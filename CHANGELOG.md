@@ -6,6 +6,8 @@ The change log is available [on GitHub][2].
 
 0.0.0
 =====
+* [#1](https://github.com/kowainik/tomland/issues/1):
+  Implement types representing TOML configuration.
 * Initially created.
 
 [1]: https://pvp.haskell.org
