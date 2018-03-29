@@ -1,3 +1,5 @@
+{- | Contains functional for pretty printing @toml@ types. -}
+
 module Toml.Printer
        ( toml2Text
        ) where
@@ -12,12 +14,43 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
 
+-- Tab is equal to 2 spaces now.
 tab :: Int -> Text
 tab n = Text.cons '\n' (Text.replicate (2*n) " ")
 
+{- | Converts 'TOML' type into 'Text'.
+
+For example, this
+
+@
+TOML
+    { tomlPairs  = HashMap.fromList [(Key "title", String "TOML example")]
+    , tomlTables = HashMap.fromList
+          [( TableId (NonEmpty.fromList ["example", "owner"])
+           , TOML
+                 { tomlPairs  = HashMap.fromList [(Key "name", String "Kowainik")]
+                 , tomlTables = mempty
+                 , tomlTableArrays = mempty
+                 }
+           )]
+    , tomlTableArrays = mempty
+    }
+@
+
+will be translated to this
+
+@
+title = "TOML Example"
+
+[example.owner]
+  name = "Kowainik"
+
+@
+-}
 toml2Text :: TOML -> Text
 toml2Text = toml2TextInd 0
 
+-- | Converts 'TOML' into 'Text' with the given indent.
 toml2TextInd :: Int -> TOML -> Text
 toml2TextInd i TOML{..} = keyValue2Text i tomlPairs  <> "\n"
                        <> tables2Text   i tomlTables
@@ -26,7 +59,7 @@ keyValue2Text :: Int -> HashMap Key Value -> Text
 keyValue2Text i = Text.concat . map kvText . HashMap.toList
   where
     kvText :: (Key, Value) -> Text
-    kvText (Key{..}, v) = tab i <> unKey <> " = " <> valText v
+    kvText (Key k, v) = tab i <> k <> " = " <> valText v
 
     valText :: Value -> Text
     valText (Bool b)   = Text.toLower $ showText b

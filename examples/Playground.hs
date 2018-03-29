@@ -7,10 +7,10 @@ import Toml.Printer (toml2Text)
 import Toml.Type (DateTime (..), Key (..), TOML (..), TableId (..), Value (..))
 
 import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Text as Text
+import qualified Data.Text.IO as TIO
 
 main :: IO ()
-main = putStrLn $ Text.unpack $ toml2Text myToml
+main = TIO.putStrLn $ toml2Text myToml
 
 
 myToml :: TOML
