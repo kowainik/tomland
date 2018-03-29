@@ -1,7 +1,8 @@
-{- | Contains functional for pretty printing @toml@ types. -}
+{- | Contains functions for pretty printing @toml@ types. -}
 
 module Toml.Printer
-       ( toml2Text
+       ( prettyToml
+       , prettyTomlInd
        ) where
 
 import Data.HashMap.Strict (HashMap)
@@ -47,16 +48,16 @@ title = "TOML Example"
 
 @
 -}
-toml2Text :: TOML -> Text
-toml2Text = toml2TextInd 0
+prettyToml :: TOML -> Text
+prettyToml = prettyTomlInd 0
 
 -- | Converts 'TOML' into 'Text' with the given indent.
-toml2TextInd :: Int -> TOML -> Text
-toml2TextInd i TOML{..} = keyValue2Text i tomlPairs  <> "\n"
-                       <> tables2Text   i tomlTables
+prettyTomlInd :: Int -> TOML -> Text
+prettyTomlInd i TOML{..} = prettyKeyValue i tomlPairs  <> "\n"
+                        <> prettyTables   i tomlTables
 
-keyValue2Text :: Int -> HashMap Key Value -> Text
-keyValue2Text i = Text.concat . map kvText . HashMap.toList
+prettyKeyValue :: Int -> HashMap Key Value -> Text
+prettyKeyValue i = Text.concat . map kvText . HashMap.toList
   where
     kvText :: (Key, Value) -> Text
     kvText (Key k, v) = tab i <> k <> " = " <> valText v
@@ -78,12 +79,12 @@ keyValue2Text i = Text.concat . map kvText . HashMap.toList
     showText :: Show a => a -> Text
     showText = Text.pack . show
 
-tables2Text :: Int -> HashMap TableId TOML -> Text
-tables2Text i = Text.concat . map table2Text . HashMap.toList
+prettyTables :: Int -> HashMap TableId TOML -> Text
+prettyTables i = Text.concat . map prettyTable . HashMap.toList
   where
-    table2Text :: (TableId, TOML) -> Text
-    table2Text (tn, toml) = tab i <> tableName2Text tn
-                                  <> toml2TextInd (succ i) toml
+    prettyTable :: (TableId, TOML) -> Text
+    prettyTable (tn, toml) = tab i <> prettyTableName tn
+                                   <> prettyTomlInd (succ i) toml
 
-    tableName2Text :: TableId -> Text
-    tableName2Text TableId{..} = "[" <> Text.intercalate "." (NonEmpty.toList unTableId) <> "]"
+    prettyTableName :: TableId -> Text
+    prettyTableName TableId{..} = "[" <> Text.intercalate "." (NonEmpty.toList unTableId) <> "]"
