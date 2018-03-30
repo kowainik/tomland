@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+
 {- | Contains functions for pretty printing @toml@ types. -}
 
 module Toml.Printer
@@ -9,7 +11,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 
-import Toml.Type (DateTime (..), Key (..), TOML (..), TableId (..), Value (..))
+import Toml.Type (AnyValue (..), DateTime (..), Key (..), TOML (..), TableId (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
@@ -56,13 +58,13 @@ prettyTomlInd :: Int -> TOML -> Text
 prettyTomlInd i TOML{..} = prettyKeyValue i tomlPairs  <> "\n"
                         <> prettyTables   i tomlTables
 
-prettyKeyValue :: Int -> HashMap Key Value -> Text
+prettyKeyValue :: Int -> HashMap Key AnyValue -> Text
 prettyKeyValue i = Text.concat . map kvText . HashMap.toList
   where
-    kvText :: (Key, Value) -> Text
-    kvText (Key k, v) = tab i <> k <> " = " <> valText v
+    kvText :: (Key, AnyValue) -> Text
+    kvText (Key k, AnyValue v) = tab i <> k <> " = " <> valText v
 
-    valText :: Value -> Text
+    valText :: Value t -> Text
     valText (Bool b)   = Text.toLower $ showText b
     valText (Int n)    = showText n
     valText (Float d)  = showText d
