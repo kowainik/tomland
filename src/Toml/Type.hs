@@ -51,12 +51,12 @@ data TOML = TOML
     }
 
 -- Needed for GADT parameterization
-data TomlType = TBool | TInt | TFloat | TString | TDate | TArray
+data ValueType = TBool | TInt | TFloat | TString | TDate | TArray
 
 -- TODO: examples are copy-pasted from TOML specification. Probably most of them
 -- will be moved into parsing module in future.
 -- | Value in @key = value@ pair.
-data Value (t :: TomlType) where
+data Value (t :: ValueType) where
     {- | Boolean value:
 
 @
@@ -130,7 +130,7 @@ data UValue
     | UArray ![UValue]
 
 -- | Existential wrapper for 'Value'.
-data AnyValue = forall (t :: TomlType) . AnyValue (Value t)
+data AnyValue = forall (t :: ValueType) . AnyValue (Value t)
 
 data DateTime
       {- | Offset date-time:
@@ -171,29 +171,32 @@ lt2 = 00:32:00.999999
 
 -- | Ensures that 'UValue's represents type-safe version of @toml@.
 typeCheck :: UValue -> Maybe AnyValue
-typeCheck (UBool b)   = Just $ AnyValue $ Bool b
-typeCheck (UInt n)    = Just $ AnyValue $ Int n
-typeCheck (UFloat f)  = Just $ AnyValue $ Float f
-typeCheck (UString s) = Just $ AnyValue $ String s
-typeCheck (UDate d)   = Just $ AnyValue $ Date d
+typeCheck (UBool b)   = justAny $ Bool b
+typeCheck (UInt n)    = justAny $ Int n
+typeCheck (UFloat f)  = justAny $ Float f
+typeCheck (UString s) = justAny $ String s
+typeCheck (UDate d)   = justAny $ Date d
 typeCheck (UArray a)  = case a of
-    []     -> Just $ AnyValue $ Array []
+    []     -> justAny $ Array []
     (x:xs) -> do
         AnyValue v <- typeCheck x
         AnyValue . Array <$> checkElem v xs
   where
     checkElem :: Value t -> [UValue] -> Maybe [Value t]
-    checkElem x []     = Just [x]
+    checkElem v []     = Just [v]
     checkElem v (x:xs) = do
-        AnyValue v2 <- typeCheck x
-        Refl <- sameValue v v2
-        (v :) <$> checkElem v2 xs
+        AnyValue vx <- typeCheck x
+        Refl <- sameValue v vx
+        (v :) <$> checkElem vx xs
+
+justAny :: Value t -> Maybe AnyValue
+justAny = Just . AnyValue
 
 sameValue :: Value a -> Value b -> Maybe (a :~: b)
-sameValue Bool{} Bool{}     = Just Refl
-sameValue Int{} Int{}       = Just Refl
-sameValue Float{} Float{}   = Just Refl
+sameValue Bool{}   Bool{}   = Just Refl
+sameValue Int{}    Int{}    = Just Refl
+sameValue Float{}  Float{}  = Just Refl
 sameValue String{} String{} = Just Refl
-sameValue Date{} Date{}     = Just Refl
-sameValue Array{} Array{}   = Just Refl
-sameValue _ _               = Nothing
+sameValue Date{}   Date{}   = Just Refl
+sameValue Array{}  Array{}  = Just Refl
+sameValue _        _        = Nothing
