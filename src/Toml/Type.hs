@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE DeriveAnyClass            #-}
+{-# LANGUAGE DerivingStrategies        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
@@ -7,10 +9,10 @@
 {- | Contains specification of TOML via Haskell ADT. -}
 
 module Toml.Type
-       ( TOML     (..)
-       , Key      (..)
-       , TableId  (..)
-       , Value    (..)
+       ( TOML (..)
+       , Key (..)
+       , UValue (..)
+       , Value (..)
        , AnyValue (..)
        , DateTime (..)
        , typeCheck
@@ -22,32 +24,32 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Type.Equality ((:~:) (..))
+import GHC.Generics (Generic)
 
-{- | Key of value in @key = val@ pair.
--}
-newtype Key = Key
-    { unKey :: Text
-    } deriving (Eq, Ord, Hashable)
-
-{- | Name of table. Stored as 'NonEmpty' list of components.
+{- | Key of value in @key = val@ pair. Represents as non-empty list of 'KeyComponent's. Key like
 
 @
-[table.name]
-  key1 = "val1"
-  key2 = "val2"
+site."google.com"
 @
+
+is represented like
+
+@
+Key ("site" :| ["\"google.com\""])
+@
+
 -}
-newtype TableId = TableId
-    { unTableId :: NonEmpty Text
-    } deriving (Eq, Ord, Hashable)
+newtype Key = Key { unKey :: NonEmpty Text }
+    deriving stock    (Generic)
+    deriving newtype  (Eq, Ord)
+    deriving anyclass (Hashable)
 
 -- TODO: describe how some TOML document will look like with this type
 {- | Represents TOML configuration value. -}
 data TOML = TOML
-    { tomlPairs       :: HashMap Key     AnyValue
-    , tomlTables      :: HashMap TableId TOML
-    , tomlTableArrays :: HashMap TableId (NonEmpty TOML)
-    -- TODO: I don't really like the above structure, probably something better should be used
+    { tomlPairs  :: HashMap Key AnyValue
+    , tomlTables :: HashMap Key TOML
+    -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
     }
 
 -- Needed for GADT parameterization
