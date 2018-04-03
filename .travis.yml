@@ -14,7 +14,7 @@ matrix:
 
   - ghc: 8.0.2
     env: GHCVER='8.0.2' STACK_YAML="$HOME/build/kowainik/tomland/stack-$GHCVER.yaml"
-  
+
 
   - ghc: 8.2.2
     env: GHCVER='8.2.2' STACK_YAML="$HOME/build/kowainik/tomland/stack.yaml"
@@ -45,3 +45,8 @@ script:
 
 notifications:
   email: false
+  slack:
+    rooms:
+      - kowainik:PRNNEflDz8PUb9sM0Z45ARwB
+    on_success: change
+    on_failure: always
