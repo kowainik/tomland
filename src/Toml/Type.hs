@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE DeriveAnyClass            #-}
-{-# LANGUAGE DerivingStrategies        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
@@ -35,14 +33,14 @@ site."google.com"
 is represented like
 
 @
-Key ("site" :| ["\"google.com\""])
+Key ("site" :| ["\\"google.com\\""])
 @
 
 -}
 newtype Key = Key { unKey :: NonEmpty Text }
-    deriving stock    (Generic)
-    deriving newtype  (Eq, Ord)
-    deriving anyclass (Hashable)
+    deriving (Eq, Ord, Generic)
+
+instance Hashable Key
 
 -- TODO: describe how some TOML document will look like with this type
 {- | Represents TOML configuration value. -}
@@ -108,7 +106,7 @@ bare-key = "value"
     Date :: DateTime -> Value 'TDate
 
     {- | Array of values. According to TOML specification all values in array
-      should have the same type. This is not guaranteed statically yet.
+      should have the same type. This is guaranteed statically with this type.
 
 @
 arr1 = [ 1, 2, 3 ]
@@ -122,7 +120,9 @@ arr6 = [ 1, 2.0 ] # INVALID
     -}
     Array  :: [Value t] -> Value 'TArray
 
--- | Untyped 'Value'.
+-- TODO: move into Toml.Type.Internal module then?..
+-- | Untyped value of 'TOML'. You shouldn't use this type in your code. Use
+-- 'Value' instead.
 data UValue
     = UBool !Bool
     | UInt !Integer

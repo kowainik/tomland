@@ -1,3 +1,5 @@
+{- | Parser of TOML language. Implemented with the help of @megaparsec@ package. -}
+
 module Toml.Parser
        ( ParseException (..)
        , parse
