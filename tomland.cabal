@@ -26,13 +26,16 @@ library
 
   build-depends:       base >= 4.9 && < 5
                      , hashable
+                     , megaparsec
+                     , parser-combinators
                      , text
                      , time
                      , unordered-containers
 
   ghc-options:         -Wall
   default-language:    Haskell2010
-  default-extensions:  GeneralizedNewtypeDeriving
+  default-extensions:  DeriveGeneric
+                       GeneralizedNewtypeDeriving
                        OverloadedStrings
                        RecordWildCards
 

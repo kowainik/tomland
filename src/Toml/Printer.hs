@@ -11,7 +11,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 
-import Toml.Type (AnyValue (..), DateTime (..), Key (..), TOML (..), TableId (..), Value (..))
+import Toml.Type (AnyValue (..), DateTime (..), Key (..), TOML (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
@@ -62,7 +62,7 @@ prettyKeyValue :: Int -> HashMap Key AnyValue -> Text
 prettyKeyValue i = Text.concat . map kvText . HashMap.toList
   where
     kvText :: (Key, AnyValue) -> Text
-    kvText (Key k, AnyValue v) = tab i <> k <> " = " <> valText v
+    kvText (k, AnyValue v) = tab i <> prettyKey k <> " = " <> valText v
 
     valText :: Value t -> Text
     valText (Bool b)   = Text.toLower $ showText b
@@ -81,12 +81,15 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     showText :: Show a => a -> Text
     showText = Text.pack . show
 
-prettyTables :: Int -> HashMap TableId TOML -> Text
+prettyTables :: Int -> HashMap Key TOML -> Text
 prettyTables i = Text.concat . map prettyTable . HashMap.toList
   where
-    prettyTable :: (TableId, TOML) -> Text
+    prettyTable :: (Key, TOML) -> Text
     prettyTable (tn, toml) = tab i <> prettyTableName tn
                                    <> prettyTomlInd (succ i) toml
 
-    prettyTableName :: TableId -> Text
-    prettyTableName TableId{..} = "[" <> Text.intercalate "." (NonEmpty.toList unTableId) <> "]"
+    prettyTableName :: Key -> Text
+    prettyTableName k = "[" <> prettyKey k <> "]"
+
+prettyKey :: Key -> Text
+prettyKey (Key k) = Text.intercalate "." (NonEmpty.toList k)

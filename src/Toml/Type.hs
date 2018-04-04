@@ -7,10 +7,10 @@
 {- | Contains specification of TOML via Haskell ADT. -}
 
 module Toml.Type
-       ( TOML     (..)
-       , Key      (..)
-       , TableId  (..)
-       , Value    (..)
+       ( TOML (..)
+       , Key (..)
+       , UValue (..)
+       , Value (..)
        , AnyValue (..)
        , DateTime (..)
        , typeCheck
@@ -22,32 +22,32 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Type.Equality ((:~:) (..))
+import GHC.Generics (Generic)
 
-{- | Key of value in @key = val@ pair.
--}
-newtype Key = Key
-    { unKey :: Text
-    } deriving (Eq, Ord, Hashable)
-
-{- | Name of table. Stored as 'NonEmpty' list of components.
+{- | Key of value in @key = val@ pair. Represents as non-empty list of 'KeyComponent's. Key like
 
 @
-[table.name]
-  key1 = "val1"
-  key2 = "val2"
+site."google.com"
 @
+
+is represented like
+
+@
+Key ("site" :| ["\\"google.com\\""])
+@
+
 -}
-newtype TableId = TableId
-    { unTableId :: NonEmpty Text
-    } deriving (Eq, Ord, Hashable)
+newtype Key = Key { unKey :: NonEmpty Text }
+    deriving (Eq, Ord, Generic)
+
+instance Hashable Key
 
 -- TODO: describe how some TOML document will look like with this type
 {- | Represents TOML configuration value. -}
 data TOML = TOML
-    { tomlPairs       :: HashMap Key     AnyValue
-    , tomlTables      :: HashMap TableId TOML
-    , tomlTableArrays :: HashMap TableId (NonEmpty TOML)
-    -- TODO: I don't really like the above structure, probably something better should be used
+    { tomlPairs  :: HashMap Key AnyValue
+    , tomlTables :: HashMap Key TOML
+    -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
     }
 
 -- Needed for GADT parameterization
@@ -106,7 +106,7 @@ bare-key = "value"
     Date :: DateTime -> Value 'TDate
 
     {- | Array of values. According to TOML specification all values in array
-      should have the same type. This is not guaranteed statically yet.
+      should have the same type. This is guaranteed statically with this type.
 
 @
 arr1 = [ 1, 2, 3 ]
@@ -120,7 +120,9 @@ arr6 = [ 1, 2.0 ] # INVALID
     -}
     Array  :: [Value t] -> Value 'TArray
 
--- | Untyped 'Value'.
+-- TODO: move into Toml.Type.Internal module then?.. But it uses 'DateTime' which is not internal...
+-- | Untyped value of 'TOML'. You shouldn't use this type in your code. Use
+-- 'Value' instead.
 data UValue
     = UBool !Bool
     | UInt !Integer

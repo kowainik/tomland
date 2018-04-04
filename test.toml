@@ -1,0 +1,16 @@
+a = true
+list = ["one", "two"]
+
+[table.name.2]
+  2Inner = +42
+
+[table.name.1]
+  listInner."google.com" = [true, false]
+  aInner = -1
+
+  [table.name.1.1]
+    listInner = [true, false]
+    aInner = 1
+
+  [table.name.1.2]
+    Inner1.2 = 42
