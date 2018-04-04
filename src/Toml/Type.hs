@@ -120,7 +120,7 @@ arr6 = [ 1, 2.0 ] # INVALID
     -}
     Array  :: [Value t] -> Value 'TArray
 
--- TODO: move into Toml.Type.Internal module then?..
+-- TODO: move into Toml.Type.Internal module then?.. But it uses 'DateTime' which is not internal...
 -- | Untyped value of 'TOML'. You shouldn't use this type in your code. Use
 -- 'Value' instead.
 data UValue
