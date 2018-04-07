@@ -127,6 +127,7 @@ tableHeaderP = do
 
 tomlP :: Parser TOML
 tomlP = do
+    sc
     kvs    <- many keyValP
     tables <- many tableHeaderP
     pure TOML { tomlPairs  = HashMap.fromList kvs
@@ -139,7 +140,7 @@ tomlP = do
 
 -- | Pretty parse exception for parsing toml.
 data ParseException = ParseException Text
-    deriving (Show)
+    deriving (Show, Eq)
 
 -- | Parses 'Text' as 'TOML' object.
 parse :: Text -> Either ParseException TOML
