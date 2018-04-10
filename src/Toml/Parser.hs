@@ -139,7 +139,7 @@ tomlP = do
 ----------------------------------------------------------------------------
 
 -- | Pretty parse exception for parsing toml.
-data ParseException = ParseException Text
+newtype ParseException = ParseException Text
     deriving (Show, Eq)
 
 -- | Parses 'Text' as 'TOML' object.
