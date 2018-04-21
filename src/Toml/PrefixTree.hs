@@ -1,9 +1,15 @@
 module Toml.PrefixTree
        ( PrefixTree (..)
-       , single
-       , insert
-       , lookup
-       , delete
+       , singleT
+       , insertT
+       , lookupT
+       , deleteT
+
+         -- * Types
+       , Piece (..)
+       , Key (..)
+       , Prefix
+       , KeysDiff (..)
        ) where
 
 import Prelude hiding (lookup)
@@ -30,12 +36,12 @@ type Prefix = Key
 -- | Map of layer names and corresponding 'PrefixTree's.
 type PrefixMap a = HashMap Piece (PrefixTree a)
 
--- | Data structure to represent @toml@.
+-- | Data structure to represent table tree for @toml@.
 data PrefixTree a
-    = Leaf Key a
-    | Branch { bcommonPref :: Prefix         -- ^ greatest common prefix
-             , bVal        :: (Maybe a)      -- ^ value by key = prefix
-             , bPrefixMap  :: (PrefixMap a)  -- ^ suffixes of prefix
+    = Leaf !Key !a
+    | Branch { bCommonPref :: !Prefix         -- ^ greatest common prefix
+             , bVal        :: !(Maybe a)      -- ^ value by key = prefix
+             , bPrefixMap  :: !(PrefixMap a)  -- ^ suffixes of prefix
              }
 
 data KeysDiff
@@ -44,13 +50,13 @@ data KeysDiff
       -- | Keys don't have any common part.
     | NoPrefix
       -- | The first key is the prefix for the second one.
-    | FstIsPref { diff :: Key}
+    | FstIsPref { diff :: !Key}
       -- | The second key is the prefix for the first one.
-    | SndIsPref { diff :: Key}
+    | SndIsPref { diff :: !Key}
       -- | Key have same prefix.
-    | Diff { pref    :: Key
-           , diffFst :: Key
-           , diffSnd :: Key
+    | Diff { pref    :: !Key
+           , diffFst :: !Key
+           , diffSnd :: !Key
            }
     deriving (Show, Eq)
 
@@ -58,11 +64,11 @@ toKey :: Piece -> [Piece] -> Key
 toKey x xs = Key $ x :| xs
 
 keysDiff :: Key -> Key -> KeysDiff
-keysDiff (Key (x :| xs)) (Key (y :| ys)) =
-    if x == y
-    then listSame xs ys []
-    else NoPrefix
+keysDiff (Key (x :| xs)) (Key (y :| ys))
+    | x == y    = listSame xs ys []
+    | otherwise = NoPrefix
   where
+    listSame :: [Piece] -> [Piece] -> [Piece] -> KeysDiff
     listSame [] []     _ = Equal
     listSame [] (s:ss) _ = FstIsPref $ toKey s ss
     listSame (f:fs) [] _ = SndIsPref $ toKey f fs
@@ -72,30 +78,32 @@ keysDiff (Key (x :| xs)) (Key (y :| ys)) =
         else Diff (toKey x pr) (toKey f fs) (toKey s ss)
 
 -- | Creates a 'PrefixTree' of one key-value element.
-single :: Key -> a -> PrefixTree a
-single = Leaf
+singleT :: Key -> a -> PrefixTree a
+singleT = Leaf
 
 -- | Inserts key-value element into the given 'PrefixTree'.
-insert :: Key -> a -> PrefixTree a -> PrefixTree a
-insert = undefined
+insertT :: Key -> a -> PrefixTree a -> PrefixTree a
+insertT = undefined
 
 -- | Looks up the value at a key in the 'PrefixTree'.
-lookup :: Key -> PrefixTree a -> Maybe a
-lookup lk (Leaf k v) = if lk == k then Just v else Nothing
-lookup lk (Branch pref mv prefMap) =
+lookupT :: Key -> PrefixTree a -> Maybe a
+lookupT lk (Leaf k v) = if lk == k then Just v else Nothing
+lookupT lk (Branch pref mv prefMap) =
     case keysDiff pref lk of
         Equal -> mv
         NoPrefix -> Nothing
         Diff _ _ _ -> Nothing
         SndIsPref _ -> Nothing
-        FstIsPref (Key (r :| rs)) -> case HashMap.lookup r prefMap of
-            Nothing -> Nothing
-            Just pt -> case rs of
-                           []     -> bVal pt
-                           (x:xs) -> lookup (toKey x xs) pt
+        FstIsPref (Key (r :| rs)) -> HashMap.lookup r prefMap >>= \pt ->
+            case rs of
+                []     -> getVal pt
+                (x:xs) -> lookupT (toKey x xs) pt
 
+  where
+    getVal :: PrefixTree a -> Maybe a
+    getVal Leaf{} = Nothing
+    getVal t      = bVal t
 
--- | Remove a key and its value from the 'PrefixTree'. Returns the deleted value if
--- operation succeeded or 'Nothing' in other case.
-delete :: Key -> PrefixTree a -> Maybe (PrefixTree a)
-delete = undefined
+-- | Remove a key and its value from the 'PrefixTree'. Returns the resulting 'PrefixTree'.
+deleteT :: Key -> PrefixTree a -> PrefixTree a
+deleteT = undefined
