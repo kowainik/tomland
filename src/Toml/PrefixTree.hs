@@ -83,7 +83,33 @@ singleT = Leaf
 
 -- | Inserts key-value element into the given 'PrefixTree'.
 insertT :: Key -> a -> PrefixTree a -> PrefixTree a
-insertT = undefined
+insertT newK newV (Leaf k v) =
+    case keysDiff k newK of
+        Equal -> Leaf k newV
+        NoPrefix -> error "Algorithm error: can't be equal prefixes in insertT:Leaf case"
+        FstIsPref rK@(Key r) -> Branch k (Just v)
+          $ HashMap.fromList [(NonEmpty.head r, Leaf rK newV)]
+        SndIsPref lK@(Key l) -> Branch newK (Just newV)
+          $ HashMap.fromList [(NonEmpty.head l, Leaf lK v)]
+        Diff p k1@(Key f) k2@(Key s) -> Branch p Nothing
+          $ HashMap.fromList [ (NonEmpty.head f, Leaf k1 v)
+                             , (NonEmpty.head s, Leaf k2 newV)
+                             ]
+insertT newK newV (Branch pref mv prefMap) =
+    case keysDiff pref newK of
+        Equal    -> Branch pref (Just newV) prefMap
+        NoPrefix -> error "Algorithm error: can't be equal prefixes in insertT:Branch case"
+        FstIsPref rK@(Key r) -> let piece = NonEmpty.head r in
+            Branch pref mv $
+              case HashMap.lookup piece prefMap of
+                  Nothing -> HashMap.insert piece (Leaf rK newV) prefMap
+                  Just a  -> HashMap.insert piece (insertT rK newV a) prefMap
+        SndIsPref lK@(Key l) -> let  piece = NonEmpty.head l in
+            Branch newK (Just newV) $ HashMap.fromList [(piece, Branch lK mv prefMap)]
+        Diff p k1@(Key f) k2@(Key s) ->
+            Branch p Nothing $ HashMap.fromList [ (NonEmpty.head f, Branch k1 mv prefMap)
+                                                , (NonEmpty.head s, Leaf k2 newV)
+                                                ]
 
 -- | Looks up the value at a key in the 'PrefixTree'.
 lookupT :: Key -> PrefixTree a -> Maybe a
