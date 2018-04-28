@@ -16,11 +16,11 @@ import Prelude hiding (lookup)
 
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
-import Data.List.NonEmpty (NonEmpty)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.List.NonEmpty as NonEmpty
 
 -- | Represents the key piece of some layer.
 newtype Piece = Piece { unPiece :: Text }
@@ -90,19 +90,11 @@ lookupT :: Key -> PrefixTree a -> Maybe a
 lookupT lk (Leaf k v) = if lk == k then Just v else Nothing
 lookupT lk (Branch pref mv prefMap) =
     case keysDiff pref lk of
-        Equal -> mv
-        NoPrefix -> Nothing
-        Diff _ _ _ -> Nothing
-        SndIsPref _ -> Nothing
-        FstIsPref (Key (r :| rs)) -> HashMap.lookup r prefMap >>= \pt ->
-            case rs of
-                []     -> getVal pt
-                (x:xs) -> lookupT (toKey x xs) pt
-
-  where
-    getVal :: PrefixTree a -> Maybe a
-    getVal Leaf{} = Nothing
-    getVal t      = bVal t
+        Equal               -> mv
+        NoPrefix            -> Nothing
+        Diff _ _ _          -> Nothing
+        SndIsPref _         -> Nothing
+        FstIsPref k@(Key r) -> HashMap.lookup (NonEmpty.head r) prefMap >>= lookupT k
 
 -- | Remove a key and its value from the 'PrefixTree'. Returns the resulting 'PrefixTree'.
 deleteT :: Key -> PrefixTree a -> PrefixTree a
