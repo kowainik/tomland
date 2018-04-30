@@ -1,9 +1,16 @@
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ViewPatterns    #-}
+
 module Toml.PrefixTree
        ( PrefixTree (..)
        , singleT
        , insertT
        , lookupT
-       , deleteT
+
+       , PrefixMap
+       , single
+       , insert
+       , lookup
 
          -- * Types
        , Piece (..)
@@ -14,6 +21,7 @@ module Toml.PrefixTree
 
 import Prelude hiding (lookup)
 
+import Control.Arrow ((&&&))
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -29,6 +37,13 @@ newtype Piece = Piece { unPiece :: Text }
 -- | Full representation of Key contains pieces of every layer.
 newtype Key = Key { unKey :: NonEmpty Piece }
     deriving (Show, Eq)
+
+pattern (:||) :: Piece -> [Piece] -> Key
+pattern x :|| xs <- ((NonEmpty.head &&& NonEmpty.tail) . unKey -> (x, xs))
+  where
+    x :|| xs = Key $ x :| xs
+
+{-# COMPLETE (:||) #-}
 
 -- | Type synonym for 'Key'.
 type Prefix = Key
@@ -60,26 +75,27 @@ data KeysDiff
            }
     deriving (Show, Eq)
 
-toKey :: Piece -> [Piece] -> Key
-toKey x xs = Key $ x :| xs
-
 keysDiff :: Key -> Key -> KeysDiff
-keysDiff (Key (x :| xs)) (Key (y :| ys))
+keysDiff (x :|| xs) (y :|| ys)
     | x == y    = listSame xs ys []
     | otherwise = NoPrefix
   where
     listSame :: [Piece] -> [Piece] -> [Piece] -> KeysDiff
     listSame [] []     _ = Equal
-    listSame [] (s:ss) _ = FstIsPref $ toKey s ss
-    listSame (f:fs) [] _ = SndIsPref $ toKey f fs
+    listSame [] (s:ss) _ = FstIsPref $ s :|| ss
+    listSame (f:fs) [] _ = SndIsPref $ f :|| fs
     listSame (f:fs) (s:ss) pr =
         if f == s
         then listSame fs ss (pr ++ [f])
-        else Diff (toKey x pr) (toKey f fs) (toKey s ss)
+        else Diff (x :|| pr) (f :|| fs) (s :|| ss)
 
 -- | Creates a 'PrefixTree' of one key-value element.
 singleT :: Key -> a -> PrefixTree a
 singleT = Leaf
+
+-- | Creates a 'PrefixMap' of one key-value element.
+single :: Key -> a -> PrefixMap a
+single k@(p :|| _) = HashMap.singleton p . singleT k
 
 -- | Inserts key-value element into the given 'PrefixTree'.
 insertT :: Key -> a -> PrefixTree a -> PrefixTree a
@@ -87,41 +103,39 @@ insertT newK newV (Leaf k v) =
     case keysDiff k newK of
         Equal -> Leaf k newV
         NoPrefix -> error "Algorithm error: can't be equal prefixes in insertT:Leaf case"
-        FstIsPref rK@(Key r) -> Branch k (Just v)
-          $ HashMap.fromList [(NonEmpty.head r, Leaf rK newV)]
-        SndIsPref lK@(Key l) -> Branch newK (Just newV)
-          $ HashMap.fromList [(NonEmpty.head l, Leaf lK v)]
-        Diff p k1@(Key f) k2@(Key s) -> Branch p Nothing
-          $ HashMap.fromList [ (NonEmpty.head f, Leaf k1 v)
-                             , (NonEmpty.head s, Leaf k2 newV)
-                             ]
+        FstIsPref rK -> Branch k (Just v) $ single rK newV
+        SndIsPref lK -> Branch newK (Just newV) $ single lK v
+        Diff p k1@(f :|| _) k2@(s :|| _) ->
+          Branch p Nothing $ HashMap.fromList [(f, Leaf k1 v), (s, Leaf k2 newV)]
 insertT newK newV (Branch pref mv prefMap) =
     case keysDiff pref newK of
         Equal    -> Branch pref (Just newV) prefMap
         NoPrefix -> error "Algorithm error: can't be equal prefixes in insertT:Branch case"
-        FstIsPref rK@(Key r) -> let piece = NonEmpty.head r in
-            Branch pref mv $
-              case HashMap.lookup piece prefMap of
-                  Nothing -> HashMap.insert piece (Leaf rK newV) prefMap
-                  Just a  -> HashMap.insert piece (insertT rK newV a) prefMap
-        SndIsPref lK@(Key l) -> let  piece = NonEmpty.head l in
-            Branch newK (Just newV) $ HashMap.fromList [(piece, Branch lK mv prefMap)]
-        Diff p k1@(Key f) k2@(Key s) ->
-            Branch p Nothing $ HashMap.fromList [ (NonEmpty.head f, Branch k1 mv prefMap)
-                                                , (NonEmpty.head s, Leaf k2 newV)
+        FstIsPref rK -> Branch pref mv $ insert rK newV prefMap
+        SndIsPref lK@(piece :|| _) ->
+            Branch newK (Just newV) $ HashMap.singleton piece (Branch lK mv prefMap)
+        Diff p k1@(f :|| _) k2@(s :|| _) ->
+            Branch p Nothing $ HashMap.fromList [ (f, Branch k1 mv prefMap)
+                                                , (s, Leaf k2 newV)
                                                 ]
+
+-- | Inserts key-value element into the given 'PrefixMap'.
+insert :: Key -> a -> PrefixMap a -> PrefixMap a
+insert k@(p :|| _) v prefMap = case HashMap.lookup p prefMap of
+    Just tree -> HashMap.insert p (insertT k v tree) prefMap
+    Nothing   -> HashMap.insert p (singleT k v) prefMap
 
 -- | Looks up the value at a key in the 'PrefixTree'.
 lookupT :: Key -> PrefixTree a -> Maybe a
 lookupT lk (Leaf k v) = if lk == k then Just v else Nothing
 lookupT lk (Branch pref mv prefMap) =
     case keysDiff pref lk of
-        Equal               -> mv
-        NoPrefix            -> Nothing
-        Diff _ _ _          -> Nothing
-        SndIsPref _         -> Nothing
-        FstIsPref k@(Key r) -> HashMap.lookup (NonEmpty.head r) prefMap >>= lookupT k
+        Equal       -> mv
+        NoPrefix    -> Nothing
+        Diff _ _ _  -> Nothing
+        SndIsPref _ -> Nothing
+        FstIsPref k -> lookup k prefMap
 
--- | Remove a key and its value from the 'PrefixTree'. Returns the resulting 'PrefixTree'.
-deleteT :: Key -> PrefixTree a -> PrefixTree a
-deleteT = undefined
+-- | Looks up the value at a key in the 'PrefixMap'.
+lookup :: Key -> PrefixMap a -> Maybe a
+lookup k@(p :|| _) prefMap = HashMap.lookup p prefMap >>= lookupT k
