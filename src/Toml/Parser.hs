@@ -9,21 +9,18 @@ module Toml.Parser
 import Control.Applicative (Alternative (..), liftA2)
 import Control.Applicative.Combinators (between, manyTill, sepBy)
 import Control.Monad (void)
-import Data.Function (on)
-import Data.HashMap.Lazy (HashMap)
-import Data.List.NonEmpty (NonEmpty (..))
-import Data.Ord (comparing)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
 import Text.Megaparsec.Char (alphaNumChar, anyChar, char, space, space1)
 
-import Toml.Type (AnyValue, Key (..), TOML (..), UValue (..), typeCheck)
+import Toml.PrefixTree (Key (..), Piece (..), insert)
+import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.HashMap.Lazy as HashMap
-import qualified Data.List as List (isPrefixOf, sortBy)
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
 import qualified Text.Megaparsec as Mega (parse)
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -81,7 +78,7 @@ keyComponentP :: Parser Text
 keyComponentP = bareKeyP <|> (quote <$> stringP)
 
 keyP :: Parser Key
-keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
+keyP = Key <$> NonEmpty.map Piece <$> NC.sepBy1 keyComponentP (char '.')
 
 tableNameP :: Parser Key
 tableNameP = lexeme $ between (char '[') (char ']') keyP
@@ -122,54 +119,22 @@ keyValP = do
 
 data TableHeader = TableHeader
     { thName :: Key
-    , thKeys :: [(Key, AnyValue)]
+    , thKeys :: TOML
     }
 
 tableHeaderP :: Parser TableHeader
-tableHeaderP = liftA2 TableHeader tableNameP (many keyValP)
+tableHeaderP = liftA2 TableHeader tableNameP (makeToml <$> many keyValP)
+  where
+    makeToml :: [(Key, AnyValue)] -> TOML
+    makeToml kv = TOML (HashMap.fromList kv) mempty
 
 tomlP :: Parser TOML
 tomlP = do
     kvs    <- many keyValP
     tables <- many tableHeaderP
     pure TOML { tomlPairs  = HashMap.fromList kvs
-              , tomlTables = merge $ List.sortBy (comparing thName) tables
+              , tomlTables = foldr (\TableHeader{..} -> insert thName thKeys) mempty tables
               }
-
-----------------------------------------------------------------------------
--- Very ugly hack just to merge different tables grouping by biggest common prefix
-----------------------------------------------------------------------------
-
--- assumes that passed list is sorted; fortunately, we need to sort this list only once
-merge :: [TableHeader] -> HashMap Key TOML
-merge = HashMap.fromList . map createTable . groupByPrefix
-  where
-    createTable :: NonEmpty TableHeader -> (Key, TOML)
-    createTable (TableHeader{..} :| headers) =
-      ( thName
-      , TOML { tomlPairs  = HashMap.fromList thKeys
-             , tomlTables = merge headers
-             }
-      )
-
-{- Groups by prefix. So the following list:
-
-["a", "a.x", "a.y", "b.1", "b.2", "c"]
-
-will be converted in the following list of non empty lists:
-
-[ "a" :| ["a.x", "a.y"], "b.1" :| [], "b.2" :| [], "c" :| [] ]
-
--}
-groupByPrefix :: [TableHeader] -> [NonEmpty TableHeader]
-groupByPrefix []     = []
-groupByPrefix (x:xs) = let (y, ys) = span (isThPref x) xs in (x :| y) : groupByPrefix ys
-  where
-    isThPref :: TableHeader -> TableHeader -> Bool
-    isThPref = isPrefixOf `on` unKey . thName
-
-isPrefixOf :: Eq a => NonEmpty a -> NonEmpty a -> Bool
-(x :| xs) `isPrefixOf` (y :| ys) = x == y && List.isPrefixOf xs ys
 
 ---------------------------------------------------------------------------
 -- Exposed API

@@ -11,7 +11,8 @@ import Data.HashMap.Strict (HashMap)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 
-import Toml.Type (AnyValue (..), DateTime (..), Key (..), TOML (..), Value (..))
+import Toml.PrefixTree (Key (..), Piece (..), PrefixMap, PrefixTree (..))
+import Toml.Type (AnyValue (..), DateTime (..), TOML (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
@@ -51,12 +52,12 @@ title = "TOML Example"
 @
 -}
 prettyToml :: TOML -> Text
-prettyToml = prettyTomlInd 0
+prettyToml = prettyTomlInd 0 ""
 
 -- | Converts 'TOML' into 'Text' with the given indent.
-prettyTomlInd :: Int -> TOML -> Text
-prettyTomlInd i TOML{..} = prettyKeyValue i tomlPairs  <> "\n"
-                        <> prettyTables   i tomlTables
+prettyTomlInd :: Int -> Text -> TOML -> Text
+prettyTomlInd i prefix TOML{..} = prettyKeyValue i tomlPairs <> "\n"
+                               <> prettyTables i prefix tomlTables
 
 prettyKeyValue :: Int -> HashMap Key AnyValue -> Text
 prettyKeyValue i = Text.concat . map kvText . HashMap.toList
@@ -81,15 +82,29 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     showText :: Show a => a -> Text
     showText = Text.pack . show
 
-prettyTables :: Int -> HashMap Key TOML -> Text
-prettyTables i = Text.concat . map prettyTable . HashMap.toList
+prettyTables :: Int -> Text -> PrefixMap TOML -> Text
+prettyTables i pref = Text.concat . map prettyTable . HashMap.elems
   where
-    prettyTable :: (Key, TOML) -> Text
-    prettyTable (tn, toml) = tab i <> prettyTableName tn
-                                   <> prettyTomlInd (succ i) toml
+    prettyTable :: PrefixTree TOML -> Text
+    prettyTable (Leaf k toml) =
+        let name = getPref k in
+        tab i <> prettyTableName name
+              <> prettyTomlInd (succ i) name toml
+    prettyTable (Branch k mToml prefMap) =
+        let name  = getPref k
+            nextI = succ i
+            toml  = case mToml of
+                        Nothing -> ""
+                        Just t  -> prettyTomlInd nextI name t
+        in tab i <> prettyTableName name <> toml <> prettyTables nextI name prefMap
 
-    prettyTableName :: Key -> Text
-    prettyTableName k = "[" <> prettyKey k <> "]"
+    getPref :: Key -> Text
+    getPref k = case pref of
+        "" -> prettyKey k
+        _  -> pref <> "." <> prettyKey k
+
+    prettyTableName :: Text -> Text
+    prettyTableName n = "[" <> n <> "]"
 
 prettyKey :: Key -> Text
-prettyKey (Key k) = Text.intercalate "." (NonEmpty.toList k)
+prettyKey (Key k) = Text.intercalate "." $ map unPiece (NonEmpty.toList k)
