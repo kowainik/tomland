@@ -11,6 +11,7 @@ module Toml.PrefixTree
        , single
        , insert
        , lookup
+       , fromList
 
          -- * Types
        , Piece (..)
@@ -22,21 +23,39 @@ module Toml.PrefixTree
 import Prelude hiding (lookup)
 
 import Control.Arrow ((&&&))
+import Data.Foldable (foldl')
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.String (IsString)
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
 
 -- | Represents the key piece of some layer.
 newtype Piece = Piece { unPiece :: Text }
-    deriving (Show, Eq, Hashable)
+    deriving (Show, Eq, Ord, Hashable, IsString)
 
--- | Full representation of Key contains pieces of every layer.
+{- | Key of value in @key = val@ pair. Represents as non-empty list of key
+components -- 'Piece's. Key like
+
+@
+site."google.com"
+@
+
+is represented like
+
+@
+Key (Piece "site" :| [Piece "\\"google.com\\""])
+@
+
+-}
 newtype Key = Key { unKey :: NonEmpty Piece }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord, Generic)
+
+instance Hashable Key
 
 pattern (:||) :: Piece -> [Piece] -> Key
 pattern x :|| xs <- ((NonEmpty.head &&& NonEmpty.tail) . unKey -> (x, xs))
@@ -139,3 +158,10 @@ lookupT lk (Branch pref mv prefMap) =
 -- | Looks up the value at a key in the 'PrefixMap'.
 lookup :: Key -> PrefixMap a -> Maybe a
 lookup k@(p :|| _) prefMap = HashMap.lookup p prefMap >>= lookupT k
+
+-- | Constructs 'PrettyMap' structure from the given list of 'Key' and value pairs.
+fromList :: [(Key, a)] -> PrefixMap a
+fromList = foldl' insertPair mempty
+  where
+    insertPair :: PrefixMap a -> (Key, a) -> PrefixMap a
+    insertPair prefMap (k, v) = insert k v prefMap

@@ -14,3 +14,5 @@ list = ["one", "two"]
 
   [table.name.1.2]
     Inner1.2 = 42
+
+[a.b.c.d]

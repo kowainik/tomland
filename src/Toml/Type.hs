@@ -8,7 +8,6 @@
 
 module Toml.Type
        ( TOML (..)
-       , Key (..)
        , UValue (..)
        , Value (..)
        , AnyValue (..)
@@ -16,37 +15,18 @@ module Toml.Type
        , typeCheck
        ) where
 
-import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
-import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Type.Equality ((:~:) (..))
-import GHC.Generics (Generic)
 
-{- | Key of value in @key = val@ pair. Represents as non-empty list of 'KeyComponent's. Key like
-
-@
-site."google.com"
-@
-
-is represented like
-
-@
-Key ("site" :| ["\\"google.com\\""])
-@
-
--}
-newtype Key = Key { unKey :: NonEmpty Text }
-    deriving (Eq, Ord, Generic)
-
-instance Hashable Key
+import Toml.PrefixTree (Key (..), PrefixMap)
 
 -- TODO: describe how some TOML document will look like with this type
 {- | Represents TOML configuration value. -}
 data TOML = TOML
     { tomlPairs  :: HashMap Key AnyValue
-    , tomlTables :: HashMap Key TOML
+    , tomlTables :: PrefixMap TOML
     -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
     }
 

@@ -1,13 +1,14 @@
 module Main where
 
-import Data.HashMap.Strict (HashMap, fromList)
 import Data.Text (Text)
 import Data.Time (fromGregorian)
 
 import Toml.Parser (ParseException (..), parse)
+import Toml.PrefixTree (Key (..), Piece (..), PrefixMap, fromList)
 import Toml.Printer (prettyToml)
-import Toml.Type (AnyValue (..), DateTime (..), Key (..), TOML (..), Value (..))
+import Toml.Type (AnyValue (..), DateTime (..), TOML (..), Value (..))
 
+import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text.IO as TIO
 
@@ -23,38 +24,38 @@ main = do
         Right toml              -> TIO.putStrLn $ prettyToml toml
 
 key :: [Text] -> Key
-key = Key . NonEmpty.fromList
+key = Key . NonEmpty.fromList . map Piece
 
 myToml :: TOML
-myToml = TOML (fromList
+myToml = TOML (HashMap.fromList
     [ (key ["a"]   , AnyValue $ Bool True)
     , (key ["list"], AnyValue $ Array [String "one", String "two"])
     , (key ["time"], AnyValue $ Array [Date $ Day (fromGregorian 2018 3 29)])
     ] ) myInnerToml
 
-myInnerToml :: HashMap Key TOML
+myInnerToml :: PrefixMap TOML
 myInnerToml = fromList
     [ ( key ["table", "name", "1"]
-      , TOML (fromList
+      , TOML (HashMap.fromList
             [ (key ["aInner"]   , AnyValue $ Int 1)
             , (key ["listInner"], AnyValue $ Array [Bool True, Bool False])
             ]) myInnerInnerToml
       )
     , ( key ["table", "name", "2"]
-      , TOML (fromList [ (key ["2Inner"], AnyValue $ Int 42)
-                       ]) mempty
+      , TOML (HashMap.fromList [(key ["2Inner"], AnyValue $ Int 42)]) mempty
       )
     ]
 
-myInnerInnerToml :: HashMap Key TOML
+
+myInnerInnerToml :: PrefixMap TOML
 myInnerInnerToml = fromList
     [ ( key ["table", "name", "1", "1"]
-      , TOML (fromList [ (key ["aInner"]   , AnyValue $ Int 1)
-                       , (key ["listInner"], AnyValue $ Array [Bool True, Bool False])
-                       ]) mempty
+      , TOML (HashMap.fromList
+            [ (key ["aInner"]   , AnyValue $ Int 1)
+            , (key ["listInner"], AnyValue $ Array [Bool True, Bool False])
+            ]) mempty
       )
     , ( key ["table", "name", "1", "2"]
-      , TOML (fromList [ (key ["Inner1.2"], AnyValue $ Int 42)
-                       ]) mempty
+      , TOML (HashMap.fromList [(key ["Inner1.2"], AnyValue $ Int 42)]) mempty
       )
     ]
