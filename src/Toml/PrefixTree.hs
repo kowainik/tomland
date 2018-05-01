@@ -16,6 +16,7 @@ module Toml.PrefixTree
          -- * Types
        , Piece (..)
        , Key (..)
+       , pattern (:||)
        , Prefix
        , KeysDiff (..)
        ) where
@@ -77,6 +78,7 @@ data PrefixTree a
              , bVal        :: !(Maybe a)      -- ^ value by key = prefix
              , bPrefixMap  :: !(PrefixMap a)  -- ^ suffixes of prefix
              }
+    deriving (Show, Eq)
 
 data KeysDiff
       -- | Keys are equal
