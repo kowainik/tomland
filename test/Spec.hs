@@ -1,2 +1,8 @@
+module Main where
+
+import Test.Tasty (defaultMain)
+
+import Test.Toml.PrefixTree (prefixTreeTests)
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = prefixTreeTests >>= defaultMain
