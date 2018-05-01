@@ -159,6 +159,7 @@ lookupT lk (Branch pref mv prefMap) =
 lookup :: Key -> PrefixMap a -> Maybe a
 lookup k@(p :|| _) prefMap = HashMap.lookup p prefMap >>= lookupT k
 
+-- | Constructs 'PrettyMap' structure from the given list of 'Key' and value pairs.
 fromList :: [(Key, a)] -> PrefixMap a
 fromList = foldl' insertPair mempty
   where

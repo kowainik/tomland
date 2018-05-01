@@ -55,10 +55,14 @@ prettyToml :: TOML -> Text
 prettyToml = prettyTomlInd 0 ""
 
 -- | Converts 'TOML' into 'Text' with the given indent.
-prettyTomlInd :: Int -> Text -> TOML -> Text
+prettyTomlInd :: Int  -- ^ Number of spaces for indentation
+              -> Text -- ^ Accumulator for table names
+              -> TOML -- ^ Given 'TOML'
+              -> Text -- ^ Pretty result
 prettyTomlInd i prefix TOML{..} = prettyKeyValue i tomlPairs <> "\n"
                                <> prettyTables i prefix tomlTables
 
+-- | Returns pretty formatted  key-value pairs of the 'TOML'.
 prettyKeyValue :: Int -> HashMap Key AnyValue -> Text
 prettyKeyValue i = Text.concat . map kvText . HashMap.toList
   where
@@ -82,6 +86,7 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     showText :: Show a => a -> Text
     showText = Text.pack . show
 
+-- | Returns pretty formatted tables section of the 'TOML'.
 prettyTables :: Int -> Text -> PrefixMap TOML -> Text
 prettyTables i pref = Text.concat . map prettyTable . HashMap.elems
   where
@@ -98,6 +103,7 @@ prettyTables i pref = Text.concat . map prettyTable . HashMap.elems
                         Just t  -> prettyTomlInd nextI name t
         in tab i <> prettyTableName name <> toml <> prettyTables nextI name prefMap
 
+    -- Adds next part of the table name to the accumulator.
     getPref :: Key -> Text
     getPref k = case pref of
         "" -> prettyKey k

@@ -6,7 +6,7 @@ module Toml.Parser
        ) where
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
-import Control.Applicative (Alternative (..), liftA2)
+import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators (between, manyTill, sepBy)
 import Control.Monad (void)
 import Data.Semigroup ((<>))
@@ -15,12 +15,11 @@ import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
 import Text.Megaparsec.Char (alphaNumChar, anyChar, char, space, space1)
 
-import Toml.PrefixTree (Key (..), Piece (..), insert)
+import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.HashMap.Lazy as HashMap
-import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
 import qualified Text.Megaparsec as Mega (parse)
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -74,11 +73,11 @@ stringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
 quote :: Text -> Text
 quote t = "\"" <> t <> "\""
 
-keyComponentP :: Parser Text
-keyComponentP = bareKeyP <|> (quote <$> stringP)
+keyComponentP :: Parser Piece
+keyComponentP = Piece <$> (bareKeyP <|> (quote <$> stringP))
 
 keyP :: Parser Key
-keyP = Key <$> NonEmpty.map Piece <$> NC.sepBy1 keyComponentP (char '.')
+keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
 
 tableNameP :: Parser Key
 tableNameP = lexeme $ between (char '[') (char ']') keyP
@@ -117,13 +116,11 @@ keyValP = do
         Nothing -> fail "Can't type check value!"
         Just v  -> pure (k, v)
 
-data TableHeader = TableHeader
-    { thName :: Key
-    , thKeys :: TOML
-    }
-
-tableHeaderP :: Parser TableHeader
-tableHeaderP = liftA2 TableHeader tableNameP (makeToml <$> many keyValP)
+tableHeaderP :: Parser (Key, TOML)
+tableHeaderP = do
+    k <- tableNameP
+    toml <- makeToml <$> many keyValP
+    pure (k, toml)
   where
     makeToml :: [(Key, AnyValue)] -> TOML
     makeToml kv = TOML (HashMap.fromList kv) mempty
@@ -133,7 +130,7 @@ tomlP = do
     kvs    <- many keyValP
     tables <- many tableHeaderP
     pure TOML { tomlPairs  = HashMap.fromList kvs
-              , tomlTables = foldr (\TableHeader{..} -> insert thName thKeys) mempty tables
+              , tomlTables = fromList tables
               }
 
 ---------------------------------------------------------------------------
