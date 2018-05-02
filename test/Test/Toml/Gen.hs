@@ -11,12 +11,11 @@ module Test.Toml.Gen
        , genToml
        ) where
 
-import Control.Monad (forM, replicateM)
-import Data.HashMap.Strict (HashMap)
+import Control.Monad (forM)
 
 import Hedgehog (MonadGen)
 
-import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..))
+import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
 import Toml.Type (AnyValue (..), TOML (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
@@ -60,11 +59,8 @@ genKeyAnyValue = do
     val <- genAnyValue
     pure (key, val)
 
--- TODO: how many keys? I'm choosing from 0 to 10..
-genKeyValueMap :: MonadGen m => m (HashMap Key AnyValue)
-genKeyValueMap = do
-    i <- Gen.int (Range.constant 0 5)
-    HashMap.fromList <$> replicateM i genKeyAnyValue
+genKeyAnyValueList :: MonadGen m => m [(Key, AnyValue)]
+genKeyAnyValueList = Gen.list (Range.linear 0 10) genKeyAnyValue
 
 -- Generates key-value pair for PrefixMap
 genEntry :: MonadGen m => m (Piece, Key)
@@ -95,8 +91,17 @@ genPrefixTree genV key = Gen.recursive
         prefVal <- Gen.maybe genV
         pure $ Branch key prefVal prefMap
 
+genTableHeader :: MonadGen m => m (Key, TOML)
+genTableHeader = do
+    k <- genKey
+    toml <- makeToml <$> genKeyAnyValueList
+    pure (k, toml)
+  where
+    makeToml :: [(Key, AnyValue)] -> TOML
+    makeToml kv = TOML (HashMap.fromList kv) mempty
+
 genToml :: MonadGen m => m TOML
 genToml = do
-    kv     <- genKeyValueMap
-    tables <- genPrefixMap genToml
-    pure $ TOML kv tables
+    kv     <- HashMap.fromList <$> genKeyAnyValueList
+    tables <- Gen.list (Range.linear 0 10) genTableHeader
+    pure $ TOML kv (fromList tables)

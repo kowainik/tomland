@@ -52,7 +52,7 @@ integer :: Parser Integer
 integer = L.signed sc (lexeme L.decimal)
 
 float :: Parser Double
-float = lexeme L.float
+float = L.signed sc $ lexeme L.float
 
 ----------------------------------------------------------------------------
 -- TOML parser
@@ -99,8 +99,8 @@ arrayP = lexeme $ between (char '[') (char ']') (valueP `sepBy` spComma)
 
 valueP :: Parser UValue
 valueP = UBool   <$> boolP
-     <|> UInt    <$> try integer
-     <|> UFloat  <$> float
+     <|> UFloat  <$> try float
+     <|> UInt    <$> integer
      <|> UString <$> stringP
 --     <|> UDate   <$> dateTimeP
      <|> UArray  <$> arrayP
