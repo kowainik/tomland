@@ -2,6 +2,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
+{-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TypeOperators             #-}
 
 {- | Contains specification of TOML via Haskell ADT. -}
@@ -9,6 +10,7 @@
 module Toml.Type
        ( TOML (..)
        , UValue (..)
+       , ValueType (..)
        , Value (..)
        , AnyValue (..)
        , DateTime (..)
@@ -17,7 +19,7 @@ module Toml.Type
 
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
-import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
+import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 import Data.Type.Equality ((:~:) (..))
 
 import Toml.PrefixTree (Key (..), PrefixMap)
@@ -28,7 +30,7 @@ data TOML = TOML
     { tomlPairs  :: HashMap Key AnyValue
     , tomlTables :: PrefixMap TOML
     -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
-    }
+    } deriving (Show, Eq)
 
 -- Needed for GADT parameterization
 data ValueType = TBool | TInt | TFloat | TString | TDate | TArray
@@ -100,6 +102,23 @@ arr6 = [ 1, 2.0 ] # INVALID
     -}
     Array  :: [Value t] -> Value 'TArray
 
+deriving instance Show (Value t)
+instance Eq (Value t) where
+    (Bool b1)   == (Bool b2)   = b1 == b2
+    (Int i1)    == (Int i2)    = i1 == i2
+    (Float f1)  == (Float f2)  = f1 == f2
+    (String s1) == (String s2) = s1 == s2
+    (Date d1)   == (Date d2)   = d1 == d2
+    (Array a1)  == (Array a2)  = eqValueList a1 a2
+
+eqValueList :: [Value a] -> [Value b] -> Bool
+eqValueList [] [] = True
+eqValueList (x:xs) (y:ys) = case sameValue x y of
+    Just Refl -> x == y && eqValueList xs ys
+    Nothing   -> False
+eqValueList _ _ = False
+
+
 -- TODO: move into Toml.Type.Internal module then?.. But it uses 'DateTime' which is not internal...
 -- | Untyped value of 'TOML'. You shouldn't use this type in your code. Use
 -- 'Value' instead.
@@ -113,6 +132,19 @@ data UValue
 
 -- | Existential wrapper for 'Value'.
 data AnyValue = forall (t :: ValueType) . AnyValue (Value t)
+
+instance Show AnyValue where
+    show (AnyValue v) = show v
+
+instance Eq AnyValue where
+    (AnyValue (Bool b1))   == (AnyValue (Bool b2))   = b1 == b2
+    (AnyValue (Int i1))    == (AnyValue (Int i2))    = i1 == i2
+    (AnyValue (Float f1))  == (AnyValue (Float f2))  = f1 == f2
+    (AnyValue (String s1)) == (AnyValue (String s2)) = s1 == s2
+    (AnyValue (Date d1))   == (AnyValue (Date d2))   = d1 == d2
+    (AnyValue (Array a1))  == (AnyValue (Array a2))  = eqValueList a1 a2
+    _                      == _                      = False
+
 
 data DateTime
       {- | Offset date-time:
@@ -150,6 +182,15 @@ lt2 = 00:32:00.999999
 @
       -}
     | Hours !TimeOfDay
+    deriving (Show)
+
+instance Eq DateTime where
+    (Zoned a) == (Zoned b) = zonedTimeToUTC a == zonedTimeToUTC b
+    (Local a) == (Local b) = a == b
+    (Day a)   == (Day b)   = a == b
+    (Hours a) == (Hours b) = a == b
+    _         == _         = False
+
 
 -- | Ensures that 'UValue's represents type-safe version of @toml@.
 typeCheck :: UValue -> Maybe AnyValue

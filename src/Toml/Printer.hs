@@ -52,7 +52,7 @@ title = "TOML Example"
 @
 -}
 prettyToml :: TOML -> Text
-prettyToml = prettyTomlInd 0 ""
+prettyToml = Text.drop 1 . prettyTomlInd 0 ""
 
 -- | Converts 'TOML' into 'Text' with the given indent.
 prettyTomlInd :: Int  -- ^ Number of spaces for indentation
