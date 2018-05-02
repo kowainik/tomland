@@ -1,11 +1,3 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE ExplicitForAll      #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
-
 module Test.Toml.Parsing.Property
        ( propertyTests
        ) where
@@ -20,10 +12,7 @@ import Toml.Printer (prettyToml)
 import Test.Toml.Gen (genToml)
 
 propertyTests :: [TestTree]
-propertyTests = [parsePrintTest]
-
-parsePrintTest :: TestTree
-parsePrintTest = testProperty "parse . prettyPrint == id" prop_parsePrint
+propertyTests = [ testProperty "parse . prettyPrint == id" prop_parsePrint ]
 
 prop_parsePrint :: Property
 prop_parsePrint =  property $ do

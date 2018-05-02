@@ -11,11 +11,10 @@ import Test.Toml.Gen (genKey, genPrefixMap, genVal)
 import qualified Toml.PrefixTree as Prefix
 
 propertyTests :: [TestTree]
-propertyTests = [insertLookup, insertInsert]
-
-insertLookup, insertInsert :: TestTree
-insertLookup = testProperty "lookup k (insert k v m) == Just v"     prop_InsertLookup
-insertInsert = testProperty "insert x a . insert x b == insert x a" prop_InsertInsert
+propertyTests =
+    [ testProperty "lookup k (insert k v m) == Just v"     prop_InsertLookup
+    , testProperty "insert x a . insert x b == insert x a" prop_InsertInsert
+    ]
 
 ----------------------------------------------------------------------------
 -- InsertLookup
@@ -23,7 +22,7 @@ insertInsert = testProperty "insert x a . insert x b == insert x a" prop_InsertI
 
 prop_InsertLookup :: Property
 prop_InsertLookup =  property $ do
-    t   <- forAll $ genPrefixMap genVal
+    t   <- forAll genPrefixMap
     key <- forAll genKey
     val <- forAll genVal
 
@@ -38,7 +37,7 @@ prop_InsertLookup =  property $ do
 
 prop_InsertInsert :: Property
 prop_InsertInsert =  property $ do
-    t <- forAll $ genPrefixMap genVal
+    t <- forAll genPrefixMap
     x <- forAll genKey
     a <- forAll genVal
     b <- forAll genVal

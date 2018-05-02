@@ -11,6 +11,7 @@ module Test.Toml.Gen
        , genToml
        ) where
 
+import Control.Applicative (liftA2)
 import Control.Monad (forM)
 
 import Hedgehog (MonadGen)
@@ -35,15 +36,15 @@ genVal = Gen.int (Range.constant 0 256)
 -- | Generates random value of 'AnyValue' type.
 genAnyValue :: MonadGen m => m AnyValue
 genAnyValue = do
-  randB <- Gen.bool
-  randI <- toInteger <$> Gen.int (Range.constantBounded @Int)
-  randF <- Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
-  randS <- Gen.text (Range.constant 0 256) Gen.alphaNum
-  Gen.element
-      [ AnyValue (Bool   randB)
-      , AnyValue (Int    randI)
-      , AnyValue (Float  randF)
-      , AnyValue (String randS)
+  let randB = Gen.bool
+  let randI = toInteger <$> Gen.int (Range.constantBounded @Int)
+  let randF = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
+  let randS = Gen.text (Range.constant 0 256) Gen.alphaNum
+  Gen.choice
+      [ AnyValue . Bool   <$> randB
+      , AnyValue . Int    <$> randI
+      , AnyValue . Float  <$> randF
+      , AnyValue . String <$> randS
       ]
 
 -- TODO: unicode support
@@ -54,10 +55,7 @@ genKey :: MonadGen m => m Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
 
 genKeyAnyValue :: MonadGen m => m (Key, AnyValue)
-genKeyAnyValue = do
-    key <- genKey
-    val <- genAnyValue
-    pure (key, val)
+genKeyAnyValue = liftA2 (,) genKey genAnyValue
 
 genKeyAnyValueList :: MonadGen m => m [(Key, AnyValue)]
 genKeyAnyValueList = Gen.list (Range.linear 0 10) genKeyAnyValue
@@ -68,27 +66,27 @@ genEntry = do
     key@(piece :|| _) <- genKey
     pure (piece, key)
 
-genPrefixMap :: MonadGen m => m v -> m (PrefixMap v)
-genPrefixMap vGen = do
+genPrefixMap :: MonadGen m => m (PrefixMap V)
+genPrefixMap = do
     entries <- Gen.list (Range.linear 0 10) genEntry
     kvps    <- forM entries $ \(piece, key) -> do
-        tree <- genPrefixTree vGen key
+        tree <- genPrefixTree key
         pure (piece, tree)
 
     pure $ HashMap.fromList kvps
 
-genPrefixTree :: forall v m . MonadGen m => m v -> Key -> m (PrefixTree v)
-genPrefixTree genV key = Gen.recursive
+genPrefixTree :: forall m . MonadGen m => Key -> m (PrefixTree V)
+genPrefixTree key = Gen.recursive
     -- list picker generator combinator
     Gen.choice
     -- non-recursive generators
-    [ Leaf key <$> genV ]
+    [ Leaf key <$> genVal ]
     -- recursive generators
-    [ genPrefixMap genV >>= genBranch ]
+    [ genPrefixMap >>= genBranch ]
   where
-    genBranch :: PrefixMap v -> m (PrefixTree v)
+    genBranch :: PrefixMap V -> m (PrefixTree V)
     genBranch prefMap = do
-        prefVal <- Gen.maybe genV
+        prefVal <- Gen.maybe genVal
         pure $ Branch key prefVal prefMap
 
 genTableHeader :: MonadGen m => m (Key, TOML)
