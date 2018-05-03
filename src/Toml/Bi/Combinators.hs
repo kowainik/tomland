@@ -31,7 +31,6 @@ import Control.Monad.Except (ExceptT, runExceptT, throwError)
 import Control.Monad.Reader (Reader, asks, runReader)
 import Control.Monad.State (State, gets, modify, runState)
 import Data.Bifunctor (first)
-import Data.Either (fromRight)
 import Data.Text (Text)
 
 import Toml.Bi.Monad (Bi, Bijection (..))
@@ -81,6 +80,10 @@ decode biToml obj = do
     _ <- result
 
     pure $ prettyToml toml
+
+fromRight :: b -> Either a b -> b
+fromRight b (Left _)  = b
+fromRight _ (Right b) = b
 
 -- | Unsafe version of 'decode' function if you're sure that you decoding
 -- structure is correct.
