@@ -12,8 +12,8 @@ module Toml.Bi.Monad
 2. How to store value of type @a@ in stateful context @w@?
 
 In practice instead of @r@ we will use some @Reader Toml@ and instead of @w@ we will
-use @State Toml@. This with the bunch of utility functions allows to have single
-description for from/to 'Toml' conversion.
+use @State Toml@. This approach with the bunch of utility functions allows to
+have single description for from/to 'Toml' conversion.
 
 In practice this type will always be used in the following way:
 
@@ -32,7 +32,7 @@ data Bijection r w c a = Bijection
 
       -- | Store value of type @c@ inside monadic context @w@ and returning
       -- value of type @a@. Type of this function actually should be @a -> w ()@ but with
-      -- such type it's impossible to have 'Monad' ant other instances.
+      -- such type it's impossible to have 'Monad' and other instances.
     , biWrite :: c -> w a
     }
 
@@ -76,7 +76,7 @@ In code this should be used like this:
 @
 data Foo = Foo { fooBar :: Int, fooBaz :: String }
 
-foo :: BiTomo Foo
+foo :: BiToml Foo
 foo = Foo
  <$> int "bar" .= fooBar
  <*> str "baz" .= fooBaz

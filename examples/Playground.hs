@@ -3,7 +3,7 @@ module Main where
 import Data.Text (Text)
 import Data.Time (fromGregorian)
 
-import Toml.Bi (BiToml, bool, double, encode, int, str, unsafeDecode, (.=))
+import Toml.Bi (BiToml, (.=))
 import Toml.Parser (ParseException (..), parse)
 import Toml.PrefixTree (Key (..), Piece (..), PrefixMap, fromList)
 import Toml.Printer (prettyToml)
@@ -12,6 +12,7 @@ import Toml.Type (AnyValue (..), DateTime (..), TOML (..), Value (..))
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text.IO as TIO
+import qualified Toml
 
 data Test = Test
   { testB :: Bool
@@ -22,10 +23,10 @@ data Test = Test
 
 testT :: BiToml Test
 testT = Test
- <$> bool   (key ["testB"]) .= testB
- <*> int    (key ["testI"]) .= testI
- <*> double (key ["testF"]) .= testF
- <*> str    (key ["testS"]) .= testS
+ <$> Toml.bool   (key ["testB"]) .= testB
+ <*> Toml.int    (key ["testI"]) .= testI
+ <*> Toml.double (key ["testF"]) .= testF
+ <*> Toml.str    (key ["testS"]) .= testS
 
 main :: IO ()
 main = do
@@ -40,9 +41,9 @@ main = do
 
     TIO.putStrLn "=== Testing bidirectional conversion ==="
     biFile <- TIO.readFile "examples/biTest.toml"
-    case encode testT biFile of
+    case Toml.encode testT biFile of
         Left _     -> putStrLn "Some error"
-        Right test -> TIO.putStrLn $ unsafeDecode testT test
+        Right test -> TIO.putStrLn $ Toml.unsafeDecode testT test
 
 key :: [Text] -> Key
 key = Key . NonEmpty.fromList . map Piece

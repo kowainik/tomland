@@ -86,7 +86,7 @@ fromRight b (Left _)  = b
 fromRight _ (Right b) = b
 
 -- | Unsafe version of 'decode' function if you're sure that you decoding
--- structure is correct.
+-- of structure is correct.
 unsafeDecode :: BiToml a -> a -> Text
 unsafeDecode biToml text = fromRight (error "Unsafe decode") $ decode biToml text
 

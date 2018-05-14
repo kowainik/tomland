@@ -7,11 +7,13 @@ import qualified Toml
 -}
 
 module Toml
-    ( module Toml.Parser
+    ( module Toml.Bi
+    , module Toml.Parser
     , module Toml.Printer
     , module Toml.Type
     ) where
 
+import Toml.Bi
 import Toml.Parser
 import Toml.Printer
 import Toml.Type
