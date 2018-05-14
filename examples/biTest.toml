@@ -1,0 +1,4 @@
+testB = true
+testI = -42
+testF = 1.23
+testS = "foobar"
