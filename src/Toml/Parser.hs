@@ -66,6 +66,10 @@ bareKeyP = lexeme $ Text.pack <$> bareStrP
     bareStrP :: Parser String
     bareStrP = some $ alphaNumChar <|> char '_' <|> char '-'
 
+literalStringP :: Parser Text
+literalStringP = lexeme $ Text.pack <$> (char '\'' *> anyChar `manyTill` char '\'')
+
+-- TODO: this parser is incorrect, it doesn't recognize all strings
 stringP :: Parser Text
 stringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
 
@@ -101,7 +105,7 @@ valueP :: Parser UValue
 valueP = UBool   <$> boolP
      <|> UFloat  <$> try float
      <|> UInt    <$> integer
-     <|> UString <$> stringP
+     <|> UString <$> (literalStringP <|> stringP)
 --     <|> UDate   <$> dateTimeP
      <|> UArray  <$> arrayP
 
