@@ -1,5 +1,5 @@
 name:                tomland
-version:             0.0.0
+version:             0.1.0
 description:         TOML parser
 synopsis:            TOML parser
 homepage:            https://github.com/kowainik/tomland
@@ -13,7 +13,8 @@ category:            Data, Text, Configuration, TOML
 build-type:          Simple
 extra-doc-files:     README.md
 cabal-version:       1.24
-tested-with:         GHC == 8.2.2, GHC == 8.0.2
+tested-with:         GHC == 8.2.2
+                   , GHC == 8.0.2
 
 library
   hs-source-dirs:      src
@@ -42,8 +43,10 @@ library
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
                        InstanceSigs
+                       LambdaCase
                        OverloadedStrings
                        RecordWildCards
+                       TypeApplications
 
 executable play-tomland
   main-is:             Playground.hs

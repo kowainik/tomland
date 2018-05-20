@@ -4,6 +4,14 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+0.1.0
+=====
+* [#16](https://github.com/kowainik/tomland/issues/16):
+  Add parser for literal strings.
+* Add `IsString` instance for `Key` data type.
+* [#38](https://github.com/kowainik/tomland/issues/38):
+  Add bidirectional converter for array.
+
 0.0.0
 =====
 * [#3](https://github.com/kowainik/tomland/issues/3):

@@ -3,6 +3,7 @@
 module Toml.Bi.Monad
        ( Bijection (..)
        , Bi
+       , dimapBijection
        , (.=)
        ) where
 
@@ -65,6 +66,21 @@ instance (Monad r, Monad w) => Monad (Bijection r w c) where
         { biRead  = biRead bi >>= \a -> biRead (f a)
         , biWrite = \c -> biWrite bi c >>= \a -> biWrite (f a) c
         }
+
+{- | This is an instance of 'Profunctor' for 'Bijection'. But since there's no
+@Profunctor@ type class in @base@ or package with no dependencies (and we don't
+want to bring extra dependencies) this instance is implemented as a single
+top-level function.
+-}
+dimapBijection :: (Functor r, Functor w)
+               => (c -> d)  -- ^ Mapper for consumer
+               -> (a -> b)  -- ^ Mapper for producer
+               -> Bijection r w d a  -- ^ Source 'Bijection' object
+               -> Bijection r w c b
+dimapBijection f g bi = Bijection
+  { biRead  = g <$> biRead bi
+  , biWrite = fmap g . biWrite bi . f
+  }
 
 {- | Operator to connect two operations:
 

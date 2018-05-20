@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE GADTs               #-}
+{-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -21,10 +23,23 @@ module Toml.Bi.Combinators
 
          -- * Converters
        , bijectionMaker
+       , dimapNum
+
+         -- * Toml parsers
        , bool
        , int
+       , integer
        , double
        , str
+       , arrayOf
+
+         -- * Value parsers
+       , Valuer (..)
+       , boolV
+       , integerV
+       , doubleV
+       , strV
+       , arrV
        ) where
 
 import Control.Monad.Except (ExceptT, runExceptT, throwError)
@@ -33,11 +48,12 @@ import Control.Monad.State (State, gets, modify, runState)
 import Data.Bifunctor (first)
 import Data.Text (Text)
 
-import Toml.Bi.Monad (Bi, Bijection (..))
+import Toml.Bi.Monad (Bi, Bijection (..), dimapBijection)
 import Toml.Parser (ParseException, parse)
 import Toml.PrefixTree (Key)
 import Toml.Printer (prettyToml)
-import Toml.Type (AnyValue (..), TOML (..), Value (..))
+import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), matchArray, matchBool,
+                  matchDouble, matchInteger, matchText)
 
 import qualified Data.HashMap.Strict as HashMap
 
@@ -61,7 +77,8 @@ data DecodeException
 -- This is @w@ type variable in 'Bijection' data type.
 type St = ExceptT DecodeException (State TOML)
 
--- | Specialied for 'Toml' monad.
+-- | Specialied 'Bi' type alias for 'Toml' monad. Keeps 'TOML' object either as
+-- environment or state.
 type BiToml a = Bi Env St a
 
 -- | Convert textual representation of toml into user data type.
@@ -90,6 +107,10 @@ fromRight _ (Right b) = b
 unsafeDecode :: BiToml a -> a -> Text
 unsafeDecode biToml text = fromRight (error "Unsafe decode") $ decode biToml text
 
+----------------------------------------------------------------------------
+-- Generalized versions of parsers
+----------------------------------------------------------------------------
+
 -- | General function to create bidirectional converters for values.
 bijectionMaker :: forall a t .
                  Text                              -- ^ Name of expected type
@@ -116,34 +137,87 @@ bijectionMaker typeTag fromVal toVal key = Bijection input output
             Nothing -> a <$ modify (\(TOML vals nested) -> TOML (HashMap.insert key val vals) nested)
             Just _  -> throwError $ DuplicateKey key val
 
+-- | Helper dimapper to turn 'integer' parser into parser for 'Int', 'Natural', 'Word', etc.
+dimapNum :: forall n r w . (Integral n, Functor r, Functor w)
+         => Bi r w Integer
+         -> Bi r w n
+dimapNum = dimapBijection toInteger fromIntegral
+
+----------------------------------------------------------------------------
+-- Value parsers
+----------------------------------------------------------------------------
+
+-- | This data type describes how to convert value of type @a@ into and from 'Value'.
+data Valuer (tag :: ValueType) a = Valuer
+  { valFrom :: forall t . Value t -> Maybe a
+  , valTo   :: a -> Value tag
+  }
+
+-- | 'Bool' parser for array element. Use with 'arrayOf' parser.
+boolV :: Valuer 'TBool Bool
+boolV = Valuer matchBool Bool
+
+-- | 'Int' parser for array element. Use with 'arrayOf' parser.
+integerV :: Valuer 'TInt Integer
+integerV = Valuer matchInteger Int
+
+-- | 'Double' parser for array element. Use with 'arrayOf' parser.
+doubleV :: Valuer 'TFloat Double
+doubleV = Valuer matchDouble Float
+
+-- | 'Text' parser for array element. Use with 'arrayOf' parser.
+strV :: Valuer 'TString Text
+strV = Valuer matchText String
+
+-- | Parser for array element which is an array itself. Use with 'arrayOf' parser.
+arrV :: forall a t . Valuer t a -> Valuer 'TArray [a]
+arrV Valuer{..} = Valuer (matchArray valFrom) (Array . map valTo)
+
+----------------------------------------------------------------------------
+-- Toml parsers
+----------------------------------------------------------------------------
+
 -- | Parser for boolean values.
 bool :: Key -> BiToml Bool
-bool = bijectionMaker "Boolean" fromBool Bool
-  where
-    fromBool :: Value f -> Maybe Bool
-    fromBool (Bool b) = Just b
-    fromBool _        = Nothing
+bool = bijectionMaker "Boolean" matchBool Bool
+
+-- | Parser for integer values.
+integer :: Key -> BiToml Integer
+integer = bijectionMaker "Int" matchInteger Int
 
 -- | Parser for integer values.
 int :: Key -> BiToml Int
-int = bijectionMaker "Int" fromInt (Int . toInteger)
-  where
-    fromInt :: Value f -> Maybe Int
-    fromInt (Int n) = Just (fromIntegral n)
-    fromInt _       = Nothing
+int = dimapNum . integer
 
 -- | Parser for floating values.
 double :: Key -> BiToml Double
-double = bijectionMaker "Double" fromDouble Float
-  where
-    fromDouble :: Value f -> Maybe Double
-    fromDouble (Float f) = Just f
-    fromDouble _         = Nothing
+double = bijectionMaker "Double" matchDouble Float
 
 -- | Parser for string values.
 str :: Key -> BiToml Text
-str = bijectionMaker "String" fromString String
+str = bijectionMaker "String" matchText String
+
+-- | Parser for array of values. Takes converter for single array element and
+-- returns list of values.
+arrayOf :: forall a t . Valuer t a -> Key -> BiToml [a]
+arrayOf valuer key = Bijection input output
   where
-    fromString :: Value f -> Maybe Text
-    fromString (String s) = Just s
-    fromString _          = Nothing
+    input :: Env [a]
+    input = do
+        mVal <- asks $ HashMap.lookup key . tomlPairs
+        case mVal of
+            Nothing -> throwError $ KeyNotFound key
+            Just (AnyValue (Array arr)) -> case arr of
+                [] -> pure []
+                xs -> case mapM (valFrom valuer) xs of
+                    Nothing   -> throwError $ TypeMismatch "Some type of element"  -- TODO: better type
+                    Just vals -> pure vals
+            Just _ -> throwError $ TypeMismatch "Array of smth"
+
+    output :: [a] -> St [a]
+    output a = do
+        let val = AnyValue $ Array $ map (valTo valuer) a
+        mVal <- gets $ HashMap.lookup key . tomlPairs
+        case mVal of
+            Nothing -> a <$ modify (\(TOML vals nested) -> TOML (HashMap.insert key val vals) nested)
+            Just _  -> throwError $ DuplicateKey key val

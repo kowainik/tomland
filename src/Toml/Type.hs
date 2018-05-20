@@ -2,18 +2,30 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
+{-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TypeOperators             #-}
 
 {- | Contains specification of TOML via Haskell ADT. -}
 
 module Toml.Type
-       ( TOML (..)
-       , UValue (..)
+       ( -- * Main type
+         TOML (..)
+
+         -- * Values
        , ValueType (..)
        , Value (..)
        , AnyValue (..)
+       , UValue (..)
        , DateTime (..)
+       , matchBool
+       , matchInteger
+       , matchDouble
+       , matchText
+       , matchDate
+       , matchArray
+
+         -- * Internal functions
        , typeCheck
        ) where
 
@@ -118,6 +130,43 @@ eqValueList (x:xs) (y:ys) = case sameValue x y of
     Nothing   -> False
 eqValueList _ _ = False
 
+----------------------------------------------------------------------------
+-- Matching functions for values
+----------------------------------------------------------------------------
+
+-- | Extract 'Bool' from 'Value'.
+matchBool :: Value f -> Maybe Bool
+matchBool (Bool b) = Just b
+matchBool _        = Nothing
+
+-- | Extract 'Integer' from 'Value'.
+matchInteger :: Value f -> Maybe Integer
+matchInteger (Int n) = Just n
+matchInteger _       = Nothing
+
+-- | Extract 'Double' from 'Value'.
+matchDouble :: Value f -> Maybe Double
+matchDouble (Float f) = Just f
+matchDouble _         = Nothing
+
+-- | Extract 'Text' from 'Value'.
+matchText :: Value f -> Maybe Text
+matchText (String s) = Just s
+matchText _          = Nothing
+
+-- | Extract 'DateTime' from 'Value'.
+matchDate :: Value f -> Maybe DateTime
+matchDate (Date d) = Just d
+matchDate _        = Nothing
+
+-- | Extract list of elements of type @a@ from array.
+matchArray :: (forall t . Value t -> Maybe a) -> Value f -> Maybe [a]
+matchArray matchElement (Array a) = mapM matchElement a
+matchArray _            _         = Nothing
+
+----------------------------------------------------------------------------
+-- Untyped value
+----------------------------------------------------------------------------
 
 -- TODO: move into Toml.Type.Internal module then?.. But it uses 'DateTime' which is not internal...
 -- | Untyped value of 'TOML'. You shouldn't use this type in your code. Use
