@@ -18,6 +18,7 @@ data Test = Test
   , testI :: Int
   , testF :: Double
   , testS :: Text
+  , testA :: [Text]
   }
 
 testT :: BiToml Test
@@ -26,6 +27,7 @@ testT = Test
  <*> Toml.int    "testI" .= testI
  <*> Toml.double "testF" .= testF
  <*> Toml.str    "testS" .= testS
+ <*> Toml.arrayOf Toml.strV "testA" .= testA
 
 main :: IO ()
 main = do
@@ -41,7 +43,7 @@ main = do
     TIO.putStrLn "=== Testing bidirectional conversion ==="
     biFile <- TIO.readFile "examples/biTest.toml"
     case Toml.encode testT biFile of
-        Left _     -> putStrLn "Some error"
+        Left msg   -> print msg
         Right test -> TIO.putStrLn $ Toml.unsafeDecode testT test
 
 myToml :: TOML

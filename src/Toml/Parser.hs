@@ -96,7 +96,7 @@ boolP = False <$ text "false"
 -- dateTimeP = error "Not implemented!"
 
 arrayP :: Parser [UValue]
-arrayP = lexeme $ between (char '[') (char ']') (valueP `sepBy` spComma)
+arrayP = lexeme $ between (char '[' *> space) (char ']') (valueP `sepBy` spComma)
   where
     spComma :: Parser ()
     spComma = char ',' *> space
