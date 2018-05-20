@@ -24,16 +24,18 @@ module Toml.PrefixTree
 import Prelude hiding (lookup)
 
 import Control.Arrow ((&&&))
+import Data.Coerce (coerce)
 import Data.Foldable (foldl')
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.String (IsString)
+import Data.String (IsString (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Text as Text
 
 -- | Represents the key piece of some layer.
 newtype Piece = Piece { unPiece :: Text }
@@ -57,6 +59,19 @@ newtype Key = Key { unKey :: NonEmpty Piece }
     deriving (Show, Eq, Ord, Generic)
 
 instance Hashable Key
+
+{- | Split a dot-separated string into 'Key'. Empty string turns into a 'Key'
+with single element - empty 'Piece'. This instance is not safe for now. Use
+carefully. If you try to use as a key string like this @site.\"google.com\"@ you
+will have list of three components instead of desired two.
+-}
+instance IsString Key where
+    fromString :: String -> Key
+    fromString = \case
+        "" -> Key ("" :| [])
+        s  -> case Text.splitOn "." (fromString s) of
+            []   -> error "Text.splitOn returned empty string"  -- can't happen
+            x:xs -> coerce @(NonEmpty Text) @Key (x :| xs)
 
 pattern (:||) :: Piece -> [Piece] -> Key
 pattern x :|| xs <- ((NonEmpty.head &&& NonEmpty.tail) . unKey -> (x, xs))
