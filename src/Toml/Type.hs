@@ -24,6 +24,7 @@ module Toml.Type
        , matchText
        , matchDate
        , matchArray
+       , valueType
 
          -- * Internal functions
        , typeCheck
@@ -44,8 +45,12 @@ data TOML = TOML
     -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
     } deriving (Show, Eq)
 
--- Needed for GADT parameterization
+-- | Needed for GADT parameterization
 data ValueType = TBool | TInt | TFloat | TString | TDate | TArray
+    deriving (Eq, Show)
+
+showType :: ValueType -> String
+showType = drop 1 . show
 
 -- TODO: examples are copy-pasted from TOML specification. Probably most of them
 -- will be moved into parsing module in future.
@@ -126,9 +131,19 @@ instance Eq (Value t) where
 eqValueList :: [Value a] -> [Value b] -> Bool
 eqValueList [] [] = True
 eqValueList (x:xs) (y:ys) = case sameValue x y of
-    Just Refl -> x == y && eqValueList xs ys
-    Nothing   -> False
+    Right Refl -> x == y && eqValueList xs ys
+    Left _     -> False
 eqValueList _ _ = False
+
+-- | Reifies type of 'Value' into 'ValueType'. Unfortunately, there's no way to
+-- guarante that 'valueType' will return @t@ for object with type @Value \'t@.
+valueType :: Value t -> ValueType
+valueType (Bool _)   = TBool
+valueType (Int _)    = TInt
+valueType (Float _)  = TFloat
+valueType (String _) = TString
+valueType (Date _)   = TDate
+valueType (Array _)  = TArray
 
 ----------------------------------------------------------------------------
 -- Matching functions for values
@@ -240,35 +255,47 @@ instance Eq DateTime where
     (Hours a) == (Hours b) = a == b
     _         == _         = False
 
+-- | Data type that holds expected vs. actual type.
+data TypeMismatchError = TypeMismatchError
+  { typeExpected :: ValueType
+  , typeActual   :: ValueType
+  } deriving (Eq)
+
+instance Show TypeMismatchError where
+    show TypeMismatchError{..} = "Expected type '" ++ showType typeExpected
+                              ++ "' but actual type: '" ++ showType typeActual ++ "'"
 
 -- | Ensures that 'UValue's represents type-safe version of @toml@.
-typeCheck :: UValue -> Maybe AnyValue
-typeCheck (UBool b)   = justAny $ Bool b
-typeCheck (UInt n)    = justAny $ Int n
-typeCheck (UFloat f)  = justAny $ Float f
-typeCheck (UString s) = justAny $ String s
-typeCheck (UDate d)   = justAny $ Date d
+typeCheck :: UValue -> Either TypeMismatchError AnyValue
+typeCheck (UBool b)   = rightAny $ Bool b
+typeCheck (UInt n)    = rightAny $ Int n
+typeCheck (UFloat f)  = rightAny $ Float f
+typeCheck (UString s) = rightAny $ String s
+typeCheck (UDate d)   = rightAny $ Date d
 typeCheck (UArray a)  = case a of
-    []     -> justAny $ Array []
-    (x:xs) -> do
+    []   -> rightAny $ Array []
+    x:xs -> do
         AnyValue v <- typeCheck x
         AnyValue . Array <$> checkElem v xs
   where
-    checkElem :: Value t -> [UValue] -> Maybe [Value t]
-    checkElem v []     = Just [v]
+    checkElem :: Value t -> [UValue] -> Either TypeMismatchError [Value t]
+    checkElem v []     = Right [v]
     checkElem v (x:xs) = do
         AnyValue vx <- typeCheck x
         Refl <- sameValue v vx
         (v :) <$> checkElem vx xs
 
-justAny :: Value t -> Maybe AnyValue
-justAny = Just . AnyValue
+rightAny :: Value t -> Either l AnyValue
+rightAny = Right . AnyValue
 
-sameValue :: Value a -> Value b -> Maybe (a :~: b)
-sameValue Bool{}   Bool{}   = Just Refl
-sameValue Int{}    Int{}    = Just Refl
-sameValue Float{}  Float{}  = Just Refl
-sameValue String{} String{} = Just Refl
-sameValue Date{}   Date{}   = Just Refl
-sameValue Array{}  Array{}  = Just Refl
-sameValue _        _        = Nothing
+sameValue :: Value a -> Value b -> Either TypeMismatchError (a :~: b)
+sameValue Bool{}   Bool{}   = Right Refl
+sameValue Int{}    Int{}    = Right Refl
+sameValue Float{}  Float{}  = Right Refl
+sameValue String{} String{} = Right Refl
+sameValue Date{}   Date{}   = Right Refl
+sameValue Array{}  Array{}  = Right Refl
+sameValue l        r        = Left $ TypeMismatchError
+                                         { typeExpected = valueType l
+                                         , typeActual   = valueType r
+                                         }
