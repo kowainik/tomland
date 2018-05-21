@@ -117,8 +117,8 @@ keyValP = do
     text_ "="
     uval <- valueP
     case typeCheck uval of
-        Nothing -> fail "Can't type check value!"
-        Just v  -> pure (k, v)
+        Left err -> fail $ show err
+        Right v  -> pure (k, v)
 
 tableHeaderP :: Parser (Key, TOML)
 tableHeaderP = do

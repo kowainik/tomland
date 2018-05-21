@@ -11,6 +11,8 @@ The change log is available [on GitHub][2].
 * Add `IsString` instance for `Key` data type.
 * [#38](https://github.com/kowainik/tomland/issues/38):
   Add bidirectional converter for array.
+* [#21](https://github.com/kowainik/tomland/issues/21):
+  Report expected vs. actual type error in parsing.
 
 0.0.0
 =====

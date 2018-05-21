@@ -1,5 +1,5 @@
 a = true
-list = ["one", 'two']
+list = ["one", 2, 'two']
 
 [table.name.2]
   2Inner = +42
