@@ -4,6 +4,12 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+0.2.0
+=====
+* Switch names for `decode` and `encode` functions.
+* [#47](https://github.com/kowainik/tomland/issues/47):
+  Rename `dimapBijection` to `dimap`. Introduce `mdimap` combinator.
+
 0.1.0
 =====
 * [#16](https://github.com/kowainik/tomland/issues/16):

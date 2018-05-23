@@ -3,7 +3,7 @@
 module Toml.Bi.Monad
        ( Bijection (..)
        , Bi
-       , dimapBijection
+       , dimap
        , (.=)
        ) where
 
@@ -71,16 +71,55 @@ instance (Monad r, Monad w) => Monad (Bijection r w c) where
 @Profunctor@ type class in @base@ or package with no dependencies (and we don't
 want to bring extra dependencies) this instance is implemented as a single
 top-level function.
+
+Useful when you want to parse @newtype@s. For example, if you had data type like this:
+
+@
+data Example = Example
+    { foo :: Bool
+    , bar :: Text
+    }
+@
+
+toml bidirectional converter for this type will look like this:
+
+@
+exampleT :: BiToml Example
+exampleT = Example
+    <$> bool "foo" .= foo
+    <*> str  "bar" .= bar
+@
+
+Now if you change your time in the following way:
+
+@
+newtype Email = Email { unEmail :: Text }
+
+data Example = Example
+    { foo :: Bool
+    , bar :: Email
+    }
+@
+
+you need to patch your toml parser like this:
+
+@
+exampleT :: BiToml Example
+exampleT = Example
+    <$> bool "foo" .= foo
+    <*> dimap unEmail Email (str  "bar") .= bar
+@
 -}
-dimapBijection :: (Functor r, Functor w)
-               => (c -> d)  -- ^ Mapper for consumer
-               -> (a -> b)  -- ^ Mapper for producer
-               -> Bijection r w d a  -- ^ Source 'Bijection' object
-               -> Bijection r w c b
-dimapBijection f g bi = Bijection
+dimap :: (Functor r, Functor w)
+      => (c -> d)  -- ^ Mapper for consumer
+      -> (a -> b)  -- ^ Mapper for producer
+      -> Bijection r w d a  -- ^ Source 'Bijection' object
+      -> Bijection r w c b
+dimap f g bi = Bijection
   { biRead  = g <$> biRead bi
   , biWrite = fmap g . biWrite bi . f
   }
+
 
 {- | Operator to connect two operations:
 

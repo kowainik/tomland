@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE Rank2Types          #-}
@@ -19,11 +20,12 @@ module Toml.Bi.Combinators
          -- * Encode/Decode
        , encode
        , decode
-       , unsafeDecode
+       , unsafeEncode
 
          -- * Converters
        , bijectionMaker
        , dimapNum
+       , mdimap
 
          -- * Toml parsers
        , bool
@@ -43,14 +45,14 @@ module Toml.Bi.Combinators
        , arrV
        ) where
 
-import Control.Monad.Except (ExceptT, catchError, runExceptT, throwError)
+import Control.Monad.Except (ExceptT, MonadError, catchError, runExceptT, throwError)
 import Control.Monad.Reader (Reader, asks, runReader)
 import Control.Monad.State (State, gets, modify, runState)
 import Data.Bifunctor (first)
 import Data.Text (Text)
 
-import Toml.Bi.Monad (Bi, Bijection (..), dimapBijection)
-import Toml.Parser (ParseException, parse)
+import Toml.Bi.Monad (Bi, Bijection (..), dimap)
+import Toml.Parser (ParseException (..), parse)
 import Toml.PrefixTree (Key)
 import Toml.Printer (prettyToml)
 import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), matchArray, matchBool,
@@ -59,7 +61,7 @@ import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), matchArr
 import qualified Data.HashMap.Strict as HashMap
 
 -- | Type of exception for converting from 'Toml' to user custom data type.
-data EncodeException
+data DecodeException
     = KeyNotFound Key  -- ^ such key is not present in 'Toml'
     | TypeMismatch Text -- ^ Expected type; TODO: add actual type
     | ParseError ParseException  -- ^ Exception during parsing
@@ -67,30 +69,31 @@ data EncodeException
 
 -- | Immutable environment for 'Toml' conversion.
 -- This is @r@ type variable in 'Bijection' data type.
-type Env = ExceptT EncodeException (Reader TOML)
+type Env = ExceptT DecodeException (Reader TOML)
 
 -- | Write exception for convertion to 'Toml' from user custom data type.
-data DecodeException
+data EncodeException
     = DuplicateKey Key AnyValue  -- ^ Key is already in table for some value
+    | DecodeParsing Text
     deriving (Eq, Show)  -- TODO: manual pretty show instances
 
 -- | Mutable context for 'Toml' conversion.
 -- This is @w@ type variable in 'Bijection' data type.
-type St = ExceptT DecodeException (State TOML)
+type St = ExceptT EncodeException (State TOML)
 
 -- | Specialied 'Bi' type alias for 'Toml' monad. Keeps 'TOML' object either as
 -- environment or state.
 type BiToml a = Bi Env St a
 
 -- | Convert textual representation of toml into user data type.
-encode :: BiToml a -> Text -> Either EncodeException a
-encode biToml text = do
+decode :: BiToml a -> Text -> Either DecodeException a
+decode biToml text = do
     toml <- first ParseError (parse text)
     runReader (runExceptT $ biRead biToml) toml
 
 -- | Convert object to textual representation.
-decode :: BiToml a -> a -> Either DecodeException Text
-decode biToml obj = do
+encode :: BiToml a -> a -> Either EncodeException Text
+encode biToml obj = do
     -- this pair has type (TOML, Either DecodeException a)
     let (result, toml) = runState (runExceptT $ biWrite biToml obj) (TOML mempty mempty)
 
@@ -105,8 +108,8 @@ fromRight _ (Right b) = b
 
 -- | Unsafe version of 'decode' function if you're sure that you decoding
 -- of structure is correct.
-unsafeDecode :: BiToml a -> a -> Text
-unsafeDecode biToml text = fromRight (error "Unsafe decode") $ decode biToml text
+unsafeEncode :: BiToml a -> a -> Text
+unsafeEncode biToml text = fromRight (error "Unsafe decode") $ encode biToml text
 
 ----------------------------------------------------------------------------
 -- Generalized versions of parsers
@@ -142,7 +145,34 @@ bijectionMaker typeTag fromVal toVal key = Bijection input output
 dimapNum :: forall n r w . (Integral n, Functor r, Functor w)
          => Bi r w Integer
          -> Bi r w n
-dimapNum = dimapBijection toInteger fromIntegral
+dimapNum = dimap toInteger fromIntegral
+
+{- | Almost same as 'dimap'. Useful when you want to have fields like this
+inside your configuration:
+
+@
+data GhcVer = Ghc7103 | Ghc802 | Ghc822 | Ghc842
+
+showGhcVer  :: GhcVer -> Text
+parseGhcVer :: Text -> Maybe GhcVer
+@
+-}
+mdimap :: (Monad r, Monad w, MonadError DecodeException r, MonadError EncodeException w)
+       => (c -> d)  -- ^ Convert from safe to unsafe value
+       -> (a -> Maybe b)  -- ^ Parser for more type safe value
+       -> Bijection r w d a  -- ^ Source 'Bijection' object
+       -> Bijection r w c b
+mdimap toString toMaybe bi = Bijection
+  { biRead  = (toMaybe <$> biRead bi) >>= \case
+        Nothing -> throwError $ ParseError $ ParseException "Can't parse" -- TODO
+        Just b  -> pure b
+
+  , biWrite = \s -> do
+        retS <- biWrite bi $ toString s
+        case toMaybe retS of
+            Nothing -> throwError $ DecodeParsing "Unable to convert" -- TODO
+            Just b  -> pure b
+  }
 
 ----------------------------------------------------------------------------
 -- Value parsers
@@ -234,6 +264,6 @@ maybeP converter key = let bi = converter key in Bijection
         Just v  -> biWrite bi v >> pure (Just v)
     }
   where
-    handleNotFound :: EncodeException -> Env (Maybe a)
+    handleNotFound :: DecodeException -> Env (Maybe a)
     handleNotFound (KeyNotFound _) = pure Nothing
     handleNotFound e               = throwError e
