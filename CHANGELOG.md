@@ -13,6 +13,8 @@ The change log is available [on GitHub][2].
   Add bidirectional converter for array.
 * [#21](https://github.com/kowainik/tomland/issues/21):
   Report expected vs. actual type error in parsing.
+* [#44](https://github.com/kowainik/tomland/issues/44):
+  Add bidirectional converter for `Maybe`.
 
 0.0.0
 =====

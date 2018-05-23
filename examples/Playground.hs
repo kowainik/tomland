@@ -14,20 +14,22 @@ import qualified Data.Text.IO as TIO
 import qualified Toml
 
 data Test = Test
-  { testB :: Bool
-  , testI :: Int
-  , testF :: Double
-  , testS :: Text
-  , testA :: [Text]
-  }
+    { testB :: Bool
+    , testI :: Int
+    , testF :: Double
+    , testS :: Text
+    , testA :: [Text]
+    , testM :: Maybe Bool
+    }
 
 testT :: BiToml Test
 testT = Test
- <$> Toml.bool   "testB" .= testB
- <*> Toml.int    "testI" .= testI
- <*> Toml.double "testF" .= testF
- <*> Toml.str    "testS" .= testS
- <*> Toml.arrayOf Toml.strV "testA" .= testA
+    <$> Toml.bool   "testB" .= testB
+    <*> Toml.int    "testI" .= testI
+    <*> Toml.double "testF" .= testF
+    <*> Toml.str    "testS" .= testS
+    <*> Toml.arrayOf Toml.strV "testA" .= testA
+    <*> Toml.maybeP Toml.bool "testM" .= testM
 
 main :: IO ()
 main = do

@@ -32,6 +32,7 @@ module Toml.Bi.Combinators
        , double
        , str
        , arrayOf
+       , maybeP
 
          -- * Value parsers
        , Valuer (..)
@@ -42,7 +43,7 @@ module Toml.Bi.Combinators
        , arrV
        ) where
 
-import Control.Monad.Except (ExceptT, runExceptT, throwError)
+import Control.Monad.Except (ExceptT, catchError, runExceptT, throwError)
 import Control.Monad.Reader (Reader, asks, runReader)
 import Control.Monad.State (State, gets, modify, runState)
 import Data.Bifunctor (first)
@@ -197,6 +198,7 @@ double = bijectionMaker "Double" matchDouble Float
 str :: Key -> BiToml Text
 str = bijectionMaker "String" matchText String
 
+-- TODO: implement using bijectionMaker
 -- | Parser for array of values. Takes converter for single array element and
 -- returns list of values.
 arrayOf :: forall a t . Valuer t a -> Key -> BiToml [a]
@@ -221,3 +223,17 @@ arrayOf valuer key = Bijection input output
         case mVal of
             Nothing -> a <$ modify (\(TOML vals nested) -> TOML (HashMap.insert key val vals) nested)
             Just _  -> throwError $ DuplicateKey key val
+
+-- TODO: maybe conflicts from maybe in Prelude, maybe we should add C or P suffix or something else?...
+-- | Bidirectional converter for @Maybe smth@ values.
+maybeP :: forall a . (Key -> BiToml a) -> Key -> BiToml (Maybe a)
+maybeP converter key = let bi = converter key in Bijection
+    { biRead  = (Just <$> biRead bi) `catchError` handleNotFound
+    , biWrite = \case
+        Nothing -> pure Nothing
+        Just v  -> biWrite bi v >> pure (Just v)
+    }
+  where
+    handleNotFound :: EncodeException -> Env (Maybe a)
+    handleNotFound (KeyNotFound _) = pure Nothing
+    handleNotFound e               = throwError e
