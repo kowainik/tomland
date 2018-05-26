@@ -133,6 +133,16 @@ data GhcVer = Ghc7103 | Ghc802 | Ghc822 | Ghc842
 showGhcVer  :: GhcVer -> Text
 parseGhcVer :: Text -> Maybe GhcVer
 @
+
+When you specify couple of functions of the following types:
+
+@
+show  :: a -> Text
+parse :: Text -> Maybe a
+@
+
+they should satisfy property @parse . show == Just@ if you want to use your
+converter for pretty-printing.
 -}
 mdimap :: (Monad r, Monad w, MonadError DecodeException r)
        => (c -> d)  -- ^ Convert from safe to unsafe value
