@@ -14,13 +14,11 @@ module Toml.Bi.Combinators
        , St
 
          -- * Exceptions
-       , EncodeException
        , DecodeException
 
          -- * Encode/Decode
-       , encode
        , decode
-       , unsafeEncode
+       , encode
 
          -- * Converters
        , bijectionMaker
@@ -48,7 +46,7 @@ module Toml.Bi.Combinators
 
 import Control.Monad.Except (ExceptT, MonadError, catchError, runExceptT, throwError)
 import Control.Monad.Reader (Reader, asks, local, runReader)
-import Control.Monad.State (State, execState, gets, modify, runState)
+import Control.Monad.State (State, execState, gets, modify)
 import Data.Bifunctor (first)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -75,15 +73,9 @@ data DecodeException
 -- This is @r@ type variable in 'Bijection' data type.
 type Env = ExceptT DecodeException (Reader TOML)
 
--- | Write exception for convertion to 'Toml' from user custom data type.
-data EncodeException
-    = DuplicateKey Key AnyValue  -- ^ Key is already in table for some value; TODO: AnyValue | TOML
-    | DecodeParsing Text
-    deriving (Eq, Show)  -- TODO: manual pretty show instances
-
 -- | Mutable context for 'Toml' conversion.
 -- This is @w@ type variable in 'Bijection' data type.
-type St = ExceptT EncodeException (State TOML)
+type St = State TOML
 
 -- | Specialied 'Bi' type alias for 'Toml' monad. Keeps 'TOML' object either as
 -- environment or state.
@@ -96,24 +88,8 @@ decode biToml text = do
     runReader (runExceptT $ biRead biToml) toml
 
 -- | Convert object to textual representation.
-encode :: BiToml a -> a -> Either EncodeException Text
-encode biToml obj = do
-    -- this pair has type (TOML, Either DecodeException a)
-    let (result, toml) = runState (runExceptT $ biWrite biToml obj) (TOML mempty mempty)
-
-    -- just to trigger error if Left
-    _ <- result
-
-    pure $ prettyToml toml
-
-fromRight :: b -> Either a b -> b
-fromRight b (Left _)  = b
-fromRight _ (Right b) = b
-
--- | Unsafe version of 'decode' function if you're sure that you decoding
--- of structure is correct.
-unsafeEncode :: BiToml a -> a -> Text
-unsafeEncode biToml text = fromRight (error "Unsafe decode") $ encode biToml text
+encode :: BiToml a -> a -> Text
+encode bi obj = prettyToml $ execState (biWrite bi obj) (TOML mempty mempty)
 
 ----------------------------------------------------------------------------
 -- Generalized versions of parsers
@@ -140,10 +116,7 @@ bijectionMaker typeTag fromVal toVal key = Bijection input output
     output :: a -> St a
     output a = do
         let val = AnyValue (toVal a)
-        mVal <- gets $ HashMap.lookup key . tomlPairs
-        case mVal of
-            Nothing -> a <$ modify (\(TOML vals nested) -> TOML (HashMap.insert key val vals) nested)
-            Just _  -> throwError $ DuplicateKey key val
+        a <$ modify (\(TOML vals nested) -> TOML (HashMap.insert key val vals) nested)
 
 -- | Helper dimapper to turn 'integer' parser into parser for 'Int', 'Natural', 'Word', etc.
 dimapNum :: forall n r w . (Integral n, Functor r, Functor w)
@@ -161,7 +134,7 @@ showGhcVer  :: GhcVer -> Text
 parseGhcVer :: Text -> Maybe GhcVer
 @
 -}
-mdimap :: (Monad r, Monad w, MonadError DecodeException r, MonadError EncodeException w)
+mdimap :: (Monad r, Monad w, MonadError DecodeException r)
        => (c -> d)  -- ^ Convert from safe to unsafe value
        -> (a -> Maybe b)  -- ^ Parser for more type safe value
        -> Bijection r w d a  -- ^ Source 'Bijection' object
@@ -174,7 +147,7 @@ mdimap toString toMaybe bi = Bijection
   , biWrite = \s -> do
         retS <- biWrite bi $ toString s
         case toMaybe retS of
-            Nothing -> throwError $ DecodeParsing "Unable to convert" -- TODO
+            Nothing -> error $ "Given pair of functions for 'mdimap' doesn't satisfy roundtrip property"
             Just b  -> pure b
   }
 
@@ -253,10 +226,7 @@ arrayOf valuer key = Bijection input output
     output :: [a] -> St [a]
     output a = do
         let val = AnyValue $ Array $ map (valTo valuer) a
-        mVal <- gets $ HashMap.lookup key . tomlPairs
-        case mVal of
-            Nothing -> a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key val vals) tables)
-            Just _  -> throwError $ DuplicateKey key val
+        a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key val vals) tables)
 
 -- TODO: maybe conflicts from maybe in Prelude, maybe we should add C or P suffix or something else?...
 -- | Bidirectional converter for @Maybe smth@ values.
@@ -288,5 +258,5 @@ table bi key = Bijection input output
     output a = do
         mTable <- gets $ Prefix.lookup key . tomlTables
         let toml = fromMaybe (TOML mempty mempty) mTable
-        let newToml = execState (runExceptT $ biWrite bi a) toml
+        let newToml = execState (biWrite bi a) toml
         a <$ modify (\(TOML vals tables) -> TOML vals (Prefix.insert key newToml tables))

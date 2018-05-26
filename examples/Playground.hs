@@ -55,7 +55,7 @@ main = do
     biFile <- TIO.readFile "examples/biTest.toml"
     case Toml.decode testT biFile of
         Left msg   -> print msg
-        Right test -> TIO.putStrLn $ Toml.unsafeEncode testT test
+        Right test -> TIO.putStrLn $ Toml.encode testT test
 
 myToml :: TOML
 myToml = TOML (HashMap.fromList
