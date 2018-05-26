@@ -3,3 +3,9 @@ testI = -42
 testF = 1.23
 testS = "foobar"
 testA = [   "abacaba", "foo", 'bar'    ]
+
+[testX]
+  inside = "xxx"
+
+# [testY]
+#   inside = "yyy"

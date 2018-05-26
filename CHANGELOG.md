@@ -9,6 +9,8 @@ The change log is available [on GitHub][2].
 * Switch names for `decode` and `encode` functions.
 * [#47](https://github.com/kowainik/tomland/issues/47):
   Rename `dimapBijection` to `dimap`. Introduce `mdimap` combinator.
+* [#37](https://github.com/kowainik/tomland/issues/37):
+  Add tables support for bidirectional conversion.
 
 0.1.0
 =====

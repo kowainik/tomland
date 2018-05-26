@@ -20,7 +20,14 @@ data Test = Test
     , testS :: Text
     , testA :: [Text]
     , testM :: Maybe Bool
+    , testX :: TestInside
+    , testY :: Maybe TestInside
     }
+
+newtype TestInside = TestInside { unInside :: Text }
+
+insideT :: BiToml TestInside
+insideT = Toml.dimap unInside TestInside $ Toml.str "inside"
 
 testT :: BiToml Test
 testT = Test
@@ -30,6 +37,8 @@ testT = Test
     <*> Toml.str    "testS" .= testS
     <*> Toml.arrayOf Toml.strV "testA" .= testA
     <*> Toml.maybeP Toml.bool "testM" .= testM
+    <*> Toml.table insideT "testX" .= testX
+    <*> Toml.maybeP (Toml.table insideT) "testY" .= testY
 
 main :: IO ()
 main = do

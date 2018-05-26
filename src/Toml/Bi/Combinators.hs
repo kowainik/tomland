@@ -35,6 +35,7 @@ module Toml.Bi.Combinators
        , str
        , arrayOf
        , maybeP
+       , table
 
          -- * Value parsers
        , Valuer (..)
@@ -46,9 +47,10 @@ module Toml.Bi.Combinators
        ) where
 
 import Control.Monad.Except (ExceptT, MonadError, catchError, runExceptT, throwError)
-import Control.Monad.Reader (Reader, asks, runReader)
-import Control.Monad.State (State, gets, modify, runState)
+import Control.Monad.Reader (Reader, asks, local, runReader)
+import Control.Monad.State (State, execState, gets, modify, runState)
 import Data.Bifunctor (first)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
@@ -59,11 +61,13 @@ import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), matchArr
                   matchDouble, matchInteger, matchText)
 
 import qualified Data.HashMap.Strict as HashMap
+import qualified Toml.PrefixTree as Prefix
 
 -- | Type of exception for converting from 'Toml' to user custom data type.
 data DecodeException
-    = KeyNotFound Key  -- ^ such key is not present in 'Toml'
-    | TypeMismatch Text -- ^ Expected type; TODO: add actual type
+    = KeyNotFound Key  -- ^ No such key
+    | TableNotFound Key  -- ^ No such table
+    | TypeMismatch Text  -- ^ Expected type; TODO: add actual type
     | ParseError ParseException  -- ^ Exception during parsing
     deriving (Eq, Show)  -- TODO: manual pretty show instances
 
@@ -73,7 +77,7 @@ type Env = ExceptT DecodeException (Reader TOML)
 
 -- | Write exception for convertion to 'Toml' from user custom data type.
 data EncodeException
-    = DuplicateKey Key AnyValue  -- ^ Key is already in table for some value
+    = DuplicateKey Key AnyValue  -- ^ Key is already in table for some value; TODO: AnyValue | TOML
     | DecodeParsing Text
     deriving (Eq, Show)  -- TODO: manual pretty show instances
 
@@ -251,7 +255,7 @@ arrayOf valuer key = Bijection input output
         let val = AnyValue $ Array $ map (valTo valuer) a
         mVal <- gets $ HashMap.lookup key . tomlPairs
         case mVal of
-            Nothing -> a <$ modify (\(TOML vals nested) -> TOML (HashMap.insert key val vals) nested)
+            Nothing -> a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key val vals) tables)
             Just _  -> throwError $ DuplicateKey key val
 
 -- TODO: maybe conflicts from maybe in Prelude, maybe we should add C or P suffix or something else?...
@@ -265,5 +269,24 @@ maybeP converter key = let bi = converter key in Bijection
     }
   where
     handleNotFound :: DecodeException -> Env (Maybe a)
-    handleNotFound (KeyNotFound _) = pure Nothing
-    handleNotFound e               = throwError e
+    handleNotFound (KeyNotFound _)   = pure Nothing
+    handleNotFound (TableNotFound _) = pure Nothing
+    handleNotFound e                 = throwError e
+
+-- | Parser for tables. Use it when when you have nested objects.
+table :: forall a . BiToml a -> Key -> BiToml a
+table bi key = Bijection input output
+  where
+    input :: Env a
+    input = do
+        mTable <- asks $ Prefix.lookup key . tomlTables
+        case mTable of
+            Nothing   -> throwError $ TableNotFound key
+            Just toml -> local (const toml) (biRead bi)
+
+    output :: a -> St a
+    output a = do
+        mTable <- gets $ Prefix.lookup key . tomlTables
+        let toml = fromMaybe (TOML mempty mempty) mTable
+        let newToml = execState (runExceptT $ biWrite bi a) toml
+        a <$ modify (\(TOML vals tables) -> TOML vals (Prefix.insert key newToml tables))
