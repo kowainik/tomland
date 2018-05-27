@@ -65,6 +65,7 @@ import qualified Toml.PrefixTree as Prefix
 data DecodeException
     = KeyNotFound Key  -- ^ No such key
     | TableNotFound Key  -- ^ No such table
+    | IncompleteTable Key Key  -- ^ 'KeyNotFound' was thrown inside 'table' parser
     | TypeMismatch Text  -- ^ Expected type; TODO: add actual type
     | ParseError ParseException  -- ^ Exception during parsing
     deriving (Eq, Show)  -- TODO: manual pretty show instances
@@ -262,7 +263,7 @@ table bi key = Bijection input output
         mTable <- asks $ Prefix.lookup key . tomlTables
         case mTable of
             Nothing   -> throwError $ TableNotFound key
-            Just toml -> local (const toml) (biRead bi)
+            Just toml -> local (const toml) (biRead bi) `catchError` rethrowNotFound
 
     output :: a -> St a
     output a = do
@@ -270,3 +271,8 @@ table bi key = Bijection input output
         let toml = fromMaybe (TOML mempty mempty) mTable
         let newToml = execState (biWrite bi a) toml
         a <$ modify (\(TOML vals tables) -> TOML vals (Prefix.insert key newToml tables))
+
+    rethrowNotFound :: DecodeException -> Env a
+    rethrowNotFound (KeyNotFound name)   = throwError $ IncompleteTable key name
+    rethrowNotFound (TableNotFound name) = throwError $ IncompleteTable key name
+    rethrowNotFound e                    = throwError e

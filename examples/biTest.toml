@@ -7,5 +7,5 @@ testA = [   "abacaba", "foo", 'bar'    ]
 [testX]
   inside = "xxx"
 
-# [testY]
+[testY]
 #   inside = "yyy"

@@ -4,6 +4,10 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+0.2.1
+=====
+* Make `table` parser work with `maybeP`.
+
 0.2.0
 =====
 * Switch names for `decode` and `encode` functions.
