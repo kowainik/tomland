@@ -12,6 +12,7 @@ copyright:           2018 Kowainik
 category:            Data, Text, Configuration, TOML
 build-type:          Simple
 extra-doc-files:     README.md
+                   , CHANGELOG.md
 cabal-version:       1.24
 tested-with:         GHC == 8.2.2
                    , GHC == 8.0.2
