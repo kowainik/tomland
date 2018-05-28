@@ -42,7 +42,7 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable, typeRep)
 
-import Toml.Bi.Code (BiToml, Env, St, DecodeException (..))
+import Toml.Bi.Code (BiToml, DecodeException (..), Env, St)
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
@@ -213,13 +213,9 @@ maybeP converter key = let bi = converter key in Bijection
     }
   where
     handleNotFound :: DecodeException -> Env (Maybe a)
-    handleNotFound e@(KeyNotFound name)
-        | name == key = pure Nothing
+    handleNotFound e
+        | e `elem` [KeyNotFound key, TableNotFound key] = pure Nothing
         | otherwise = throwError e
-    handleNotFound e@(TableNotFound name)
-        | name == key = pure Nothing
-        | otherwise = throwError e
-    handleNotFound e = throwError e
 
 -- | Parser for tables. Use it when when you have nested objects.
 table :: forall a . BiToml a -> Key -> BiToml a
@@ -230,7 +226,7 @@ table bi key = Bijection input output
         mTable <- asks $ Prefix.lookup key . tomlTables
         case mTable of
             Nothing   -> throwError $ TableNotFound key
-            Just toml -> local (const toml) (biRead bi) `catchError` addTableName
+            Just toml -> local (const toml) (biRead bi) `catchError` handleTableName
 
     output :: a -> St a
     output a = do
@@ -239,7 +235,8 @@ table bi key = Bijection input output
         let newToml = execState (biWrite bi a) toml
         a <$ modify (\(TOML vals tables) -> TOML vals (Prefix.insert key newToml tables))
 
-    addTableName :: DecodeException -> Env a
-    addTableName (KeyNotFound name)   = throwError $ KeyNotFound (key <> name)
-    addTableName (TableNotFound name) = throwError $ TableNotFound (key <> name)
-    addTableName e                    = throwError e
+    handleTableName :: DecodeException -> Env a
+    handleTableName (KeyNotFound name)        = throwError $ KeyNotFound (key <> name)
+    handleTableName (TableNotFound name)      = throwError $ TableNotFound (key <> name)
+    handleTableName (TypeMismatch name t1 t2) = throwError $ TypeMismatch (key <> name) t1 t2
+    handleTableName e                         = throwError e
