@@ -49,6 +49,7 @@ import Control.Monad.Reader (Reader, asks, local, runReader)
 import Control.Monad.State (State, execState, gets, modify)
 import Data.Bifunctor (first)
 import Data.Maybe (fromMaybe)
+import Data.Semigroup ((<>))
 import Data.Text (Text)
 
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
@@ -65,7 +66,6 @@ import qualified Toml.PrefixTree as Prefix
 data DecodeException
     = KeyNotFound Key  -- ^ No such key
     | TableNotFound Key  -- ^ No such table
-    | IncompleteTable Key Key  -- ^ 'KeyNotFound' was thrown inside 'table' parser
     | TypeMismatch Text  -- ^ Expected type; TODO: add actual type
     | ParseError ParseException  -- ^ Exception during parsing
     deriving (Eq, Show)  -- TODO: manual pretty show instances
@@ -250,9 +250,13 @@ maybeP converter key = let bi = converter key in Bijection
     }
   where
     handleNotFound :: DecodeException -> Env (Maybe a)
-    handleNotFound (KeyNotFound _)   = pure Nothing
-    handleNotFound (TableNotFound _) = pure Nothing
-    handleNotFound e                 = throwError e
+    handleNotFound e@(KeyNotFound name)
+        | name == key = pure Nothing
+        | otherwise = throwError e
+    handleNotFound e@(TableNotFound name)
+        | name == key = pure Nothing
+        | otherwise = throwError e
+    handleNotFound e = throwError e
 
 -- | Parser for tables. Use it when when you have nested objects.
 table :: forall a . BiToml a -> Key -> BiToml a
@@ -263,7 +267,7 @@ table bi key = Bijection input output
         mTable <- asks $ Prefix.lookup key . tomlTables
         case mTable of
             Nothing   -> throwError $ TableNotFound key
-            Just toml -> local (const toml) (biRead bi) `catchError` rethrowNotFound
+            Just toml -> local (const toml) (biRead bi) `catchError` addTableName
 
     output :: a -> St a
     output a = do
@@ -272,7 +276,7 @@ table bi key = Bijection input output
         let newToml = execState (biWrite bi a) toml
         a <$ modify (\(TOML vals tables) -> TOML vals (Prefix.insert key newToml tables))
 
-    rethrowNotFound :: DecodeException -> Env a
-    rethrowNotFound (KeyNotFound name)   = throwError $ IncompleteTable key name
-    rethrowNotFound (TableNotFound name) = throwError $ IncompleteTable key name
-    rethrowNotFound e                    = throwError e
+    addTableName :: DecodeException -> Env a
+    addTableName (KeyNotFound name)   = throwError $ KeyNotFound (key <> name)
+    addTableName (TableNotFound name) = throwError $ TableNotFound (key <> name)
+    addTableName e                    = throwError e

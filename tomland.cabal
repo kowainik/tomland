@@ -1,7 +1,7 @@
 name:                tomland
-version:             0.2.0
-description:         TOML parser
+version:             0.2.1
 synopsis:            TOML parser
+description:         See README.md for details.
 homepage:            https://github.com/kowainik/tomland
 bug-reports:         https://github.com/kowainik/tomland/issues
 license:             MPL-2.0
