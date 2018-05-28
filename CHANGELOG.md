@@ -7,6 +7,8 @@ The change log is available [on GitHub][2].
 0.2.1
 =====
 * Make `table` parser work with `maybeP`.
+* [#39](https://github.com/kowainik/tomland/issues/39):
+  Implement `prettyException` function for `DecodeException`.
 
 0.2.0
 =====

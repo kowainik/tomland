@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
@@ -8,20 +9,8 @@
 -- | Contains TOML-specific combinators for converting between TOML and user data types.
 
 module Toml.Bi.Combinators
-       ( -- * Types
-         BiToml
-       , Env
-       , St
-
-         -- * Exceptions
-       , DecodeException
-
-         -- * Encode/Decode
-       , decode
-       , encode
-
-         -- * Converters
-       , bijectionMaker
+       ( -- * Converters
+         bijectionMaker
        , dimapNum
        , mdimap
 
@@ -44,66 +33,40 @@ module Toml.Bi.Combinators
        , arrV
        ) where
 
-import Control.Monad.Except (ExceptT, MonadError, catchError, runExceptT, throwError)
-import Control.Monad.Reader (Reader, asks, local, runReader)
-import Control.Monad.State (State, execState, gets, modify)
-import Data.Bifunctor (first)
+import Control.Monad.Except (MonadError, catchError, throwError)
+import Control.Monad.Reader (asks, local)
+import Control.Monad.State (execState, gets, modify)
 import Data.Maybe (fromMaybe)
+import Data.Proxy (Proxy (..))
+import Data.Semigroup ((<>))
 import Data.Text (Text)
+import Data.Typeable (Typeable, typeRep)
 
+import Toml.Bi.Code (BiToml, DecodeException (..), Env, St)
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
-import Toml.Parser (ParseException (..), parse)
+import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Printer (prettyToml)
 import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), matchArray, matchBool,
-                  matchDouble, matchInteger, matchText)
+                  matchDouble, matchInteger, matchText, valueType)
 
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text as Text
 import qualified Toml.PrefixTree as Prefix
-
--- | Type of exception for converting from 'Toml' to user custom data type.
-data DecodeException
-    = KeyNotFound Key  -- ^ No such key
-    | TableNotFound Key  -- ^ No such table
-    | IncompleteTable Key Key  -- ^ 'KeyNotFound' was thrown inside 'table' parser
-    | TypeMismatch Text  -- ^ Expected type; TODO: add actual type
-    | ParseError ParseException  -- ^ Exception during parsing
-    deriving (Eq, Show)  -- TODO: manual pretty show instances
-
--- | Immutable environment for 'Toml' conversion.
--- This is @r@ type variable in 'Bijection' data type.
-type Env = ExceptT DecodeException (Reader TOML)
-
--- | Mutable context for 'Toml' conversion.
--- This is @w@ type variable in 'Bijection' data type.
-type St = State TOML
-
--- | Specialied 'Bi' type alias for 'Toml' monad. Keeps 'TOML' object either as
--- environment or state.
-type BiToml a = Bi Env St a
-
--- | Convert textual representation of toml into user data type.
-decode :: BiToml a -> Text -> Either DecodeException a
-decode biToml text = do
-    toml <- first ParseError (parse text)
-    runReader (runExceptT $ biRead biToml) toml
-
--- | Convert object to textual representation.
-encode :: BiToml a -> a -> Text
-encode bi obj = prettyToml $ execState (biWrite bi obj) (TOML mempty mempty)
 
 ----------------------------------------------------------------------------
 -- Generalized versions of parsers
 ----------------------------------------------------------------------------
 
+typeName :: forall a . Typeable a => Text
+typeName = Text.pack $ show $ typeRep $ Proxy @a
+
 -- | General function to create bidirectional converters for values.
-bijectionMaker :: forall a t .
-                 Text                              -- ^ Name of expected type
-               -> (forall f . Value f -> Maybe a)  -- ^ How to convert from 'AnyValue' to @a@
+bijectionMaker :: forall a t . Typeable a
+               => (forall f . Value f -> Maybe a)  -- ^ How to convert from 'AnyValue' to @a@
                -> (a -> Value t)                   -- ^ Convert @a@ to 'Anyvale'
                -> Key                              -- ^ Key of the value
                -> BiToml a
-bijectionMaker typeTag fromVal toVal key = Bijection input output
+bijectionMaker fromVal toVal key = Bijection input output
   where
     input :: Env a
     input = do
@@ -112,7 +75,7 @@ bijectionMaker typeTag fromVal toVal key = Bijection input output
             Nothing -> throwError $ KeyNotFound key
             Just (AnyValue val) -> case fromVal val of
                 Just v  -> pure v
-                Nothing -> throwError $ TypeMismatch typeTag
+                Nothing -> throwError $ TypeMismatch key (typeName @a) (valueType val)
 
     output :: a -> St a
     output a = do
@@ -198,11 +161,11 @@ arrV Valuer{..} = Valuer (matchArray valFrom) (Array . map valTo)
 
 -- | Parser for boolean values.
 bool :: Key -> BiToml Bool
-bool = bijectionMaker "Boolean" matchBool Bool
+bool = bijectionMaker matchBool Bool
 
 -- | Parser for integer values.
 integer :: Key -> BiToml Integer
-integer = bijectionMaker "Int" matchInteger Int
+integer = bijectionMaker matchInteger Int
 
 -- | Parser for integer values.
 int :: Key -> BiToml Int
@@ -210,16 +173,16 @@ int = dimapNum . integer
 
 -- | Parser for floating values.
 double :: Key -> BiToml Double
-double = bijectionMaker "Double" matchDouble Float
+double = bijectionMaker matchDouble Float
 
 -- | Parser for string values.
 str :: Key -> BiToml Text
-str = bijectionMaker "String" matchText String
+str = bijectionMaker matchText String
 
 -- TODO: implement using bijectionMaker
 -- | Parser for array of values. Takes converter for single array element and
 -- returns list of values.
-arrayOf :: forall a t . Valuer t a -> Key -> BiToml [a]
+arrayOf :: forall a t . Typeable a => Valuer t a -> Key -> BiToml [a]
 arrayOf valuer key = Bijection input output
   where
     input :: Env [a]
@@ -228,11 +191,11 @@ arrayOf valuer key = Bijection input output
         case mVal of
             Nothing -> throwError $ KeyNotFound key
             Just (AnyValue (Array arr)) -> case arr of
-                [] -> pure []
-                xs -> case mapM (valFrom valuer) xs of
-                    Nothing   -> throwError $ TypeMismatch "Some type of element"  -- TODO: better type
+                []   -> pure []
+                x:xs -> case mapM (valFrom valuer) (x:xs) of
+                    Nothing   -> throwError $ TypeMismatch key (typeName @a) (valueType x)  -- TODO: different error for array element
                     Just vals -> pure vals
-            Just _ -> throwError $ TypeMismatch "Array of smth"
+            Just _ -> throwError $ TypeMismatch key (typeName @a) TArray
 
     output :: [a] -> St [a]
     output a = do
@@ -250,9 +213,9 @@ maybeP converter key = let bi = converter key in Bijection
     }
   where
     handleNotFound :: DecodeException -> Env (Maybe a)
-    handleNotFound (KeyNotFound _)   = pure Nothing
-    handleNotFound (TableNotFound _) = pure Nothing
-    handleNotFound e                 = throwError e
+    handleNotFound e
+        | e `elem` [KeyNotFound key, TableNotFound key] = pure Nothing
+        | otherwise = throwError e
 
 -- | Parser for tables. Use it when when you have nested objects.
 table :: forall a . BiToml a -> Key -> BiToml a
@@ -263,7 +226,7 @@ table bi key = Bijection input output
         mTable <- asks $ Prefix.lookup key . tomlTables
         case mTable of
             Nothing   -> throwError $ TableNotFound key
-            Just toml -> local (const toml) (biRead bi) `catchError` rethrowNotFound
+            Just toml -> local (const toml) (biRead bi) `catchError` handleTableName
 
     output :: a -> St a
     output a = do
@@ -272,7 +235,8 @@ table bi key = Bijection input output
         let newToml = execState (biWrite bi a) toml
         a <$ modify (\(TOML vals tables) -> TOML vals (Prefix.insert key newToml tables))
 
-    rethrowNotFound :: DecodeException -> Env a
-    rethrowNotFound (KeyNotFound name)   = throwError $ IncompleteTable key name
-    rethrowNotFound (TableNotFound name) = throwError $ IncompleteTable key name
-    rethrowNotFound e                    = throwError e
+    handleTableName :: DecodeException -> Env a
+    handleTableName (KeyNotFound name)        = throwError $ KeyNotFound (key <> name)
+    handleTableName (TableNotFound name)      = throwError $ TableNotFound (key <> name)
+    handleTableName (TypeMismatch name t1 t2) = throwError $ TypeMismatch (key <> name) t1 t2
+    handleTableName e                         = throwError e

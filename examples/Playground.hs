@@ -53,9 +53,9 @@ main = do
 
     TIO.putStrLn "=== Testing bidirectional conversion ==="
     biFile <- TIO.readFile "examples/biTest.toml"
-    case Toml.decode testT biFile of
-        Left msg   -> print msg
-        Right test -> TIO.putStrLn $ Toml.encode testT test
+    TIO.putStrLn $ case Toml.decode testT biFile of
+        Left msg   -> Toml.prettyException msg
+        Right test -> Toml.encode testT test
 
 myToml :: TOML
 myToml = TOML (HashMap.fromList

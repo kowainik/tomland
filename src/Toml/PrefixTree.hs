@@ -29,6 +29,7 @@ import Data.Foldable (foldl')
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Semigroup (Semigroup)
 import Data.String (IsString (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -56,7 +57,7 @@ Key (Piece "site" :| [Piece "\\"google.com\\""])
 
 -}
 newtype Key = Key { unKey :: NonEmpty Piece }
-    deriving (Show, Eq, Ord, Generic)
+    deriving (Show, Eq, Ord, Semigroup, Generic)
 
 instance Hashable Key
 
