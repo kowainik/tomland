@@ -22,6 +22,7 @@ library
 
   exposed-modules:     Toml
                          Toml.Bi
+                           Toml.Bi.Code
                            Toml.Bi.Combinators
                            Toml.Bi.Monad
                          Toml.Parser

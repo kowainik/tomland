@@ -24,6 +24,7 @@ module Toml.Type
        , matchText
        , matchDate
        , matchArray
+       , showType
        , valueType
 
          -- * Internal functions
