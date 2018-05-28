@@ -19,6 +19,9 @@ matrix:
   - ghc: 8.2.2
     env: GHCVER='8.2.2' STACK_YAML="$HOME/build/kowainik/tomland/stack.yaml"
 
+  - ghc: 8.4.2
+    env: GHCVER='8.4.2' STACK_YAML="$HOME/build/kowainik/tomland/stack-$GHCVER.yaml"
+
 addons:
   apt:
     sources:
