@@ -1,5 +1,20 @@
+{- | This module introduces EDSL for manually specifying 'TOML' data types.
+
+__Example:__
+
+@
+exampleToml :: TOML
+exampleToml = mkToml $ do
+    "key1" =: 1
+    "key2" =: Bool True
+    table "tableName" $
+        "tableKey" =: Array ["Oh", "Hi", "Mark"]
+@
+
+-}
+
 module Toml.Edsl
-       ( toml
+       ( mkToml
        , (=:)
        , table
        ) where
@@ -7,20 +22,19 @@ module Toml.Edsl
 import Control.Monad.State (State, execState, modify)
 
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), Value (..))
+import Toml.Type (TOML (..), Value, emptyToml, insertKeyVal, insertTable)
 
-import qualified Data.HashMap.Strict as HashMap
-import qualified Toml.PrefixTree as Prefix
 
-type Env = State TOML ()
+type TDSL = State TOML ()
 
-toml :: Env -> TOML
-toml env = execState env $ TOML mempty mempty
+-- | Creates 'TOML' from the 'TDSL'.
+mkToml :: TDSL -> TOML
+mkToml env = execState env emptyToml
 
-(=:) :: Key -> Value a -> Env
-(=:) k v = modify $ \tml -> tml {tomlPairs = HashMap.insert k (AnyValue v) (tomlPairs tml)}
+-- | Adds key-value pair to the 'TDSL'.
+(=:) :: Key -> Value a -> TDSL
+(=:) k v = modify $ insertKeyVal k v
 
-table :: Key -> Env -> Env
-table k env = modify $ \tml -> tml
-    { tomlTables = Prefix.insert k (execState env (TOML mempty mempty)) (tomlTables tml)
-    }
+-- | Adds table to the 'TDSL'.
+table :: Key -> TDSL -> TDSL
+table k env = modify $ insertTable k (mkToml env)

@@ -4,7 +4,7 @@ import Data.Text (Text)
 import Data.Time (fromGregorian)
 
 import Toml.Bi (BiToml, (.=))
-import Toml.Edsl (table, toml, (=:))
+import Toml.Edsl (mkToml, table, (=:))
 import Toml.Parser (ParseException (..), parse)
 import Toml.Printer (prettyToml)
 import Toml.Type (DateTime (..), TOML (..), Value (..))
@@ -48,7 +48,7 @@ main = do
     content <- TIO.readFile "test.toml"
     case parse content of
         Left (ParseException e) -> TIO.putStrLn e
-        Right tml               -> TIO.putStrLn $ prettyToml tml
+        Right toml              -> TIO.putStrLn $ prettyToml toml
 
     TIO.putStrLn "=== Testing bidirectional conversion ==="
     biFile <- TIO.readFile "examples/biTest.toml"
@@ -57,17 +57,17 @@ main = do
         Right test -> Toml.encode testT test
 
 myToml :: TOML
-myToml = toml $ do
+myToml = mkToml $ do
     "a" =: Bool True
-    "list" =: Array [String "one", String "two"]
+    "list" =: Array ["one", "two"]
     "time" =: Array [Date $ Day (fromGregorian 2018 3 29)]
     table "table.name.1" $ do
-        "aInner" =: Int 1
+        "aInner" =: 1
         "listInner" =: Array [Bool True, Bool False]
         table "1" $ do
-            "aInner11" =: Int 11
-            "listInner11" =: Array [Int 0, Int 1]
+            "aInner11" =: 11
+            "listInner11" =: Array [0, 1]
         table "2" $
-            "Inner12" =: Int 12
+            "Inner12" =: "12"
     table "table.name.2" $
-        "Inner2" =: Int 42
+        "Inner2" =: 42
