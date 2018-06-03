@@ -1,19 +1,13 @@
 {-# LANGUAGE PatternSynonyms  #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Test.Toml.PrefixTree.Unit
-       ( unitTests
-       ) where
+module Test.Toml.PrefixTree.Unit where
 
-import Test.Tasty (TestTree)
-import Test.Tasty.Hspec (Spec, describe, it, shouldBe, testSpec)
+import Test.Tasty.Hspec (Spec, describe, it, shouldBe)
 
 import Toml.PrefixTree (pattern (:||))
 
 import qualified Toml.PrefixTree as Prefix
-
-unitTests :: IO TestTree
-unitTests = testSpec "PrefixTree unit tests" spec_PrefixTree
 
 spec_PrefixTree :: Spec
 spec_PrefixTree = do

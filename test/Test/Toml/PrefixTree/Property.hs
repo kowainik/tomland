@@ -1,27 +1,17 @@
-module Test.Toml.PrefixTree.Property
-       ( propertyTests
-       ) where
+module Test.Toml.PrefixTree.Property where
 
-import Hedgehog (Property, forAll, property, (===))
-import Test.Tasty (TestTree)
-import Test.Tasty.Hedgehog (testProperty)
+import Hedgehog (forAll, (===))
 
-import Test.Toml.Gen (genKey, genPrefixMap, genVal)
+import Test.Toml.Gen (PropertyTest, genKey, genPrefixMap, genVal, prop)
 
 import qualified Toml.PrefixTree as Prefix
-
-propertyTests :: [TestTree]
-propertyTests =
-    [ testProperty "lookup k (insert k v m) == Just v"     prop_InsertLookup
-    , testProperty "insert x a . insert x b == insert x a" prop_InsertInsert
-    ]
 
 ----------------------------------------------------------------------------
 -- InsertLookup
 ----------------------------------------------------------------------------
 
-prop_InsertLookup :: Property
-prop_InsertLookup =  property $ do
+test_InsertLookup :: PropertyTest
+test_InsertLookup =  prop "lookup k (insert k v m) == Just v" $ do
     t   <- forAll genPrefixMap
     key <- forAll genKey
     val <- forAll genVal
@@ -35,8 +25,8 @@ prop_InsertLookup =  property $ do
 -- InsertInsert
 ----------------------------------------------------------------------------
 
-prop_InsertInsert :: Property
-prop_InsertInsert =  property $ do
+test_InsertInsert :: PropertyTest
+test_InsertInsert =  prop "insert x a . insert x b == insert x a" $ do
     t <- forAll genPrefixMap
     x <- forAll genKey
     a <- forAll genVal

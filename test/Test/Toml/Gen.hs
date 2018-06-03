@@ -5,7 +5,12 @@
 -- | This module contains all generators for @tomland@ testing.
 
 module Test.Toml.Gen
-       ( genVal
+       ( -- * Properties
+         PropertyTest
+       , prop
+
+         -- * Generators
+       , genVal
        , genKey
        , genPrefixMap
        , genToml
@@ -13,8 +18,10 @@ module Test.Toml.Gen
 
 import Control.Applicative (liftA2)
 import Control.Monad (forM)
-
-import Hedgehog (MonadGen)
+import GHC.Stack (HasCallStack)
+import Hedgehog (MonadGen, PropertyT, property)
+import Test.Tasty (TestName, TestTree)
+import Test.Tasty.Hedgehog (testProperty)
 
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
 import Toml.Type (AnyValue (..), TOML (..), Value (..))
@@ -22,6 +29,15 @@ import Toml.Type (AnyValue (..), TOML (..), Value (..))
 import qualified Data.HashMap.Strict as HashMap
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+
+----------------------------------------------------------------------------
+-- Property test creator
+----------------------------------------------------------------------------
+
+type PropertyTest = [TestTree]
+
+prop :: HasCallStack => TestName -> PropertyT IO () -> [TestTree]
+prop testName = pure . testProperty testName . property
 
 ----------------------------------------------------------------------------
 -- Common generators
