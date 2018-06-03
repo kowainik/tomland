@@ -1,20 +1,13 @@
-module Test.Toml.Parsing.Property
-       ( propertyTests
-       ) where
+module Test.Toml.Parsing.Property where
 
-import Hedgehog (Property, forAll, property, (===))
-import Test.Tasty (TestTree)
-import Test.Tasty.Hedgehog (testProperty)
+import Hedgehog (forAll, tripping)
 
 import Toml.Parser (parse)
 import Toml.Printer (prettyToml)
 
-import Test.Toml.Gen (genToml)
+import Test.Toml.Gen (PropertyTest, genToml, prop)
 
-propertyTests :: [TestTree]
-propertyTests = [ testProperty "parse . prettyPrint == id" prop_parsePrint ]
-
-prop_parsePrint :: Property
-prop_parsePrint =  property $ do
+test_tomlRoundtrip :: PropertyTest
+test_tomlRoundtrip =  prop "parse . prettyPrint == id" $ do
     toml <- forAll genToml
-    parse (prettyToml toml) === Right toml
+    tripping toml prettyToml parse

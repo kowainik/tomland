@@ -69,13 +69,13 @@ test-suite tomland-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       Test.Toml.Gen
-                       Test.Toml.Parsing
-                         Test.Toml.Parsing.Property
-                       Test.Toml.PrefixTree
-                         Test.Toml.PrefixTree.Property
-                         Test.Toml.PrefixTree.Unit
 
+  other-modules:       Test.Toml.Gen
+                       Test.Toml.Parsing.Property
+                       Test.Toml.PrefixTree.Property
+                       Test.Toml.PrefixTree.Unit
+
+  build-tool-depends:  tasty-discover:tasty-discover
   build-depends:       base
                      , tomland
                      , hedgehog
