@@ -4,12 +4,11 @@ import Data.Text (Text)
 import Data.Time (fromGregorian)
 
 import Toml.Bi (BiToml, (.=))
+import Toml.Edsl (mkToml, table, (=:))
 import Toml.Parser (ParseException (..), parse)
-import Toml.PrefixTree (PrefixMap, fromList)
 import Toml.Printer (prettyToml)
-import Toml.Type (AnyValue (..), DateTime (..), TOML (..), Value (..))
+import Toml.Type (DateTime (..), TOML (..), Value (..))
 
-import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text.IO as TIO
 import qualified Toml
 
@@ -58,35 +57,17 @@ main = do
         Right test -> Toml.encode testT test
 
 myToml :: TOML
-myToml = TOML (HashMap.fromList
-    [ ("a"   , AnyValue $ Bool True)
-    , ("list", AnyValue $ Array [String "one", String "two"])
-    , ("time", AnyValue $ Array [Date $ Day (fromGregorian 2018 3 29)])
-    ] ) myInnerToml
-
-myInnerToml :: PrefixMap TOML
-myInnerToml = fromList
-    [ ( "table.name.1"
-      , TOML (HashMap.fromList
-            [ ("aInner"   , AnyValue $ Int 1)
-            , ("listInner", AnyValue $ Array [Bool True, Bool False])
-            ]) myInnerInnerToml
-      )
-    , ( "table.name.2"
-      , TOML (HashMap.fromList [("2Inner", AnyValue $ Int 42)]) mempty
-      )
-    ]
-
-
-myInnerInnerToml :: PrefixMap TOML
-myInnerInnerToml = fromList
-    [ ( "table.name.1.1"
-      , TOML (HashMap.fromList
-            [ ("aInner"   , AnyValue $ Int 1)
-            , ("listInner", AnyValue $ Array [Bool True, Bool False])
-            ]) mempty
-      )
-    , ( "table.name.1.2"
-      , TOML (HashMap.fromList [("Inner1.2", AnyValue $ Int 42)]) mempty
-      )
-    ]
+myToml = mkToml $ do
+    "a" =: Bool True
+    "list" =: Array ["one", "two"]
+    "time" =: Array [Date $ Day (fromGregorian 2018 3 29)]
+    table "table.name.1" $ do
+        "aInner" =: 1
+        "listInner" =: Array [Bool True, Bool False]
+        table "1" $ do
+            "aInner11" =: 11
+            "listInner11" =: Array [0, 1]
+        table "2" $
+            "Inner12" =: "12"
+    table "table.name.2" $
+        "Inner2" =: 42

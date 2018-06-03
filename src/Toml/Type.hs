@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE Rank2Types                #-}
@@ -11,6 +12,9 @@
 module Toml.Type
        ( -- * Main type
          TOML (..)
+       , emptyToml
+       , insertKeyVal
+       , insertTable
 
          -- * Values
        , ValueType (..)
@@ -32,11 +36,15 @@ module Toml.Type
        ) where
 
 import Data.HashMap.Strict (HashMap)
+import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 import Data.Type.Equality ((:~:) (..))
 
 import Toml.PrefixTree (Key (..), PrefixMap)
+
+import qualified Data.HashMap.Strict as HashMap
+import qualified Toml.PrefixTree as Prefix
 
 -- TODO: describe how some TOML document will look like with this type
 {- | Represents TOML configuration value. -}
@@ -45,6 +53,19 @@ data TOML = TOML
     , tomlTables :: PrefixMap TOML
     -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
     } deriving (Show, Eq)
+
+emptyToml :: TOML
+emptyToml = TOML mempty mempty
+
+-- | Inserts given key-value into the 'TOML'.
+insertKeyVal :: Key -> Value a -> TOML -> TOML
+insertKeyVal k v toml = toml {tomlPairs = HashMap.insert k (AnyValue v) (tomlPairs toml)}
+
+-- | Inserts given table into the 'TOML'.
+insertTable :: Key -> TOML -> TOML -> TOML
+insertTable k inToml toml = toml
+    { tomlTables = Prefix.insert k inToml (tomlTables toml)
+    }
 
 -- | Needed for GADT parameterization
 data ValueType = TBool | TInt | TFloat | TString | TDate | TArray
@@ -121,6 +142,18 @@ arr6 = [ 1, 2.0 ] # INVALID
     Array  :: [Value t] -> Value 'TArray
 
 deriving instance Show (Value t)
+
+instance (t ~ 'TInt) => Num (Value t) where
+    (Int a) + (Int b) = Int $ a + b
+    (Int a) * (Int b) = Int $ a * b
+    abs (Int a) = Int (abs a)
+    signum (Int a) = Int (signum a)
+    fromInteger = Int
+    negate (Int a) = Int (negate a)
+
+instance (t ~ 'TString) => IsString (Value t) where
+    fromString = String . fromString @Text
+
 instance Eq (Value t) where
     (Bool b1)   == (Bool b2)   = b1 == b2
     (Int i1)    == (Int i2)    = i1 == i2

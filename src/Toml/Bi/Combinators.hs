@@ -46,8 +46,9 @@ import Toml.Bi.Code (BiToml, DecodeException (..), Env, St)
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), matchArray, matchBool,
-                  matchDouble, matchInteger, matchText, valueType)
+import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), emptyToml, insertKeyVal,
+                  insertTable, matchArray, matchBool, matchDouble, matchInteger, matchText,
+                  valueType)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
@@ -78,9 +79,7 @@ bijectionMaker fromVal toVal key = Bijection input output
                 Nothing -> throwError $ TypeMismatch key (typeName @a) (valueType val)
 
     output :: a -> St a
-    output a = do
-        let val = AnyValue (toVal a)
-        a <$ modify (\(TOML vals nested) -> TOML (HashMap.insert key val vals) nested)
+    output a = a <$ modify (insertKeyVal key (toVal a))
 
 -- | Helper dimapper to turn 'integer' parser into parser for 'Int', 'Natural', 'Word', etc.
 dimapNum :: forall n r w . (Integral n, Functor r, Functor w)
@@ -231,9 +230,9 @@ table bi key = Bijection input output
     output :: a -> St a
     output a = do
         mTable <- gets $ Prefix.lookup key . tomlTables
-        let toml = fromMaybe (TOML mempty mempty) mTable
+        let toml = fromMaybe emptyToml mTable
         let newToml = execState (biWrite bi a) toml
-        a <$ modify (\(TOML vals tables) -> TOML vals (Prefix.insert key newToml tables))
+        a <$ modify (insertTable key newToml)
 
     handleTableName :: DecodeException -> Env a
     handleTableName (KeyNotFound name)        = throwError $ KeyNotFound (key <> name)

@@ -4,6 +4,12 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+0.2.2
+=====
+
+* [#8](https://github.com/kowainik/tomland/issues/8):
+  Create EDSL for easier TOML data type writing.
+
 0.2.1
 =====
 * Make `table` parser work with `maybeP`.
