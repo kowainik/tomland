@@ -46,9 +46,8 @@ import Toml.Bi.Code (BiToml, DecodeException (..), Env, St)
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), emptyToml, insertKeyVal,
-                  insertTable, matchArray, matchBool, matchDouble, matchInteger, matchText,
-                  valueType)
+import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), insertKeyVal, insertTable,
+                  matchArray, matchBool, matchDouble, matchInteger, matchText, valueType)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
@@ -230,7 +229,7 @@ table bi key = Bijection input output
     output :: a -> St a
     output a = do
         mTable <- gets $ Prefix.lookup key . tomlTables
-        let toml = fromMaybe emptyToml mTable
+        let toml = fromMaybe mempty mTable
         let newToml = execState (biWrite bi a) toml
         a <$ modify (insertTable key newToml)
 

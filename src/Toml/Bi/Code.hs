@@ -17,9 +17,9 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Reader (Reader, runReader)
 import Control.Monad.State (State, execState)
 import Data.Bifunctor (first)
+import Data.Foldable (toList)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
-import Data.Foldable (toList)
 
 import Toml.Bi.Monad (Bi, Bijection (..))
 import Toml.Parser (ParseException (..), parse)
@@ -69,4 +69,4 @@ decode biToml text = do
 
 -- | Convert object to textual representation.
 encode :: BiToml a -> a -> Text
-encode bi obj = prettyToml $ execState (biWrite bi obj) (TOML mempty mempty)
+encode bi obj = prettyToml $ execState (biWrite bi obj) mempty

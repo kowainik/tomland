@@ -22,14 +22,14 @@ module Toml.Edsl
 import Control.Monad.State (State, execState, modify)
 
 import Toml.PrefixTree (Key)
-import Toml.Type (TOML (..), Value, emptyToml, insertKeyVal, insertTable)
+import Toml.Type (TOML (..), Value, insertKeyVal, insertTable)
 
 
 type TDSL = State TOML ()
 
 -- | Creates 'TOML' from the 'TDSL'.
 mkToml :: TDSL -> TOML
-mkToml env = execState env emptyToml
+mkToml env = execState env mempty
 
 -- | Adds key-value pair to the 'TDSL'.
 (=:) :: Key -> Value a -> TDSL
@@ -37,4 +37,4 @@ mkToml env = execState env emptyToml
 
 -- | Adds table to the 'TDSL'.
 table :: Key -> TDSL -> TDSL
-table k env = modify $ insertTable k (mkToml env)
+table k = modify . insertTable k . mkToml
