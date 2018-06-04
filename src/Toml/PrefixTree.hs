@@ -26,11 +26,12 @@ module Toml.PrefixTree
 import Prelude hiding (lookup)
 
 import Control.Arrow ((&&&))
+import Data.Bifunctor (first)
 import Data.Coerce (coerce)
 import Data.Foldable (foldl')
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
-import Data.List.NonEmpty (NonEmpty (..), (<|))
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup (Semigroup (..))
 import Data.String (IsString (..))
 import Data.Text (Text)
@@ -131,6 +132,10 @@ keysDiff (x :|| xs) (y :|| ys)
         then listSame fs ss (pr ++ [f])
         else Diff (x :|| pr) (f :|| fs) (s :|| ss)
 
+-- | Prepends 'Piece' to the beginning of the 'Key'.
+(<|) :: Piece -> Key -> Key
+(<|) p k = Key (p NonEmpty.<| unKey k)
+
 -- | Creates a 'PrefixTree' of one key-value element.
 singleT :: Key -> a -> PrefixTree a
 singleT = Leaf
@@ -199,7 +204,4 @@ toListT (Branch pref ma prefMap) = case ma of
 
 -- | Converts 'PrefixMap' to the list of pairs.
 toList :: PrefixMap a -> [(Key, a)]
-toList tree = concatMap (\(p, tr) -> map (addPiece p) $ toListT tr) $ HashMap.toList tree
-  where
-    addPiece :: Piece -> (Key, a) -> (Key, a)
-    addPiece p (k, v) = (Key (p <| unKey k), v)
+toList = concatMap (\(p, tr) -> (first (p <|)) <$> toListT tr) . HashMap.toList
