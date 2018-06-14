@@ -204,4 +204,4 @@ toListT (Branch pref ma prefMap) = case ma of
 
 -- | Converts 'PrefixMap' to the list of pairs.
 toList :: PrefixMap a -> [(Key, a)]
-toList = concatMap (\(p, tr) -> (first (p <|)) <$> toListT tr) . HashMap.toList
+toList = concatMap (\(p, tr) -> first (p <|) <$> toListT tr) . HashMap.toList

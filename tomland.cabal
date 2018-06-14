@@ -71,9 +71,11 @@ test-suite tomland-test
   main-is:             Spec.hs
 
   other-modules:       Test.Toml.Gen
+  other-modules:       Test.Toml.Property
                        Test.Toml.Parsing.Property
                        Test.Toml.PrefixTree.Property
                        Test.Toml.PrefixTree.Unit
+                       Test.Toml.TOML.Property
 
   build-tool-depends:  tasty-discover:tasty-discover
   build-depends:       base
