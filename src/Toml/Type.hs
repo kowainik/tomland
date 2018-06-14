@@ -12,7 +12,6 @@
 module Toml.Type
        ( -- * Main type
          TOML (..)
-       , emptyToml
        , insertKeyVal
        , insertTable
 
@@ -36,6 +35,7 @@ module Toml.Type
        ) where
 
 import Data.HashMap.Strict (HashMap)
+import Data.Semigroup (Semigroup (..))
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
@@ -54,8 +54,14 @@ data TOML = TOML
     -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
     } deriving (Show, Eq)
 
-emptyToml :: TOML
-emptyToml = TOML mempty mempty
+instance Semigroup TOML where
+    (TOML pairsA tablesA) <> (TOML pairsB tablesB) = TOML
+        (pairsA <> pairsB)
+        (HashMap.unionWith (<>) tablesA tablesB)
+
+instance Monoid TOML where
+    mappend = (<>)
+    mempty = TOML mempty mempty
 
 -- | Inserts given key-value into the 'TOML'.
 insertKeyVal :: Key -> Value a -> TOML -> TOML

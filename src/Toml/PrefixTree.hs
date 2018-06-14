@@ -6,12 +6,14 @@ module Toml.PrefixTree
        , singleT
        , insertT
        , lookupT
+       , toListT
 
        , PrefixMap
        , single
        , insert
        , lookup
        , fromList
+       , toList
 
          -- * Types
        , Piece (..)
@@ -24,12 +26,13 @@ module Toml.PrefixTree
 import Prelude hiding (lookup)
 
 import Control.Arrow ((&&&))
+import Data.Bifunctor (first)
 import Data.Coerce (coerce)
 import Data.Foldable (foldl')
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Semigroup (Semigroup)
+import Data.Semigroup (Semigroup (..))
 import Data.String (IsString (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -96,6 +99,9 @@ data PrefixTree a
              }
     deriving (Show, Eq)
 
+instance Semigroup (PrefixTree a) where
+    a <> b = foldl' (\tree (k, v) -> insertT k v tree) a (toListT b)
+
 data KeysDiff
       -- | Keys are equal
     = Equal
@@ -125,6 +131,10 @@ keysDiff (x :|| xs) (y :|| ys)
         if f == s
         then listSame fs ss (pr ++ [f])
         else Diff (x :|| pr) (f :|| fs) (s :|| ss)
+
+-- | Prepends 'Piece' to the beginning of the 'Key'.
+(<|) :: Piece -> Key -> Key
+(<|) p k = Key (p NonEmpty.<| unKey k)
 
 -- | Creates a 'PrefixTree' of one key-value element.
 singleT :: Key -> a -> PrefixTree a
@@ -177,9 +187,21 @@ lookupT lk (Branch pref mv prefMap) =
 lookup :: Key -> PrefixMap a -> Maybe a
 lookup k@(p :|| _) prefMap = HashMap.lookup p prefMap >>= lookupT k
 
--- | Constructs 'PrettyMap' structure from the given list of 'Key' and value pairs.
+-- | Constructs 'PrefixMap' structure from the given list of 'Key' and value pairs.
 fromList :: [(Key, a)] -> PrefixMap a
 fromList = foldl' insertPair mempty
   where
     insertPair :: PrefixMap a -> (Key, a) -> PrefixMap a
     insertPair prefMap (k, v) = insert k v prefMap
+
+-- | Converts 'PrefixTree' to the list of pairs.
+toListT :: PrefixTree a -> [(Key, a)]
+toListT (Leaf k v) = [(k, v)]
+toListT (Branch pref ma prefMap) = case ma of
+    Just a  -> (:) (pref, a)
+    Nothing -> id
+    $ map (\(k, v) -> (pref <> k, v)) $ toList prefMap
+
+-- | Converts 'PrefixMap' to the list of pairs.
+toList :: PrefixMap a -> [(Key, a)]
+toList = concatMap (\(p, tr) -> first (p <|) <$> toListT tr) . HashMap.toList
