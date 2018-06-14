@@ -9,6 +9,9 @@ The change log is available [on GitHub][2].
 
 * [#8](https://github.com/kowainik/tomland/issues/8):
   Create EDSL for easier TOML data type writing.
+* [#10](https://github.com/kowainik/tomland/issues/10):
+  Add `Semigroup` and `Monoid` instances for `PrefixTree` and `TOML`.
+  Add property tests on laws
 
 0.2.1
 =====
