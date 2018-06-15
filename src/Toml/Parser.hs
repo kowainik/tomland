@@ -16,7 +16,7 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, manyTill, sepEndBy, skipMany)
+import Control.Applicative.Combinators (between, manyTill, option, sepEndBy, skipMany)
 import Control.Monad (void)
 import Data.Char (digitToInt)
 import Data.List (foldl')
@@ -24,7 +24,7 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space1)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, char', oneOf, space1)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -109,6 +109,25 @@ integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
     binDigitChar = oneOf ['0', '1']
     mkNum b      = foldl' (step b) 0
     step b a c   = a * b + fromIntegral (digitToInt c)
+
+floatP :: Parser Double
+floatP = lexeme $ inf <|> nan <|> floatNum
+  where
+    inf :: Parser Double
+    inf = try $ L.signed sc $ 1 / 0 <$ text "inf"
+    nan :: Parser Double
+    nan = try $ L.signed sc $ 0 / 0 <$ text "nan"
+    floatNum :: Parser Double
+    floatNum = fmap rd $ try (signedDecimal <++> expo)
+                     <|> try (signedDecimal <++> frac <++> option "" expo)
+      where
+        (<++>) a b = (++) <$> a <*> b
+        (<:>)  a b = (:)  <$> a <*> b
+        rd            = read :: String -> Double
+        decimal       = show <$> (L.decimal :: Parser Integer)
+        signedDecimal = show <$> (L.signed sc L.decimal :: Parser Integer)
+        frac          = char '.' <:> decimal
+        expo          = char' 'e' <:> signedDecimal
 
 boolP :: Parser Bool
 boolP = False <$ text "false"
