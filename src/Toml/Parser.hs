@@ -24,7 +24,7 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, char', oneOf, space1)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, char', digitChar, oneOf, space1)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -118,16 +118,14 @@ floatP = lexeme $ inf <|> nan <|> floatNum
     nan :: Parser Double
     nan = try $ L.signed sc $ 0 / 0 <$ text "nan"
     floatNum :: Parser Double
-    floatNum = fmap rd $ try (signedDecimal <++> expo)
-                     <|> try (signedDecimal <++> frac <++> option "" expo)
+    floatNum = fmap rd $ try (decimal <++> expo) <|> try (decimal <++> frac <++> option "" expo)
       where
         (<++>) a b = (++) <$> a <*> b
         (<:>)  a b = (:)  <$> a <*> b
-        rd            = read :: String -> Double
-        decimal       = show <$> (L.decimal :: Parser Integer)
-        signedDecimal = show <$> (L.signed sc L.decimal :: Parser Integer)
-        frac          = char '.' <:> decimal
-        expo          = char' 'e' <:> signedDecimal
+        rd      = read :: String -> Double
+        decimal = show <$> (L.signed sc L.decimal :: Parser Integer)
+        frac    = char '.' <:> (some digitChar)
+        expo    = char' 'e' <:> decimal
 
 boolP :: Parser Bool
 boolP = False <$ text "false"
