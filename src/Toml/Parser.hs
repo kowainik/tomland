@@ -9,11 +9,13 @@ module Toml.Parser
 import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators (between, manyTill, sepBy)
 import Control.Monad (void)
+import Data.Char (digitToInt)
+import Data.List (foldl')
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, space, space1)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space, space1)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -47,9 +49,6 @@ text = L.symbol sc
 
 text_ :: Text -> Parser ()
 text_ = void . text
-
-integer :: Parser Integer
-integer = L.signed sc (lexeme L.decimal)
 
 float :: Parser Double
 float = L.signed sc $ lexeme L.float
@@ -88,6 +87,17 @@ tableNameP = lexeme $ between (char '[') (char ']') keyP
 
 -- Values
 
+integerP :: Parser Integer
+integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
+  where
+    decimal      = L.signed sc L.decimal
+    binary       = try (char '0' >> char 'b') >> mkNum 2 <$> (some binDigitChar)
+    octal        = try (char '0' >> char 'o') >> L.octal
+    hexadecimal  = try (char '0' >> char 'x') >> L.hexadecimal
+    binDigitChar = oneOf ['0', '1']
+    mkNum b      = foldl' (step b) 0
+    step b a c   = a * b + fromIntegral (digitToInt c)
+
 boolP :: Parser Bool
 boolP = False <$ text "false"
     <|> True  <$ text "true"
@@ -104,7 +114,7 @@ arrayP = lexeme $ between (char '[' *> space) (char ']') (valueP `sepBy` spComma
 valueP :: Parser UValue
 valueP = UBool   <$> boolP
      <|> UFloat  <$> try float
-     <|> UInt    <$> integer
+     <|> UInt    <$> integerP
      <|> UString <$> (literalStringP <|> stringP)
 --     <|> UDate   <$> dateTimeP
      <|> UArray  <$> arrayP
