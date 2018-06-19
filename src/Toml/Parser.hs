@@ -5,6 +5,7 @@ module Toml.Parser
        , parse
        , arrayP
        , boolP
+       , dateTimeP
        , doubleP
        , integerP
        , keyP
@@ -19,16 +20,19 @@ import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany)
 import Control.Monad (void)
 import Data.Char (chr, digitToInt, isControl)
+import Data.Fixed (Pico)
 import Data.List (foldl')
 import Data.Semigroup ((<>))
 import Data.Text (Text)
+import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
+                  minutesToTimeZone)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, eol, hexDigitChar, oneOf, satisfy, space,
-                             space1, string, tab)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, digitChar, eol, hexDigitChar, oneOf,
+                             satisfy, space, space1, string, tab)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
-import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
+import Toml.Type (AnyValue, DateTime (..), TOML (..), UValue (..), typeCheck)
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.HashMap.Lazy as HashMap
@@ -179,8 +183,72 @@ boolP :: Parser Bool
 boolP = False <$ text "false"
     <|> True  <$ text "true"
 
--- dateTimeP :: Parser DateTime
--- dateTimeP = error "Not implemented!"
+dateTimeP :: Parser DateTime
+dateTimeP = lexeme $ try hoursP <|> dayLocalZoned
+  where
+    -- dayLocalZoned can parse: only a local date, a local date with time, or
+    -- a local date with a time and an offset
+    dayLocalZoned :: Parser DateTime
+    dayLocalZoned = do
+      let makeLocal (Day day) (Hours hours) = Local $ LocalTime day hours
+          makeLocal _         _             = undefined
+          makeZoned (Local localTime) mins = Zoned $ ZonedTime localTime (minutesToTimeZone mins)
+          makeZoned _                 _    = undefined
+      day        <- try dayP
+      maybeHours <- optional (try $ (char 'T' <|> char ' ') *> hoursP)
+      case maybeHours of
+        Nothing    -> return day
+        Just hours -> do
+          maybeOffset <- optional (try timeOffsetP)
+          case maybeOffset of
+            Nothing     -> return (makeLocal day hours)
+            Just offset -> return (makeZoned (makeLocal day hours) offset)
+
+    timeOffsetP :: Parser Int
+    timeOffsetP = z <|> numOffset
+      where
+        z = pure 0 <* char 'Z'
+        numOffset = do
+          sign    <- char '+' <|> char '-'
+          hours   <- int2DigitsP
+          _       <- char ':'
+          minutes <- int2DigitsP
+          let totalMinutes = hours * 60 + minutes
+          if sign == '+'
+             then return totalMinutes
+             else return (negate totalMinutes)
+
+    hoursP :: Parser DateTime
+    hoursP = do
+      hours   <- int2DigitsP
+      _       <- char ':'
+      minutes <- int2DigitsP
+      _       <- char ':'
+      seconds <- picoTruncated
+      case makeTimeOfDayValid hours minutes seconds of
+        Just time -> return (Hours time)
+        Nothing   -> fail $ "Invalid time of day: " <> show hours <> ":" <> show minutes <> ":" <> show seconds
+
+    dayP :: Parser DateTime
+    dayP = do
+      year  <- integer4DigitsP
+      _     <- char '-'
+      month <- int2DigitsP
+      _     <- char '-'
+      day   <- int2DigitsP
+      case fromGregorianValid year month day of
+        Just date -> return (Day date)
+        Nothing   -> fail $ "Invalid date: " <> show year <> "-" <> show month <> "-" <> show day
+
+    integer4DigitsP = (read :: String -> Integer) <$> count 4 digitChar
+    int2DigitsP     = (read :: String -> Int)     <$> count 2 digitChar
+    picoTruncated   = do
+      let rdPico = read :: String -> Pico
+      int <- count 2 digitChar
+      frc <- optional (char '.' >> take 12 <$> some digitChar)
+      case frc of
+        Nothing   -> return (rdPico int)
+        Just frc' -> return (rdPico $ int ++ "." ++ frc')
 
 arrayP :: Parser [UValue]
 arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
@@ -193,10 +261,10 @@ arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
 
 valueP :: Parser UValue
 valueP = UBool    <$> boolP
+     <|> UDate    <$> dateTimeP
      <|> UDouble  <$> try doubleP
      <|> UInteger <$> integerP
      <|> UText    <$> textP
---     <|> UDate   <$> dateTimeP
      <|> UArray   <$> arrayP
 
 -- TOML

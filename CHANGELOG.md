@@ -12,6 +12,8 @@ The change log is available [on GitHub][2].
   Add parsing of multiline strings
 * [#40](https://github.com/kowainik/tomland/issues/40):
   Support full-featured string parser
+* [#18](https://github.com/kowainik/tomland/issues/18):
+  Add dates parsing
 
 0.3
 =====

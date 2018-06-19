@@ -3,13 +3,15 @@
 module Test.Toml.Parsing.Unit where
 
 import Data.Semigroup ((<>))
+import Data.Time (LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian, minutesToTimeZone)
 import Test.Hspec.Megaparsec (parseSatisfies, shouldFailOn, shouldParse)
 import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
-import Toml.Parser (arrayP, boolP, doubleP, integerP, keyP, keyValP, tableHeaderP, textP, tomlP)
+import Toml.Parser (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, keyValP, tableHeaderP, textP,
+                    tomlP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
-import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
+import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
 
 import qualified Data.HashMap.Lazy as HashMap
 import qualified Data.List.NonEmpty as NE
@@ -20,27 +22,37 @@ spec_Parser = do
       failOn p given            = parse p "" `shouldFailOn` given
       parseXSatisfies p given f = parse p "" given `parseSatisfies` f
 
-      parseArray   = parseX arrayP
-      parseBool    = parseX boolP
-      parseDouble  = parseX doubleP
-      parseInteger = parseX integerP
-      parseKey     = parseX keyP
-      parseKeyVal  = parseX keyValP
-      parseText    = parseX textP
-      parseTable   = parseX tableHeaderP
-      parseToml    = parseX tomlP
+      parseArray    = parseX arrayP
+      parseBool     = parseX boolP
+      parseDateTime = parseX dateTimeP
+      parseDouble   = parseX doubleP
+      parseInteger  = parseX integerP
+      parseKey      = parseX keyP
+      parseKeyVal   = parseX keyValP
+      parseText     = parseX textP
+      parseTable    = parseX tableHeaderP
+      parseToml     = parseX tomlP
 
-      arrayFailOn  = failOn arrayP
-      boolFailOn   = failOn boolP
-      doubleFailOn = failOn doubleP
-      keyValFailOn = failOn keyValP
-      textFailOn   = failOn textP
+      arrayFailOn    = failOn arrayP
+      boolFailOn     = failOn boolP
+      dateTimeFailOn = failOn dateTimeP
+      doubleFailOn   = failOn doubleP
+      keyValFailOn   = failOn keyValP
+      textFailOn     = failOn textP
 
       doubleSatisfies = parseXSatisfies doubleP
 
       quoteWith q t = q <> t <> q
       squote        = quoteWith "'"
       dquote        = quoteWith "\""
+
+      makeDay year month day            = Day $ fromGregorian year month day
+      makeHours hour minute second      = Hours $ TimeOfDay hour minute second
+      makeLocal (Day day) (Hours hours) = Local $ LocalTime day hours
+      makeLocal _          _            = undefined
+      makeZoned (Local local) offset    = Zoned $ ZonedTime local offset
+      makeZoned _                _      = undefined
+      makeOffset hours minutes          = minutesToTimeZone (hours * 60 + minutes * (signum hours))
 
       makeKey k = (Key . NE.fromList) (map Piece k)
 
@@ -55,10 +67,7 @@ spec_Parser = do
       parseArray "[1.2, 2.3, 3.4]" [UDouble 1.2, UDouble 2.3, UDouble 3.4]
       parseArray "['x', 'y']" [UText "x", UText "y"]
       parseArray "[[1], [2]]" [UArray [UInteger 1], UArray [UInteger 2]]
-    --xit "can parse arrays of dates" $ do
-    --  let makeDay   y m d = (UDate . Day) (fromGregorian y m d)
-    --      makeHours h m s = (UDate . Hours) (TimeOfDay h m s)
-    --  parseArray "[1920-12-10, 10:15:30]" [makeDay 1920 12 10, makeHours 10 15 30]
+      parseArray "[1920-12-10, 10:15:30]" [UDate (makeDay 1920 12 10), UDate (makeHours 10 15 30)]
     it "can parse multiline arrays" $ do
       parseArray "[\n1,\n2\n]" [UInteger 1, UInteger 2]
     it "can parse an array of arrays" $ do
@@ -224,15 +233,12 @@ spec_Parser = do
 
   describe "keyValP" $ do
     it "can parse key/value pairs" $ do
-      parseKeyVal "x='abcdef'"  (makeKey ["x"], AnyValue (Text "abcdef"))
-      parseKeyVal "x=1"         (makeKey ["x"], AnyValue (Integer 1))
-      parseKeyVal "x=5.2"       (makeKey ["x"], AnyValue (Double 5.2))
-      parseKeyVal "x=true"      (makeKey ["x"], AnyValue (Bool True))
-      parseKeyVal "x=[1, 2, 3]" (makeKey ["x"], AnyValue (Array [Integer 1, Integer 2, Integer 3]))
-    --xit "can parse a key/value pair when the value is a date" $ do
-    --  let makeDay y m d = (AnyValue .Date . Day) (fromGregorian y m d)
-
-    --  parseKeyVal "x = 1920-12-10" (makeKey ["x"], makeDay 1920 12 10)
+      parseKeyVal "x='abcdef'"     (makeKey ["x"], AnyValue (Text "abcdef"))
+      parseKeyVal "x=1"            (makeKey ["x"], AnyValue (Integer 1))
+      parseKeyVal "x=5.2"          (makeKey ["x"], AnyValue (Double 5.2))
+      parseKeyVal "x=true"         (makeKey ["x"], AnyValue (Bool True))
+      parseKeyVal "x=[1, 2, 3]"    (makeKey ["x"], AnyValue (Array [Integer 1, Integer 2, Integer 3]))
+      parseKeyVal "x = 1920-12-10" (makeKey ["x"], AnyValue (Date (makeDay 1920 12 10)))
     --xit "can parse a key/value pair when the value is an inline table" $ do
     --  pending
     it "ignores white spaces around key names and values" $ do
@@ -331,6 +337,47 @@ spec_Parser = do
       it "fails if the string has an unescaped control character other than tab" $ do
         parseText (squote3 "\t") "\t"
         textFailOn (squote3 "\b")
+
+  describe "dateTimeP" $ do
+    it "can parse a date-time with an offset" $ do
+      parseDateTime "1979-05-27T07:32:00Z"             (makeZoned (makeLocal (makeDay 1979 5 27) (makeHours 7 32 0)) (makeOffset 0 0))
+      parseDateTime "1979-05-27T00:32:00+07:10"        (makeZoned (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0)) (makeOffset 7 10))
+      parseDateTime "1979-05-27T00:32:00.999999-07:25" (makeZoned (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0.999999)) (makeOffset (-7) 25))
+    it "can parse a date-time with an offset when the T delimiter is replaced with a space" $ do
+      parseDateTime "1979-05-27 07:32:00Z" (makeZoned (makeLocal (makeDay 1979 5 27) (makeHours 7 32 0)) (makeOffset 0 0))
+    it "can parse a date-time without an offset" $ do
+      parseDateTime "1979-05-27T17:32:00"        (makeLocal (makeDay 1979 5 27) (makeHours 17 32 0))
+      parseDateTime "1979-05-27T00:32:00.999999" (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0.999999))
+    it "can parse a local date" $ do
+      parseDateTime "1979-05-27" (makeDay 1979 5 27)
+    it "can parse a local time" $ do
+      parseDateTime "07:32:00"        (makeHours 7 32 0)
+      parseDateTime "00:32:00.999999" (makeHours 0 32 0.999999)
+    it "truncates the additional precision after picoseconds in the fractional seconds" $ do
+      parseDateTime "00:32:00.99999999999199" (makeHours 0 32 0.999999999991)
+    it "fails if the date is not valid" $ do
+      dateTimeFailOn "1920-15-12"
+      dateTimeFailOn "1920-12-40"
+    it "fails if the date does not have the form: 'yyyy-mm-dd'" $ do
+      dateTimeFailOn "1920-01-1"
+      dateTimeFailOn "1920-1-01"
+      dateTimeFailOn "920-01-01"
+      dateTimeFailOn "1920/10/01"
+    it "fails if the time is not valid" $ do
+      dateTimeFailOn "25:10:10"
+      dateTimeFailOn "10:70:10"
+      dateTimeFailOn "10:10:70"
+    it "fails if the time does not have the form: 'hh:mm:ss'" $ do
+      dateTimeFailOn "1:12:12"
+      dateTimeFailOn "12:1:12"
+      dateTimeFailOn "12:12:1"
+      dateTimeFailOn "12-12-12"
+    it "fails if the offset does not have any of the forms: 'Z', '+hh:mm', '-hh:mm'" $ do
+      parseDateTime "1979-05-27T00:32:00X"     (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+      parseDateTime "1979-05-27T00:32:00+07:1" (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+      parseDateTime "1979-05-27T00:32:00+7:01" (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+      parseDateTime "1979-05-27T00:32:0007:00" (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+
 
   describe "tableHeaderP" $ do
     it "can parse a TOML table" $ do
