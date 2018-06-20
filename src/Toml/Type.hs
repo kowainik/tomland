@@ -241,6 +241,7 @@ data UValue
     | UString !Text
     | UDate !DateTime
     | UArray ![UValue]
+    deriving (Eq, Show)
 
 -- | Existential wrapper for 'Value'.
 data AnyValue = forall (t :: ValueType) . AnyValue (Value t)

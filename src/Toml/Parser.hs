@@ -3,6 +3,9 @@
 module Toml.Parser
        ( ParseException (..)
        , parse
+       , integerP
+       , boolP
+       , arrayP
        ) where
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..

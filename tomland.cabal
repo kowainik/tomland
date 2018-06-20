@@ -74,6 +74,7 @@ test-suite tomland-test
   other-modules:       Test.Toml.Gen
   other-modules:       Test.Toml.Property
                        Test.Toml.Parsing.Property
+                       Test.Toml.Parsing.Unit
                        Test.Toml.PrefixTree.Property
                        Test.Toml.PrefixTree.Unit
                        Test.Toml.TOML.Property
@@ -82,6 +83,8 @@ test-suite tomland-test
   build-depends:       base
                      , tomland
                      , hedgehog
+                     , hspec-megaparsec
+                     , megaparsec
                      , tasty
                      , tasty-hedgehog
                      , tasty-hspec
