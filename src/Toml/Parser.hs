@@ -10,7 +10,7 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, manyTill, sepBy)
+import Control.Applicative.Combinators (between, choice, manyTill, sepEndBy1, skipMany)
 import Control.Monad (void)
 import Data.Char (digitToInt)
 import Data.List (foldl')
@@ -18,7 +18,7 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space, space1)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space1)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -109,18 +109,35 @@ boolP = False <$ text "false"
 -- dateTimeP = error "Not implemented!"
 
 arrayP :: Parser [UValue]
-arrayP = lexeme $ between (char '[' *> space) (char ']') (valueP `sepBy` spComma)
+arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
   where
+    elements :: Parser [UValue]
+    elements = (choice (fmap (\p -> p `sepEndBy1` spComma) ps) <|> pure []) <* skipMany (text ",")
+    ps :: [Parser UValue]
+    ps = [uBoolP, uFloatP, uIntP, uStringP, uArrayP]
     spComma :: Parser ()
-    spComma = char ',' *> space
+    spComma = char ',' *> sc
+
+uBoolP :: Parser UValue
+uBoolP = UBool <$> boolP
+
+uFloatP :: Parser UValue
+uFloatP = UFloat <$> try float
+
+uIntP :: Parser UValue
+uIntP = UInt <$> integerP
+
+uStringP :: Parser UValue
+uStringP = UString <$> (literalStringP <|> stringP)
+
+-- uDateP :: Parser UValue
+-- uDateP = UDate <$> dateTimeP
+
+uArrayP :: Parser UValue
+uArrayP = UArray <$> arrayP
 
 valueP :: Parser UValue
-valueP = UBool   <$> boolP
-     <|> UFloat  <$> try float
-     <|> UInt    <$> integerP
-     <|> UString <$> (literalStringP <|> stringP)
---     <|> UDate   <$> dateTimeP
-     <|> UArray  <$> arrayP
+valueP = uBoolP <|> uFloatP <|> uIntP <|> uStringP <|> uArrayP
 
 -- TOML
 
