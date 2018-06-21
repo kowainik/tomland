@@ -29,6 +29,7 @@ library
                          Toml.Parser
                          Toml.PrefixTree
                          Toml.Printer
+                         Toml.Prism
                          Toml.Type
 
 

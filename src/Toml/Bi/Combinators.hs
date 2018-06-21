@@ -23,14 +23,6 @@ module Toml.Bi.Combinators
        , arrayOf
        , maybeP
        , table
-
-         -- * Value parsers
-       , Valuer (..)
-       , boolV
-       , integerV
-       , doubleV
-       , strV
-       , arrV
        ) where
 
 import Control.Monad.Except (MonadError, catchError, throwError)
@@ -46,8 +38,9 @@ import Toml.Bi.Code (BiToml, DecodeException (..), Env, St)
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
+import Toml.Prism (Prism (..), match, _Array)
 import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), insertKeyVal, insertTable,
-                  matchArray, matchBool, matchDouble, matchInteger, matchText, valueType)
+                  matchBool, matchDouble, matchInteger, matchText, valueType)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
@@ -124,36 +117,6 @@ mdimap toString toMaybe bi = Bijection
   }
 
 ----------------------------------------------------------------------------
--- Value parsers
-----------------------------------------------------------------------------
-
--- | This data type describes how to convert value of type @a@ into and from 'Value'.
-data Valuer (tag :: ValueType) a = Valuer
-  { valFrom :: forall t . Value t -> Maybe a
-  , valTo   :: a -> Value tag
-  }
-
--- | 'Bool' parser for array element. Use with 'arrayOf' parser.
-boolV :: Valuer 'TBool Bool
-boolV = Valuer matchBool Bool
-
--- | 'Int' parser for array element. Use with 'arrayOf' parser.
-integerV :: Valuer 'TInt Integer
-integerV = Valuer matchInteger Int
-
--- | 'Double' parser for array element. Use with 'arrayOf' parser.
-doubleV :: Valuer 'TFloat Double
-doubleV = Valuer matchDouble Float
-
--- | 'Text' parser for array element. Use with 'arrayOf' parser.
-strV :: Valuer 'TString Text
-strV = Valuer matchText String
-
--- | Parser for array element which is an array itself. Use with 'arrayOf' parser.
-arrV :: forall a t . Valuer t a -> Valuer 'TArray [a]
-arrV Valuer{..} = Valuer (matchArray valFrom) (Array . map valTo)
-
-----------------------------------------------------------------------------
 -- Toml parsers
 ----------------------------------------------------------------------------
 
@@ -180,8 +143,8 @@ str = bijectionMaker matchText String
 -- TODO: implement using bijectionMaker
 -- | Parser for array of values. Takes converter for single array element and
 -- returns list of values.
-arrayOf :: forall a t . Typeable a => Valuer t a -> Key -> BiToml [a]
-arrayOf valuer key = Bijection input output
+arrayOf :: forall a . Typeable a => Prism AnyValue a -> Key -> BiToml [a]
+arrayOf prism key = Bijection input output
   where
     input :: Env [a]
     input = do
@@ -189,15 +152,15 @@ arrayOf valuer key = Bijection input output
         case mVal of
             Nothing -> throwError $ KeyNotFound key
             Just (AnyValue (Array arr)) -> case arr of
-                []   -> pure []
-                x:xs -> case mapM (valFrom valuer) (x:xs) of
-                    Nothing   -> throwError $ TypeMismatch key (typeName @a) (valueType x)  -- TODO: different error for array element
+                []      -> pure []
+                l@(x:_) -> case mapM (match prism) l of
+                    Nothing   -> throwError $ TypeMismatch key (typeName @a) (valueType x)
                     Just vals -> pure vals
             Just _ -> throwError $ TypeMismatch key (typeName @a) TArray
 
     output :: [a] -> St [a]
     output a = do
-        let val = AnyValue $ Array $ map (valTo valuer) a
+        let val = review (_Array prism) a
         a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key val vals) tables)
 
 -- TODO: maybe conflicts from maybe in Prelude, maybe we should add C or P suffix or something else?...

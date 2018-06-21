@@ -30,11 +30,11 @@ insideT = Toml.dimap unInside TestInside $ Toml.str "inside"
 
 testT :: BiToml Test
 testT = Test
-    <$> Toml.bool   "testB" .= testB
-    <*> Toml.int    "testI" .= testI
+    <$> Toml.bool "testB" .= testB
+    <*> Toml.int "testI" .= testI
     <*> Toml.double "testF" .= testF
-    <*> Toml.str    "testS" .= testS
-    <*> Toml.arrayOf Toml.strV "testA" .= testA
+    <*> Toml.str "testS" .= testS
+    <*> Toml.arrayOf Toml._String "testA" .= testA
     <*> Toml.maybeP Toml.bool "testM" .= testM
     <*> Toml.table insideT "testX" .= testX
     <*> Toml.maybeP (Toml.table insideT) "testY" .= testY
