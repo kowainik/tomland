@@ -53,7 +53,6 @@ instance Cat.Category Prism where
         { preview = preview objectPrism >=> preview fieldPrism
         , review = review objectPrism . review fieldPrism
         }
-    -- TODO: is naming too verbose?
 
 -- | Creates prism for 'AnyValue'.
 mkAnyValuePrism :: (forall t . Value t -> Maybe a)
