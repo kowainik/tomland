@@ -21,17 +21,22 @@ module Toml.Type
        , AnyValue (..)
        , UValue (..)
        , DateTime (..)
+
+         -- * Matching
+       , liftMatch
        , matchBool
        , matchInteger
        , matchDouble
        , matchText
        , matchDate
        , matchArray
-       , showType
-       , valueType
 
-         -- * Internal functions
+         -- * Typechecking value functions
+       , TypeMismatchError (..)
+       , reifyAnyValues
+       , showType
        , typeCheck
+       , valueType
        ) where
 
 import Data.HashMap.Strict (HashMap)
@@ -190,34 +195,37 @@ valueType (Array _)  = TArray
 ----------------------------------------------------------------------------
 
 -- | Extract 'Bool' from 'Value'.
-matchBool :: Value f -> Maybe Bool
+matchBool :: Value t -> Maybe Bool
 matchBool (Bool b) = Just b
 matchBool _        = Nothing
 
 -- | Extract 'Integer' from 'Value'.
-matchInteger :: Value f -> Maybe Integer
+matchInteger :: Value t -> Maybe Integer
 matchInteger (Int n) = Just n
 matchInteger _       = Nothing
 
 -- | Extract 'Double' from 'Value'.
-matchDouble :: Value f -> Maybe Double
+matchDouble :: Value t -> Maybe Double
 matchDouble (Float f) = Just f
 matchDouble _         = Nothing
 
 -- | Extract 'Text' from 'Value'.
-matchText :: Value f -> Maybe Text
+matchText :: Value t -> Maybe Text
 matchText (String s) = Just s
 matchText _          = Nothing
 
 -- | Extract 'DateTime' from 'Value'.
-matchDate :: Value f -> Maybe DateTime
+matchDate :: Value t -> Maybe DateTime
 matchDate (Date d) = Just d
 matchDate _        = Nothing
 
 -- | Extract list of elements of type @a@ from array.
-matchArray :: (forall t . Value t -> Maybe a) -> Value f -> Maybe [a]
-matchArray matchElement (Array a) = mapM matchElement a
-matchArray _            _         = Nothing
+matchArray :: (AnyValue -> Maybe a) -> Value t -> Maybe [a]
+matchArray matchValue (Array a) = mapM (liftMatch matchValue) a
+matchArray _            _       = Nothing
+
+liftMatch :: (AnyValue -> Maybe a) -> (Value t -> Maybe a)
+liftMatch fromAnyValue = fromAnyValue . AnyValue
 
 ----------------------------------------------------------------------------
 -- Untyped value
@@ -339,3 +347,9 @@ sameValue l        r        = Left $ TypeMismatchError
                                          { typeExpected = valueType l
                                          , typeActual   = valueType r
                                          }
+
+-- | Checks whether all elements inside given list of 'AnyValue' have the same
+-- type as given 'Value'. Returns list of @Value t@ without given 'Value'.
+reifyAnyValues :: Value t -> [AnyValue] -> Either TypeMismatchError [Value t]
+reifyAnyValues _ []                 = Right []
+reifyAnyValues v (AnyValue av : xs) = sameValue v av >>= \Refl -> (av :) <$> reifyAnyValues v xs

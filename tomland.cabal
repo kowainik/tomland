@@ -1,5 +1,5 @@
 name:                tomland
-version:             0.2.2
+version:             0.3
 synopsis:            TOML parser
 description:         See README.md for details.
 homepage:            https://github.com/kowainik/tomland
@@ -29,6 +29,7 @@ library
                          Toml.Parser
                          Toml.PrefixTree
                          Toml.Printer
+                         Toml.Prism
                          Toml.Type
 
 

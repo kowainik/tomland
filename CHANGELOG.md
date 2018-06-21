@@ -4,7 +4,7 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
-0.2.2
+0.3
 =====
 
 * [#8](https://github.com/kowainik/tomland/issues/8):
@@ -12,6 +12,10 @@ The change log is available [on GitHub][2].
 * [#10](https://github.com/kowainik/tomland/issues/10):
   Add `Semigroup` and `Monoid` instances for `PrefixTree` and `TOML`.
   Add property tests on laws
+* **Breaking change:** [#60](https://github.com/kowainik/tomland/issues/60):
+  Replace `Valuer` with `Prism`.
+
+  _Migration guide:_ replace any `fooV` with corresponding prism `_Foo`.
 
 0.2.1
 =====

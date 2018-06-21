@@ -11,6 +11,7 @@ module Toml
     , module Toml.Parser
     , module Toml.PrefixTree
     , module Toml.Printer
+    , module Toml.Prism
     , module Toml.Type
     ) where
 
@@ -18,4 +19,5 @@ import Toml.Bi
 import Toml.Parser
 import Toml.PrefixTree
 import Toml.Printer
+import Toml.Prism
 import Toml.Type
