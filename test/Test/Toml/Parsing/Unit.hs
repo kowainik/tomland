@@ -2,10 +2,9 @@
 
 module Test.Toml.Parsing.Unit where
 
-import Test.Tasty.Hspec (Spec, context, describe, it)
-
 import Data.Text (singleton)
-import Test.Hspec.Megaparsec
+import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
+import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
 import Toml.Parser (arrayP, boolP, integerP)
@@ -62,6 +61,7 @@ spec_Parser = do
     it "can parse `true` and `false`" $ do
       parseBool "true" True
       parseBool "false" False
+      parseBool "true        " True
     it "fails if `true` or `false` are not all lowercase" $ do
       boolFailOn "True"
       boolFailOn "False"
@@ -140,7 +140,7 @@ spec_Parser = do
       it "can parse numbers when hex digits are lowercase" $ do
         parseInt "0xabcdef" 0xabcdef
       it "can parse numbers when hex digits are uppercase" $ do
-        parseInt "0xABCDEF" 0xabcdef
+        parseInt "0xABCDEF" 0xABCDEF
       it "can parse numbers when hex digits are in both lowercase and uppercase" $ do
-        parseInt "0xAbCdEf" 0xabcdef
-        parseInt "0xaBcDeF" 0xabcdef
+        parseInt "0xAbCdEf" 0xAbCdEf
+        parseInt "0xaBcDeF" 0xaBcDeF

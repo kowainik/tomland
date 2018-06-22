@@ -72,15 +72,18 @@ literalStringP :: Parser Text
 literalStringP = lexeme $ Text.pack <$> (char '\'' *> anyChar `manyTill` char '\'')
 
 -- TODO: this parser is incorrect, it doesn't recognize all strings
+basicStringP :: Parser Text
+basicStringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
+
 stringP :: Parser Text
-stringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
+stringP = literalStringP <|> basicStringP
 
 -- adds " to both sides
 quote :: Text -> Text
 quote t = "\"" <> t <> "\""
 
 keyComponentP :: Parser Piece
-keyComponentP = Piece <$> (bareKeyP <|> (quote <$> stringP))
+keyComponentP = Piece <$> (bareKeyP <|> (quote <$> basicStringP))
 
 keyP :: Parser Key
 keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
@@ -128,7 +131,7 @@ uIntP :: Parser UValue
 uIntP = UInt <$> integerP
 
 uStringP :: Parser UValue
-uStringP = UString <$> (literalStringP <|> stringP)
+uStringP = UString <$> stringP
 
 -- uDateP :: Parser UValue
 -- uDateP = UDate <$> dateTimeP
