@@ -89,6 +89,7 @@ test-suite tomland-test
                      , tasty-hedgehog
                      , tasty-hspec
                      , text
+                     , time
                      , unordered-containers
 
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N

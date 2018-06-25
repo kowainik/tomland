@@ -2,13 +2,13 @@
 
 module Test.Toml.Parsing.Unit where
 
-import Data.Text (singleton)
+import Data.Time (TimeOfDay (..), fromGregorian)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
-import Test.Tasty.Hspec (Spec, context, describe, it)
+import Test.Tasty.Hspec (Spec, context, describe, it, xit)
 import Text.Megaparsec (parse)
 
 import Toml.Parser (arrayP, boolP, integerP)
-import Toml.Type (UValue (..))
+import Toml.Type (DateTime (..), UValue (..))
 
 spec_Parser :: Spec
 spec_Parser = do
@@ -20,6 +20,7 @@ spec_Parser = do
       parseInt    = parseX integerP
       arrayFailOn = failOn arrayP
       boolFailOn  = failOn boolP
+      intFailOn   = failOn integerP
 
   describe "arrayP" $ do
     it "can parse arrays" $ do
@@ -27,9 +28,12 @@ spec_Parser = do
       parseArray "[1]" [UInt 1]
       parseArray "[1, 2, 3]" [UInt 1, UInt 2, UInt 3]
       parseArray "[1.2, 2.3, 3.4]" [UFloat 1.2, UFloat 2.3, UFloat 3.4]
-      parseArray "['x', 'y']" [UString (singleton 'x'), UString (singleton 'y')]
+      parseArray "['x', 'y']" [UString "x", UString "y"]
       parseArray "[[1], [2]]" [UArray [UInt 1], UArray [UInt 2]]
-      -- TODO: Add a test for array of UDate after implementing issue #18
+    xit "can parse arrays of dates" $ do
+      let makeDay   y m d = (UDate . Day) (fromGregorian y m d)
+          makeHours h m s = (UDate . Hours) (TimeOfDay h m s)
+      parseArray "[1920-12-10, 10:15:30]" [makeDay 1920 12 10, makeHours 10 15 30]
     it "can parse multiline arrays" $ do
       parseArray "[\n1,\n2\n]" [UInt 1, UInt 2]
     it "can parse an array of arrays" $ do
@@ -41,10 +45,6 @@ spec_Parser = do
       parseArray "[\n\n#c\n1, #c 2 \n 2, \n\n\n 3, #c \n #c \n 4]" [UInt 1, UInt 2, UInt 3, UInt 4]
     it "ignores white spaces" $ do
       parseArray "[   1    ,    2,3,  4      ]" [UInt 1, UInt 2, UInt 3, UInt 4]
-    it "fails if the array has elements of different types" $ do
-      arrayFailOn "[1, 2.4]"
-      arrayFailOn "[1, 'y', 2]"
-      arrayFailOn "[[2, 3], 'x']"
     it "fails if the elements are not surrounded by square brackets" $ do
       arrayFailOn "1, 2, 3"
       arrayFailOn "[1, 2, 3"
@@ -84,20 +84,18 @@ spec_Parser = do
       it "can parse both the minimum and maximum numbers in the 64 bit range" $ do
         parseInt "-9223372036854775808" (-9223372036854775808)
         parseInt "9223372036854775807" 9223372036854775807
-      -- TODO: After implementing issue #64
-      --it "does not parse numbers with leading zeros" $ do
-      --  parseInt "0123" 0
-      --  parseInt "-023" 0
-      -- TODO: After implementing issue #17
-      --it "can parse numbers with underscores between digits" $ do
-      --  parseInt "1_000" 1000
-      --  parseInt "5_349_221" 5349221
-      --  parseInt "1_2_3_4_5" 12345
-      --  parseInt "1_2_3_" 1
-      --  parseInt "13_" 13
-      --  intFailOn "_123_"
-      --  intFailOn "_13"
-      --  intFailOn "_"
+      xit "can parse numbers with underscores between digits" $ do
+        parseInt "1_000" 1000
+        parseInt "5_349_221" 5349221
+        parseInt "1_2_3_4_5" 12345
+        parseInt "1_2_3_" 1
+        parseInt "13_" 13
+        intFailOn "_123_"
+        intFailOn "_13"
+        intFailOn "_"
+      xit "does not parse numbers with leading zeros" $ do
+        parseInt "0123" 0
+        parseInt "-023" 0
     context "when the integer is in binary representation" $ do
       it "can parse numbers prefixed with `0b`" $ do
         parseInt "0b1101" 13

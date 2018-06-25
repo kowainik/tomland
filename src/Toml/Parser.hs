@@ -10,7 +10,7 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, choice, manyTill, sepEndBy1, skipMany)
+import Control.Applicative.Combinators (between, manyTill, sepEndBy, skipMany)
 import Control.Monad (void)
 import Data.Char (digitToInt)
 import Data.List (foldl')
@@ -115,32 +115,18 @@ arrayP :: Parser [UValue]
 arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
   where
     elements :: Parser [UValue]
-    elements = (choice (fmap (\p -> p `sepEndBy1` spComma) ps) <|> pure []) <* skipMany (text ",")
-    ps :: [Parser UValue]
-    ps = [uBoolP, uFloatP, uIntP, uStringP, uArrayP]
+    elements = valueP `sepEndBy` spComma <* skipMany (text ",")
+
     spComma :: Parser ()
     spComma = char ',' *> sc
 
-uBoolP :: Parser UValue
-uBoolP = UBool <$> boolP
-
-uFloatP :: Parser UValue
-uFloatP = UFloat <$> try float
-
-uIntP :: Parser UValue
-uIntP = UInt <$> integerP
-
-uStringP :: Parser UValue
-uStringP = UString <$> stringP
-
--- uDateP :: Parser UValue
--- uDateP = UDate <$> dateTimeP
-
-uArrayP :: Parser UValue
-uArrayP = UArray <$> arrayP
-
 valueP :: Parser UValue
-valueP = uBoolP <|> uFloatP <|> uIntP <|> uStringP <|> uArrayP
+valueP = UBool   <$> boolP
+     <|> UFloat  <$> try float
+     <|> UInt    <$> integerP
+     <|> UString <$> stringP
+--     <|> UDate   <$> dateTimeP
+     <|> UArray <$> arrayP
 
 -- TOML
 
