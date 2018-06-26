@@ -4,14 +4,6 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
-0.3.1
-=====
-
-* [#26](https://github.com/kowainik/tomland/issues/26):
-  Implement unit tests for `Integer`, `Boolean`, and `Array` parsers.
-  Allow terminating commas inside an array.
-  Allow comments before and after any value inside an array.
-
 0.3
 =====
 
@@ -20,6 +12,11 @@ The change log is available [on GitHub][2].
 * [#10](https://github.com/kowainik/tomland/issues/10):
   Add `Semigroup` and `Monoid` instances for `PrefixTree` and `TOML`.
   Add property tests on laws
+* [#26](https://github.com/kowainik/tomland/issues/26):
+  Implement unit tests for TOML parsers.
+  Allow terminating commas inside an array.
+  Allow comments before and after any value inside an array.
+  Allow keys to be literal strings.
 * **Breaking change:** [#60](https://github.com/kowainik/tomland/issues/60):
   Replace `Valuer` with `Prism`.
 
