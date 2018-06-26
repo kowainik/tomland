@@ -2,25 +2,47 @@
 
 module Test.Toml.Parsing.Unit where
 
+import Data.Semigroup ((<>))
 import Data.Time (TimeOfDay (..), fromGregorian)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
-import Test.Tasty.Hspec (Spec, context, describe, it, xit)
+import Test.Tasty.Hspec (Spec, context, describe, it, pending, xit)
 import Text.Megaparsec (parse)
 
-import Toml.Parser (arrayP, boolP, integerP)
-import Toml.Type (DateTime (..), UValue (..))
+import Toml.Parser (arrayP, boolP, floatP, integerP, keyP, keyValP, stringP, tableHeaderP, tomlP)
+import Toml.PrefixTree (Key (..), Piece (..), fromList)
+import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
+
+import qualified Data.HashMap.Lazy as HashMap
+import qualified Data.List.NonEmpty as NE
 
 spec_Parser :: Spec
 spec_Parser = do
   let parseX p given expected = parse p "" given `shouldParse` expected
       failOn p given          = parse p "" `shouldFailOn` given
 
-  let parseArray  = parseX arrayP
-      parseBool   = parseX boolP
-      parseInt    = parseX integerP
-      arrayFailOn = failOn arrayP
-      boolFailOn  = failOn boolP
-      intFailOn   = failOn integerP
+      parseArray   = parseX arrayP
+      parseBool    = parseX boolP
+      parseFloat   = parseX floatP
+      parseInt     = parseX integerP
+      parseKey     = parseX keyP
+      parseKeyVal  = parseX keyValP
+      parseString  = parseX stringP
+      parseTable   = parseX tableHeaderP
+      parseToml    = parseX tomlP
+      arrayFailOn  = failOn arrayP
+      boolFailOn   = failOn boolP
+      intFailOn    = failOn integerP
+      keyValFailOn = failOn keyValP
+      stringFailOn = failOn stringP
+
+      quoteWith q t = q <> t <> q
+      squote        = quoteWith "'"
+      dquote        = quoteWith "\""
+
+      makeKey k = (Key . NE.fromList) (map Piece k)
+
+      tomlFromList kv = TOML (HashMap.fromList kv) mempty
+
 
   describe "arrayP" $ do
     it "can parse arrays" $ do
@@ -69,6 +91,22 @@ spec_Parser = do
       boolFailOn "FALSE"
       boolFailOn "tRuE"
       boolFailOn "fAlSE"
+
+  describe "floatP" $ do
+      it "can parse a number which consists of an integral part, and a fractional part" $ do
+        parseFloat "+1.0" 1.0
+        parseFloat "3.1415" 3.1415
+        parseFloat "0.0" 0.0
+        parseFloat "-0.01" (-0.01)
+      it "can parse a number which consists of an integral part, and an exponent part" $ do
+        parseFloat "5e+22" 5e+22
+        parseFloat "1e6" 1e6
+        parseFloat "-2E-2" (-2E-2)
+      it "can parse a number which consists of an integral, a fractional, and an exponent part" $ do
+        parseFloat "6.626e-34" 6.626e-34
+      it "can parse sign-prefixed zero" $ do
+        parseFloat "+0.0" 0.0
+        parseFloat "-0.0" (-0.0)
 
   describe "integerP" $ do
     context "when the integer is in decimal representation" $ do
@@ -142,3 +180,129 @@ spec_Parser = do
       it "can parse numbers when hex digits are in both lowercase and uppercase" $ do
         parseInt "0xAbCdEf" 0xAbCdEf
         parseInt "0xaBcDeF" 0xaBcDeF
+
+  describe "keyP" $ do
+    context "when the key is a bare key" $ do
+      it "can parse keys which contain ASCII letters, digits, underscores, and dashes" $ do
+        parseKey "key"       (makeKey ["key"])
+        parseKey "bare_key1" (makeKey ["bare_key1"])
+        parseKey "bare-key2" (makeKey ["bare-key2"])
+      it "can parse keys which contain only digits" $ do
+        parseKey "1234" (makeKey ["1234"])
+    context "when the key is a quoted key" $ do
+      it "can parse keys that follow the exact same rules as basic strings" $ do
+        parseKey (dquote "127.0.0.1")          (makeKey [dquote "127.0.0.1"])
+        parseKey (dquote "character encoding") (makeKey [dquote "character encoding"])
+        parseKey (dquote "ʎǝʞ")                (makeKey [dquote "ʎǝʞ"])
+      it "can parse keys that follow the exact same rules as literal strings" $ do
+        parseKey (squote "key2")             (makeKey [squote "key2"])
+        parseKey (squote "quoted \"value\"") (makeKey [squote "quoted \"value\""])
+    context "when the key is a dotted key" $ do
+      it "can parse a sequence of bare or quoted keys joined with a dot" $ do
+        parseKey "name"                (makeKey ["name"])
+        parseKey "physical.color"      (makeKey ["physical", "color"])
+        parseKey "physical.shape"      (makeKey ["physical", "shape"])
+        parseKey "site.\"google.com\"" (makeKey ["site", dquote "google.com"])
+      xit "ignores whitespaces around dot-separated parts" $ do
+        parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
+
+  describe "keyValP" $ do
+    it "can parse key/value pairs" $ do
+      parseKeyVal "x='abcdef'"  (makeKey ["x"], AnyValue (String "abcdef"))
+      parseKeyVal "x=1"         (makeKey ["x"], AnyValue (Int 1))
+      parseKeyVal "x=5.2"       (makeKey ["x"], AnyValue (Float 5.2))
+      parseKeyVal "x=true"      (makeKey ["x"], AnyValue (Bool True))
+      parseKeyVal "x=[1, 2, 3]" (makeKey ["x"], AnyValue (Array [Int 1, Int 2, Int 3]))
+    xit "can parse a key/value pair when the value is a date" $ do
+      let makeDay y m d = (AnyValue .Date . Day) (fromGregorian y m d)
+
+      parseKeyVal "x = 1920-12-10" (makeKey ["x"], makeDay 1920 12 10)
+    xit "can parse a key/value pair when the value is an inline table" $ do
+      pending
+    it "ignores white spaces around key names and values" $ do
+      parseKeyVal "x=1    "   (makeKey ["x"], AnyValue (Int 1))
+      parseKeyVal "x=    1"   (makeKey ["x"], AnyValue (Int 1))
+      parseKeyVal "x    =1"   (makeKey ["x"], AnyValue (Int 1))
+      parseKeyVal "x\t= 1 "   (makeKey ["x"], AnyValue (Int 1))
+      parseKeyVal "\"x\" = 1" (makeKey [dquote "x"], AnyValue (Int 1))
+    xit "fails if the key, equals sign, and value are not on the same line" $ do
+      keyValFailOn "x\n=\n1"
+      keyValFailOn "x=\n1"
+      keyValFailOn "\"x\"\n=\n1"
+    it "works if the value is broken over multiple lines" $ do
+      parseKeyVal "x=[1, \n2\n]" (makeKey ["x"], AnyValue (Array [Int 1, Int 2]))
+    it "fails if the value is not specified" $ do
+      keyValFailOn "x="
+
+  describe "stringP" $ do
+    context "when the string is a basic string" $ do
+      it "can parse strings surrounded by double quotes" $ do
+        parseString (dquote "xyz") "xyz"
+        parseString (dquote "")    ""
+        stringFailOn "\"xyz"
+        stringFailOn "xyz\""
+        stringFailOn "xyz"
+      xit "can parse escaped quotation marks, backslashes, and control characters" $ do
+        parseString (dquote "backspace: \\b")               "backspace: \b"
+        parseString (dquote "tab: \\t")                     "tab: \t"
+        parseString (dquote "linefeed: \\n")                "linefeed: \n"
+        parseString (dquote "form feed: \\f")               "form feed: \f"
+        parseString (dquote "carriage return: \\r")         "carriage return: \r"
+        parseString (dquote "quote: \\\"")                  "quote: \""
+        parseString (dquote "backslash: \\\\")              "backslash: \\"
+        parseString (dquote "a\\uD7FFxy\\U0010FFFF\\uE000") "a\55295xy\1114111\57344"
+      xit "fails if the string has an unescaped backslash, or control character" $ do
+        stringFailOn (dquote "new \n line")
+        stringFailOn (dquote "back \\ slash")
+      xit "fails if the string has an escape sequence that is not listed in the TOML specification" $ do
+        stringFailOn (dquote "xy\\z \\abc")
+      xit "fails if the string is not on a single line" $ do
+        stringFailOn (dquote "\nabc")
+        stringFailOn (dquote "ab\r\nc")
+        stringFailOn (dquote "abc\n")
+      xit "fails if escape codes are not valid Unicode scalar values" $ do
+        stringFailOn (dquote "\\u1")
+        stringFailOn (dquote "\\uxyzw")
+        stringFailOn (dquote "\\U0000")
+        stringFailOn (dquote "\\uD8FF")
+        stringFailOn (dquote "\\U001FFFFF")
+    context "when the string is a literal string" $ do
+      it "can parse strings surrounded by single quotes" $ do
+        parseString (squote "C:\\Users\\nodejs\\templates")    "C:\\Users\\nodejs\\templates"
+        parseString (squote "\\\\ServerX\\admin$\\system32\\") "\\\\ServerX\\admin$\\system32\\"
+        parseString (squote "Tom \"Dubs\" Preston-Werner")     "Tom \"Dubs\" Preston-Werner"
+        parseString (squote "<\\i\\c*\\s*>")                   "<\\i\\c*\\s*>"
+        parseString (squote "a \t tab")                        "a \t tab"
+      xit "fails if the string is not on a single line" $ do
+        stringFailOn (squote "\nabc")
+        stringFailOn (squote "ab\r\nc")
+        stringFailOn (squote "abc\n")
+
+  describe "tableHeaderP" $ do
+    it "can parse a TOML table" $ do
+      let key1KV = (makeKey ["key1"], AnyValue (String "some string"))
+          key2KV = (makeKey ["key2"], AnyValue (Int 123))
+          table  = (makeKey ["table-1"], tomlFromList [key1KV, key2KV])
+
+      parseTable "[table-1]\nkey1 = \"some string\"\nkey2 = 123" table
+    it "can parse an empty TOML table" $ do
+      parseTable "[table]" (makeKey ["table"], tomlFromList [])
+    it "allows the name of the table to be any valid TOML key" $ do
+      parseTable "[dog.\"tater.man\"]" (makeKey ["dog", dquote "tater.man"], tomlFromList [])
+      parseTable "[j.\"ʞ\".'l']"       (makeKey ["j", dquote "ʞ", squote "l"], tomlFromList [])
+
+  describe "tomlP" $ do
+    it "can parse TOML files" $ do
+      let tomlString = " # This is a TOML document.\n\n \
+                       \ title = \"TOML Example\" # Comment \n\n \
+                       \ [owner]\n \
+                       \ name = \"Tom Preston-Werner\" \
+                       \ enabled = true # First class dates"
+
+          titleKV    = (makeKey ["title"], AnyValue (String "TOML Example"))
+          nameKV     = (makeKey ["name"], AnyValue (String "Tom Preston-Werner"))
+          enabledKV  = (makeKey ["enabled"], AnyValue (Bool True))
+          tomlPairs  = HashMap.fromList [titleKV]
+          tomlTables = fromList [(makeKey ["owner"], tomlFromList [nameKV, enabledKV])]
+
+      parseToml tomlString (TOML tomlPairs tomlTables)

@@ -3,9 +3,15 @@
 module Toml.Parser
        ( ParseException (..)
        , parse
-       , integerP
-       , boolP
        , arrayP
+       , boolP
+       , floatP
+       , integerP
+       , keyP
+       , keyValP
+       , stringP
+       , tableHeaderP
+       , tomlP
        ) where
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
