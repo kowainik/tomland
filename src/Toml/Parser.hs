@@ -53,8 +53,8 @@ text = L.symbol sc
 text_ :: Text -> Parser ()
 text_ = void . text
 
-float :: Parser Double
-float = L.signed sc $ lexeme L.float
+floatP :: Parser Double
+floatP = L.signed sc $ lexeme L.float
 
 ----------------------------------------------------------------------------
 -- TOML parser
@@ -122,7 +122,7 @@ arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
 
 valueP :: Parser UValue
 valueP = UBool   <$> boolP
-     <|> UFloat  <$> try float
+     <|> UFloat  <$> try floatP
      <|> UInt    <$> integerP
      <|> UString <$> stringP
 --     <|> UDate   <$> dateTimeP
