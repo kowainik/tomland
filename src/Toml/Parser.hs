@@ -78,12 +78,12 @@ basicStringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
 stringP :: Parser Text
 stringP = literalStringP <|> basicStringP
 
--- adds " to both sides
-quote :: Text -> Text
-quote t = "\"" <> t <> "\""
+-- adds " or ' to both sides
+quote :: Text -> Text -> Text
+quote q t = q <> t <> q
 
 keyComponentP :: Parser Piece
-keyComponentP = Piece <$> (bareKeyP <|> (quote <$> basicStringP))
+keyComponentP = Piece <$> (bareKeyP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))
 
 keyP :: Parser Key
 keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
