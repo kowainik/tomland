@@ -3,14 +3,13 @@
 module Test.Toml.Parsing.Unit where
 
 import Data.Semigroup ((<>))
-import Data.Time (TimeOfDay (..), fromGregorian)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
-import Test.Tasty.Hspec (Spec, context, describe, it, pending, xit)
+import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
 import Toml.Parser (arrayP, boolP, floatP, integerP, keyP, keyValP, stringP, tableHeaderP, tomlP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
-import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
+import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
 
 import qualified Data.HashMap.Lazy as HashMap
 import qualified Data.List.NonEmpty as NE
@@ -31,7 +30,6 @@ spec_Parser = do
       parseToml    = parseX tomlP
       arrayFailOn  = failOn arrayP
       boolFailOn   = failOn boolP
-      intFailOn    = failOn integerP
       keyValFailOn = failOn keyValP
       stringFailOn = failOn stringP
 
@@ -52,10 +50,10 @@ spec_Parser = do
       parseArray "[1.2, 2.3, 3.4]" [UFloat 1.2, UFloat 2.3, UFloat 3.4]
       parseArray "['x', 'y']" [UString "x", UString "y"]
       parseArray "[[1], [2]]" [UArray [UInt 1], UArray [UInt 2]]
-    xit "can parse arrays of dates" $ do
-      let makeDay   y m d = (UDate . Day) (fromGregorian y m d)
-          makeHours h m s = (UDate . Hours) (TimeOfDay h m s)
-      parseArray "[1920-12-10, 10:15:30]" [makeDay 1920 12 10, makeHours 10 15 30]
+    --xit "can parse arrays of dates" $ do
+    --  let makeDay   y m d = (UDate . Day) (fromGregorian y m d)
+    --      makeHours h m s = (UDate . Hours) (TimeOfDay h m s)
+    --  parseArray "[1920-12-10, 10:15:30]" [makeDay 1920 12 10, makeHours 10 15 30]
     it "can parse multiline arrays" $ do
       parseArray "[\n1,\n2\n]" [UInt 1, UInt 2]
     it "can parse an array of arrays" $ do
@@ -122,18 +120,18 @@ spec_Parser = do
       it "can parse both the minimum and maximum numbers in the 64 bit range" $ do
         parseInt "-9223372036854775808" (-9223372036854775808)
         parseInt "9223372036854775807" 9223372036854775807
-      xit "can parse numbers with underscores between digits" $ do
-        parseInt "1_000" 1000
-        parseInt "5_349_221" 5349221
-        parseInt "1_2_3_4_5" 12345
-        parseInt "1_2_3_" 1
-        parseInt "13_" 13
-        intFailOn "_123_"
-        intFailOn "_13"
-        intFailOn "_"
-      xit "does not parse numbers with leading zeros" $ do
-        parseInt "0123" 0
-        parseInt "-023" 0
+      --xit "can parse numbers with underscores between digits" $ do
+      --  parseInt "1_000" 1000
+      --  parseInt "5_349_221" 5349221
+      --  parseInt "1_2_3_4_5" 12345
+      --  parseInt "1_2_3_" 1
+      --  parseInt "13_" 13
+      --  intFailOn "_123_"
+      --  intFailOn "_13"
+      --  intFailOn "_"
+      --xit "does not parse numbers with leading zeros" $ do
+      --  parseInt "0123" 0
+      --  parseInt "-023" 0
     context "when the integer is in binary representation" $ do
       it "can parse numbers prefixed with `0b`" $ do
         parseInt "0b1101" 13
@@ -203,8 +201,8 @@ spec_Parser = do
         parseKey "physical.color"      (makeKey ["physical", "color"])
         parseKey "physical.shape"      (makeKey ["physical", "shape"])
         parseKey "site.\"google.com\"" (makeKey ["site", dquote "google.com"])
-      xit "ignores whitespaces around dot-separated parts" $ do
-        parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
+      --xit "ignores whitespaces around dot-separated parts" $ do
+      --  parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
 
   describe "keyValP" $ do
     it "can parse key/value pairs" $ do
@@ -213,22 +211,22 @@ spec_Parser = do
       parseKeyVal "x=5.2"       (makeKey ["x"], AnyValue (Float 5.2))
       parseKeyVal "x=true"      (makeKey ["x"], AnyValue (Bool True))
       parseKeyVal "x=[1, 2, 3]" (makeKey ["x"], AnyValue (Array [Int 1, Int 2, Int 3]))
-    xit "can parse a key/value pair when the value is a date" $ do
-      let makeDay y m d = (AnyValue .Date . Day) (fromGregorian y m d)
+    --xit "can parse a key/value pair when the value is a date" $ do
+    --  let makeDay y m d = (AnyValue .Date . Day) (fromGregorian y m d)
 
-      parseKeyVal "x = 1920-12-10" (makeKey ["x"], makeDay 1920 12 10)
-    xit "can parse a key/value pair when the value is an inline table" $ do
-      pending
+    --  parseKeyVal "x = 1920-12-10" (makeKey ["x"], makeDay 1920 12 10)
+    --xit "can parse a key/value pair when the value is an inline table" $ do
+    --  pending
     it "ignores white spaces around key names and values" $ do
       parseKeyVal "x=1    "   (makeKey ["x"], AnyValue (Int 1))
       parseKeyVal "x=    1"   (makeKey ["x"], AnyValue (Int 1))
       parseKeyVal "x    =1"   (makeKey ["x"], AnyValue (Int 1))
       parseKeyVal "x\t= 1 "   (makeKey ["x"], AnyValue (Int 1))
       parseKeyVal "\"x\" = 1" (makeKey [dquote "x"], AnyValue (Int 1))
-    xit "fails if the key, equals sign, and value are not on the same line" $ do
-      keyValFailOn "x\n=\n1"
-      keyValFailOn "x=\n1"
-      keyValFailOn "\"x\"\n=\n1"
+    --xit "fails if the key, equals sign, and value are not on the same line" $ do
+    --  keyValFailOn "x\n=\n1"
+    --  keyValFailOn "x=\n1"
+    --  keyValFailOn "\"x\"\n=\n1"
     it "works if the value is broken over multiple lines" $ do
       parseKeyVal "x=[1, \n2\n]" (makeKey ["x"], AnyValue (Array [Int 1, Int 2]))
     it "fails if the value is not specified" $ do
@@ -242,30 +240,30 @@ spec_Parser = do
         stringFailOn "\"xyz"
         stringFailOn "xyz\""
         stringFailOn "xyz"
-      xit "can parse escaped quotation marks, backslashes, and control characters" $ do
-        parseString (dquote "backspace: \\b")               "backspace: \b"
-        parseString (dquote "tab: \\t")                     "tab: \t"
-        parseString (dquote "linefeed: \\n")                "linefeed: \n"
-        parseString (dquote "form feed: \\f")               "form feed: \f"
-        parseString (dquote "carriage return: \\r")         "carriage return: \r"
-        parseString (dquote "quote: \\\"")                  "quote: \""
-        parseString (dquote "backslash: \\\\")              "backslash: \\"
-        parseString (dquote "a\\uD7FFxy\\U0010FFFF\\uE000") "a\55295xy\1114111\57344"
-      xit "fails if the string has an unescaped backslash, or control character" $ do
-        stringFailOn (dquote "new \n line")
-        stringFailOn (dquote "back \\ slash")
-      xit "fails if the string has an escape sequence that is not listed in the TOML specification" $ do
-        stringFailOn (dquote "xy\\z \\abc")
-      xit "fails if the string is not on a single line" $ do
-        stringFailOn (dquote "\nabc")
-        stringFailOn (dquote "ab\r\nc")
-        stringFailOn (dquote "abc\n")
-      xit "fails if escape codes are not valid Unicode scalar values" $ do
-        stringFailOn (dquote "\\u1")
-        stringFailOn (dquote "\\uxyzw")
-        stringFailOn (dquote "\\U0000")
-        stringFailOn (dquote "\\uD8FF")
-        stringFailOn (dquote "\\U001FFFFF")
+      --xit "can parse escaped quotation marks, backslashes, and control characters" $ do
+      --  parseString (dquote "backspace: \\b")               "backspace: \b"
+      --  parseString (dquote "tab: \\t")                     "tab: \t"
+      --  parseString (dquote "linefeed: \\n")                "linefeed: \n"
+      --  parseString (dquote "form feed: \\f")               "form feed: \f"
+      --  parseString (dquote "carriage return: \\r")         "carriage return: \r"
+      --  parseString (dquote "quote: \\\"")                  "quote: \""
+      --  parseString (dquote "backslash: \\\\")              "backslash: \\"
+      --  parseString (dquote "a\\uD7FFxy\\U0010FFFF\\uE000") "a\55295xy\1114111\57344"
+      --xit "fails if the string has an unescaped backslash, or control character" $ do
+      --  stringFailOn (dquote "new \n line")
+      --  stringFailOn (dquote "back \\ slash")
+      --xit "fails if the string has an escape sequence that is not listed in the TOML specification" $ do
+      --  stringFailOn (dquote "xy\\z \\abc")
+      --xit "fails if the string is not on a single line" $ do
+      --  stringFailOn (dquote "\nabc")
+      --  stringFailOn (dquote "ab\r\nc")
+      --  stringFailOn (dquote "abc\n")
+      --xit "fails if escape codes are not valid Unicode scalar values" $ do
+      --  stringFailOn (dquote "\\u1")
+      --  stringFailOn (dquote "\\uxyzw")
+      --  stringFailOn (dquote "\\U0000")
+      --  stringFailOn (dquote "\\uD8FF")
+      --  stringFailOn (dquote "\\U001FFFFF")
     context "when the string is a literal string" $ do
       it "can parse strings surrounded by single quotes" $ do
         parseString (squote "C:\\Users\\nodejs\\templates")    "C:\\Users\\nodejs\\templates"
@@ -273,10 +271,10 @@ spec_Parser = do
         parseString (squote "Tom \"Dubs\" Preston-Werner")     "Tom \"Dubs\" Preston-Werner"
         parseString (squote "<\\i\\c*\\s*>")                   "<\\i\\c*\\s*>"
         parseString (squote "a \t tab")                        "a \t tab"
-      xit "fails if the string is not on a single line" $ do
-        stringFailOn (squote "\nabc")
-        stringFailOn (squote "ab\r\nc")
-        stringFailOn (squote "abc\n")
+      --xit "fails if the string is not on a single line" $ do
+      --  stringFailOn (squote "\nabc")
+      --  stringFailOn (squote "ab\r\nc")
+      --  stringFailOn (squote "abc\n")
 
   describe "tableHeaderP" $ do
     it "can parse a TOML table" $ do
