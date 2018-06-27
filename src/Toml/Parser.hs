@@ -3,11 +3,20 @@
 module Toml.Parser
        ( ParseException (..)
        , parse
+       , arrayP
+       , boolP
+       , floatP
+       , integerP
+       , keyP
+       , keyValP
+       , stringP
+       , tableHeaderP
+       , tomlP
        ) where
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, manyTill, sepBy)
+import Control.Applicative.Combinators (between, manyTill, sepEndBy, skipMany)
 import Control.Monad (void)
 import Data.Char (digitToInt)
 import Data.List (foldl')
@@ -15,7 +24,7 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space, space1)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space1)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -50,8 +59,8 @@ text = L.symbol sc
 text_ :: Text -> Parser ()
 text_ = void . text
 
-float :: Parser Double
-float = L.signed sc $ lexeme L.float
+floatP :: Parser Double
+floatP = L.signed sc $ lexeme L.float
 
 ----------------------------------------------------------------------------
 -- TOML parser
@@ -69,15 +78,18 @@ literalStringP :: Parser Text
 literalStringP = lexeme $ Text.pack <$> (char '\'' *> anyChar `manyTill` char '\'')
 
 -- TODO: this parser is incorrect, it doesn't recognize all strings
-stringP :: Parser Text
-stringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
+basicStringP :: Parser Text
+basicStringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
 
--- adds " to both sides
-quote :: Text -> Text
-quote t = "\"" <> t <> "\""
+stringP :: Parser Text
+stringP = literalStringP <|> basicStringP
+
+-- adds " or ' to both sides
+quote :: Text -> Text -> Text
+quote q t = q <> t <> q
 
 keyComponentP :: Parser Piece
-keyComponentP = Piece <$> (bareKeyP <|> (quote <$> stringP))
+keyComponentP = Piece <$> (bareKeyP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))
 
 keyP :: Parser Key
 keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
@@ -106,18 +118,21 @@ boolP = False <$ text "false"
 -- dateTimeP = error "Not implemented!"
 
 arrayP :: Parser [UValue]
-arrayP = lexeme $ between (char '[' *> space) (char ']') (valueP `sepBy` spComma)
+arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
   where
+    elements :: Parser [UValue]
+    elements = valueP `sepEndBy` spComma <* skipMany (text ",")
+
     spComma :: Parser ()
-    spComma = char ',' *> space
+    spComma = char ',' *> sc
 
 valueP :: Parser UValue
 valueP = UBool   <$> boolP
-     <|> UFloat  <$> try float
+     <|> UFloat  <$> try floatP
      <|> UInt    <$> integerP
-     <|> UString <$> (literalStringP <|> stringP)
+     <|> UString <$> stringP
 --     <|> UDate   <$> dateTimeP
-     <|> UArray  <$> arrayP
+     <|> UArray <$> arrayP
 
 -- TOML
 

@@ -11,7 +11,14 @@ The change log is available [on GitHub][2].
   Create EDSL for easier TOML data type writing.
 * [#10](https://github.com/kowainik/tomland/issues/10):
   Add `Semigroup` and `Monoid` instances for `PrefixTree` and `TOML`.
-  Add property tests on laws
+  Add property tests on laws.
+* [#20](https://github.com/kowainik/tomland/issues/20):
+  Add parsing of hexadecimal, octal, and binary integer numbers.
+* [#26](https://github.com/kowainik/tomland/issues/26):
+  Implement unit tests for TOML parsers.
+  Allow terminating commas inside an array.
+  Allow comments before and after any value inside an array.
+  Allow keys to be literal strings.
 * **Breaking change:** [#60](https://github.com/kowainik/tomland/issues/60):
   Replace `Valuer` with `Prism`.
 
