@@ -19,9 +19,9 @@ module Toml.Bi.Combinators
        , int
        , integer
        , double
-       , str
+       , text
        , arrayOf
-       , maybeP
+       , maybeT
        , table
        ) where
 
@@ -39,7 +39,7 @@ import Toml.Bi.Monad (Bi, Bijection (..), dimap)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
 import Toml.Prism (Prism (..), match, _Array)
-import Toml.Type (AnyValue (..), TOML (..), Value (..), ValueType (..), insertKeyVal, insertTable,
+import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..), insertKeyVal, insertTable,
                   matchBool, matchDouble, matchInteger, matchText, valueType)
 
 import qualified Data.HashMap.Strict as HashMap
@@ -126,7 +126,7 @@ bool = bijectionMaker matchBool Bool
 
 -- | Parser for integer values.
 integer :: Key -> BiToml Integer
-integer = bijectionMaker matchInteger Int
+integer = bijectionMaker matchInteger Integer
 
 -- | Parser for integer values.
 int :: Key -> BiToml Int
@@ -134,11 +134,11 @@ int = dimapNum . integer
 
 -- | Parser for floating values.
 double :: Key -> BiToml Double
-double = bijectionMaker matchDouble Float
+double = bijectionMaker matchDouble Double
 
 -- | Parser for string values.
-str :: Key -> BiToml Text
-str = bijectionMaker matchText String
+text :: Key -> BiToml Text
+text = bijectionMaker matchText Text
 
 -- TODO: implement using bijectionMaker
 -- | Parser for array of values. Takes converter for single array element and
@@ -163,10 +163,9 @@ arrayOf prism key = Bijection input output
         let val = review (_Array prism) a
         a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key val vals) tables)
 
--- TODO: maybe conflicts from maybe in Prelude, maybe we should add C or P suffix or something else?...
 -- | Bidirectional converter for @Maybe smth@ values.
-maybeP :: forall a . (Key -> BiToml a) -> Key -> BiToml (Maybe a)
-maybeP converter key = let bi = converter key in Bijection
+maybeT :: forall a . (Key -> BiToml a) -> Key -> BiToml (Maybe a)
+maybeT converter key = let bi = converter key in Bijection
     { biRead  = (Just <$> biRead bi) `catchError` handleNotFound
     , biWrite = \case
         Nothing -> pure Nothing

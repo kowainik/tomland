@@ -31,7 +31,10 @@ library
                          Toml.Printer
                          Toml.Prism
                          Toml.Type
-
+                           Toml.Type.AnyValue
+                           Toml.Type.TOML
+                           Toml.Type.UValue
+                           Toml.Type.Value
 
   build-depends:       base >= 4.9 && < 5
                      , hashable

@@ -5,7 +5,7 @@
 -- | This module contains all generators for @tomland@ testing.
 
 module Test.Toml.Gen
-       ( -- * Properties
+       ( -- * Property
          PropertyTest
        , prop
 
@@ -54,13 +54,13 @@ genAnyValue :: MonadGen m => m AnyValue
 genAnyValue = do
   let randB = Gen.bool
   let randI = toInteger <$> Gen.int (Range.constantBounded @Int)
-  let randF = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
+  let randD = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
   let randS = Gen.text (Range.constant 0 256) Gen.alphaNum
   Gen.choice
-      [ AnyValue . Bool   <$> randB
-      , AnyValue . Int    <$> randI
-      , AnyValue . Float  <$> randF
-      , AnyValue . String <$> randS
+      [ AnyValue . Bool    <$> randB
+      , AnyValue . Integer <$> randI
+      , AnyValue . Double  <$> randD
+      , AnyValue . Text    <$> randS
       ]
 
 -- TODO: unicode support

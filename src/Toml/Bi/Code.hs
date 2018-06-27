@@ -25,7 +25,7 @@ import Toml.Bi.Monad (Bi, Bijection (..))
 import Toml.Parser (ParseException (..), parse)
 import Toml.PrefixTree (Key (..), unPiece)
 import Toml.Printer (prettyToml)
-import Toml.Type (TOML (..), ValueType, showType)
+import Toml.Type (TOML (..), TValue, showType)
 
 import qualified Data.Text as Text
 
@@ -33,7 +33,7 @@ import qualified Data.Text as Text
 data DecodeException
     = KeyNotFound Key  -- ^ No such key
     | TableNotFound Key  -- ^ No such table
-    | TypeMismatch Key Text ValueType -- ^ Expected type vs actual type
+    | TypeMismatch Key Text TValue  -- ^ Expected type vs actual type
     | ParseError ParseException  -- ^ Exception during parsing
     deriving (Eq, Show)  -- TODO: manual pretty show instances
 

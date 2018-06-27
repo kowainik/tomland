@@ -5,11 +5,11 @@ module Toml.Parser
        , parse
        , arrayP
        , boolP
-       , floatP
+       , doubleP
        , integerP
        , keyP
        , keyValP
-       , stringP
+       , textP
        , tableHeaderP
        , tomlP
        ) where
@@ -59,8 +59,8 @@ text = L.symbol sc
 text_ :: Text -> Parser ()
 text_ = void . text
 
-floatP :: Parser Double
-floatP = L.signed sc $ lexeme L.float
+doubleP :: Parser Double
+doubleP = L.signed sc $ lexeme L.float
 
 ----------------------------------------------------------------------------
 -- TOML parser
@@ -81,8 +81,8 @@ literalStringP = lexeme $ Text.pack <$> (char '\'' *> anyChar `manyTill` char '\
 basicStringP :: Parser Text
 basicStringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
 
-stringP :: Parser Text
-stringP = literalStringP <|> basicStringP
+textP :: Parser Text
+textP = literalStringP <|> basicStringP
 
 -- adds " or ' to both sides
 quote :: Text -> Text -> Text
@@ -127,10 +127,10 @@ arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
     spComma = char ',' *> sc
 
 valueP :: Parser UValue
-valueP = UBool   <$> boolP
-     <|> UFloat  <$> try floatP
-     <|> UInt    <$> integerP
-     <|> UString <$> stringP
+valueP = UBool <$> boolP
+     <|> UDouble <$> try doubleP
+     <|> UInteger <$> integerP
+     <|> UText <$> textP
 --     <|> UDate   <$> dateTimeP
      <|> UArray <$> arrayP
 

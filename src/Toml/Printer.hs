@@ -70,12 +70,12 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     kvText (k, AnyValue v) = tab i <> prettyKey k <> " = " <> valText v
 
     valText :: Value t -> Text
-    valText (Bool b)   = Text.toLower $ showText b
-    valText (Int n)    = showText n
-    valText (Float d)  = showText d
-    valText (String s) = showText s
-    valText (Date d)   = timeText d
-    valText (Array a)  = "[" <> Text.intercalate ", " (map valText a) <> "]"
+    valText (Bool b)    = Text.toLower $ showText b
+    valText (Integer n) = showText n
+    valText (Double d)  = showText d
+    valText (Text s)    = showText s
+    valText (Date d)    = timeText d
+    valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
 
     timeText :: DateTime -> Text
     timeText (Zoned z) = showText z

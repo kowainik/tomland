@@ -3,11 +3,10 @@ module Test.Toml.Property
        , identityLaw
        ) where
 
+import Data.Semigroup (Semigroup ((<>)))
 import Hedgehog (Gen, forAll, (===))
 
 import Test.Toml.Gen (PropertyTest, prop)
-
-import Data.Semigroup (Semigroup ((<>)))
 
 {- | The semigroup associativity axiom:
 

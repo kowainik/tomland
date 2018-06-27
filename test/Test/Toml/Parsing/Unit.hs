@@ -7,7 +7,7 @@ import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
 import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
-import Toml.Parser (arrayP, boolP, floatP, integerP, keyP, keyValP, stringP, tableHeaderP, tomlP)
+import Toml.Parser (arrayP, boolP, doubleP, integerP, keyP, keyValP, tableHeaderP, textP, tomlP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
 
@@ -21,17 +21,18 @@ spec_Parser = do
 
       parseArray   = parseX arrayP
       parseBool    = parseX boolP
-      parseFloat   = parseX floatP
-      parseInt     = parseX integerP
+      parseDouble  = parseX doubleP
+      parseInteger = parseX integerP
       parseKey     = parseX keyP
       parseKeyVal  = parseX keyValP
-      parseString  = parseX stringP
+      parseText    = parseX textP
       parseTable   = parseX tableHeaderP
       parseToml    = parseX tomlP
+
       arrayFailOn  = failOn arrayP
       boolFailOn   = failOn boolP
       keyValFailOn = failOn keyValP
-      stringFailOn = failOn stringP
+      textFailOn   = failOn textP
 
       quoteWith q t = q <> t <> q
       squote        = quoteWith "'"
@@ -45,26 +46,26 @@ spec_Parser = do
   describe "arrayP" $ do
     it "can parse arrays" $ do
       parseArray "[]" []
-      parseArray "[1]" [UInt 1]
-      parseArray "[1, 2, 3]" [UInt 1, UInt 2, UInt 3]
-      parseArray "[1.2, 2.3, 3.4]" [UFloat 1.2, UFloat 2.3, UFloat 3.4]
-      parseArray "['x', 'y']" [UString "x", UString "y"]
-      parseArray "[[1], [2]]" [UArray [UInt 1], UArray [UInt 2]]
+      parseArray "[1]" [UInteger 1]
+      parseArray "[1, 2, 3]" [UInteger 1, UInteger 2, UInteger 3]
+      parseArray "[1.2, 2.3, 3.4]" [UDouble 1.2, UDouble 2.3, UDouble 3.4]
+      parseArray "['x', 'y']" [UText "x", UText "y"]
+      parseArray "[[1], [2]]" [UArray [UInteger 1], UArray [UInteger 2]]
     --xit "can parse arrays of dates" $ do
     --  let makeDay   y m d = (UDate . Day) (fromGregorian y m d)
     --      makeHours h m s = (UDate . Hours) (TimeOfDay h m s)
     --  parseArray "[1920-12-10, 10:15:30]" [makeDay 1920 12 10, makeHours 10 15 30]
     it "can parse multiline arrays" $ do
-      parseArray "[\n1,\n2\n]" [UInt 1, UInt 2]
+      parseArray "[\n1,\n2\n]" [UInteger 1, UInteger 2]
     it "can parse an array of arrays" $ do
-      parseArray "[[1], [2.3, 5.1]]" [UArray [UInt 1], UArray [UFloat 2.3, UFloat 5.1]]
+      parseArray "[[1], [2.3, 5.1]]" [UArray [UInteger 1], UArray [UDouble 2.3, UDouble 5.1]]
     it "can parse an array with terminating commas (trailing commas)" $ do
-      parseArray "[1, 2,]" [UInt 1, UInt 2]
-      parseArray "[1, 2, 3, , ,]" [UInt 1, UInt 2, UInt 3]
+      parseArray "[1, 2,]" [UInteger 1, UInteger 2]
+      parseArray "[1, 2, 3, , ,]" [UInteger 1, UInteger 2, UInteger 3]
     it "allows an arbitrary number of comments and newlines before or after a value" $ do
-      parseArray "[\n\n#c\n1, #c 2 \n 2, \n\n\n 3, #c \n #c \n 4]" [UInt 1, UInt 2, UInt 3, UInt 4]
+      parseArray "[\n\n#c\n1, #c 2 \n 2, \n\n\n 3, #c \n #c \n 4]" [UInteger 1, UInteger 2, UInteger 3, UInteger 4]
     it "ignores white spaces" $ do
-      parseArray "[   1    ,    2,3,  4      ]" [UInt 1, UInt 2, UInt 3, UInt 4]
+      parseArray "[   1    ,    2,3,  4      ]" [UInteger 1, UInteger 2, UInteger 3, UInteger 4]
     it "fails if the elements are not surrounded by square brackets" $ do
       arrayFailOn "1, 2, 3"
       arrayFailOn "[1, 2, 3"
@@ -90,36 +91,36 @@ spec_Parser = do
       boolFailOn "tRuE"
       boolFailOn "fAlSE"
 
-  describe "floatP" $ do
+  describe "doubleP" $ do
       it "can parse a number which consists of an integral part, and a fractional part" $ do
-        parseFloat "+1.0" 1.0
-        parseFloat "3.1415" 3.1415
-        parseFloat "0.0" 0.0
-        parseFloat "-0.01" (-0.01)
+        parseDouble "+1.0" 1.0
+        parseDouble "3.1415" 3.1415
+        parseDouble "0.0" 0.0
+        parseDouble "-0.01" (-0.01)
       it "can parse a number which consists of an integral part, and an exponent part" $ do
-        parseFloat "5e+22" 5e+22
-        parseFloat "1e6" 1e6
-        parseFloat "-2E-2" (-2E-2)
+        parseDouble "5e+22" 5e+22
+        parseDouble "1e6" 1e6
+        parseDouble "-2E-2" (-2E-2)
       it "can parse a number which consists of an integral, a fractional, and an exponent part" $ do
-        parseFloat "6.626e-34" 6.626e-34
+        parseDouble "6.626e-34" 6.626e-34
       it "can parse sign-prefixed zero" $ do
-        parseFloat "+0.0" 0.0
-        parseFloat "-0.0" (-0.0)
+        parseDouble "+0.0" 0.0
+        parseDouble "-0.0" (-0.0)
 
   describe "integerP" $ do
     context "when the integer is in decimal representation" $ do
       it "can parse positive integer numbers" $ do
-        parseInt "10" 10
-        parseInt "+3" 3
-        parseInt "0" 0
+        parseInteger "10" 10
+        parseInteger "+3" 3
+        parseInteger "0" 0
       it "can parse negative integer numbers" $ do
-        parseInt "-123" (-123)
+        parseInteger "-123" (-123)
       it "can parse sign-prefixed zero as an unprefixed zero" $ do
-        parseInt "+0" 0
-        parseInt "-0" 0
+        parseInteger "+0" 0
+        parseInteger "-0" 0
       it "can parse both the minimum and maximum numbers in the 64 bit range" $ do
-        parseInt "-9223372036854775808" (-9223372036854775808)
-        parseInt "9223372036854775807" 9223372036854775807
+        parseInteger "-9223372036854775808" (-9223372036854775808)
+        parseInteger "9223372036854775807" 9223372036854775807
       --xit "can parse numbers with underscores between digits" $ do
       --  parseInt "1_000" 1000
       --  parseInt "5_349_221" 5349221
@@ -134,50 +135,50 @@ spec_Parser = do
       --  parseInt "-023" 0
     context "when the integer is in binary representation" $ do
       it "can parse numbers prefixed with `0b`" $ do
-        parseInt "0b1101" 13
-        parseInt "0b0" 0
+        parseInteger "0b1101" 13
+        parseInteger "0b0" 0
       it "does not parse numbers prefixed with `0B`" $ do
-        parseInt "0B1101" 0
+        parseInteger "0B1101" 0
       it "can parse numbers with leading zeros after the prefix" $ do
-        parseInt "0b000" 0
-        parseInt "0b00011" 3
+        parseInteger "0b000" 0
+        parseInteger "0b00011" 3
       it "does not parse negative numbers" $ do
-        parseInt "-0b101" 0
+        parseInteger "-0b101" 0
       it "does not parse numbers with non-valid binary digits" $ do
-        parseInt "0b123" 1
+        parseInteger "0b123" 1
     context "when the integer is in octal representation" $ do
       it "can parse numbers prefixed with `0o`" $ do
-        parseInt "0o567" 0o567
-        parseInt "0o0" 0
+        parseInteger "0o567" 0o567
+        parseInteger "0o0" 0
       it "does not parse numbers prefixed with `0O`" $ do
-        parseInt "0O567" 0
+        parseInteger "0O567" 0
       it "can parse numbers with leading zeros after the prefix" $ do
-        parseInt "0o000000" 0
-        parseInt "0o000567" 0o567
+        parseInteger "0o000000" 0
+        parseInteger "0o000567" 0o567
       it "does not parse negative numbers" $ do
-        parseInt "-0o123" 0
+        parseInteger "-0o123" 0
       it "does not parse numbers with non-valid octal digits" $ do
-        parseInt "0o789" 0o7
+        parseInteger "0o789" 0o7
     context "when the integer is in hexadecimal representation" $ do
       it "can parse numbers prefixed with `0x`" $ do
-        parseInt "0x12af" 0x12af
-        parseInt "0x0" 0
+        parseInteger "0x12af" 0x12af
+        parseInteger "0x0" 0
       it "does not parse numbers prefixed with `0X`" $ do
-        parseInt "0Xfff" 0
+        parseInteger "0Xfff" 0
       it "can parse numbers with leading zeros after the prefix" $ do
-        parseInt "0x00000" 0
-        parseInt "0x012af" 0x12af
+        parseInteger "0x00000" 0
+        parseInteger "0x012af" 0x12af
       it "does not parse negative numbers" $ do
-        parseInt "-0xfff" 0
+        parseInteger "-0xfff" 0
       it "does not parse numbers with non-valid hexadecimal digits" $ do
-        parseInt "0xfgh" 0xf
+        parseInteger "0xfgh" 0xf
       it "can parse numbers when hex digits are lowercase" $ do
-        parseInt "0xabcdef" 0xabcdef
+        parseInteger "0xabcdef" 0xabcdef
       it "can parse numbers when hex digits are uppercase" $ do
-        parseInt "0xABCDEF" 0xABCDEF
+        parseInteger "0xABCDEF" 0xABCDEF
       it "can parse numbers when hex digits are in both lowercase and uppercase" $ do
-        parseInt "0xAbCdEf" 0xAbCdEf
-        parseInt "0xaBcDeF" 0xaBcDeF
+        parseInteger "0xAbCdEf" 0xAbCdEf
+        parseInteger "0xaBcDeF" 0xaBcDeF
 
   describe "keyP" $ do
     context "when the key is a bare key" $ do
@@ -206,11 +207,11 @@ spec_Parser = do
 
   describe "keyValP" $ do
     it "can parse key/value pairs" $ do
-      parseKeyVal "x='abcdef'"  (makeKey ["x"], AnyValue (String "abcdef"))
-      parseKeyVal "x=1"         (makeKey ["x"], AnyValue (Int 1))
-      parseKeyVal "x=5.2"       (makeKey ["x"], AnyValue (Float 5.2))
+      parseKeyVal "x='abcdef'"  (makeKey ["x"], AnyValue (Text "abcdef"))
+      parseKeyVal "x=1"         (makeKey ["x"], AnyValue (Integer 1))
+      parseKeyVal "x=5.2"       (makeKey ["x"], AnyValue (Double 5.2))
       parseKeyVal "x=true"      (makeKey ["x"], AnyValue (Bool True))
-      parseKeyVal "x=[1, 2, 3]" (makeKey ["x"], AnyValue (Array [Int 1, Int 2, Int 3]))
+      parseKeyVal "x=[1, 2, 3]" (makeKey ["x"], AnyValue (Array [Integer 1, Integer 2, Integer 3]))
     --xit "can parse a key/value pair when the value is a date" $ do
     --  let makeDay y m d = (AnyValue .Date . Day) (fromGregorian y m d)
 
@@ -218,28 +219,28 @@ spec_Parser = do
     --xit "can parse a key/value pair when the value is an inline table" $ do
     --  pending
     it "ignores white spaces around key names and values" $ do
-      parseKeyVal "x=1    "   (makeKey ["x"], AnyValue (Int 1))
-      parseKeyVal "x=    1"   (makeKey ["x"], AnyValue (Int 1))
-      parseKeyVal "x    =1"   (makeKey ["x"], AnyValue (Int 1))
-      parseKeyVal "x\t= 1 "   (makeKey ["x"], AnyValue (Int 1))
-      parseKeyVal "\"x\" = 1" (makeKey [dquote "x"], AnyValue (Int 1))
+      parseKeyVal "x=1    "   (makeKey ["x"], AnyValue (Integer 1))
+      parseKeyVal "x=    1"   (makeKey ["x"], AnyValue (Integer 1))
+      parseKeyVal "x    =1"   (makeKey ["x"], AnyValue (Integer 1))
+      parseKeyVal "x\t= 1 "   (makeKey ["x"], AnyValue (Integer 1))
+      parseKeyVal "\"x\" = 1" (makeKey [dquote "x"], AnyValue (Integer 1))
     --xit "fails if the key, equals sign, and value are not on the same line" $ do
     --  keyValFailOn "x\n=\n1"
     --  keyValFailOn "x=\n1"
     --  keyValFailOn "\"x\"\n=\n1"
     it "works if the value is broken over multiple lines" $ do
-      parseKeyVal "x=[1, \n2\n]" (makeKey ["x"], AnyValue (Array [Int 1, Int 2]))
+      parseKeyVal "x=[1, \n2\n]" (makeKey ["x"], AnyValue (Array [Integer 1, Integer 2]))
     it "fails if the value is not specified" $ do
       keyValFailOn "x="
 
-  describe "stringP" $ do
+  describe "textP" $ do
     context "when the string is a basic string" $ do
       it "can parse strings surrounded by double quotes" $ do
-        parseString (dquote "xyz") "xyz"
-        parseString (dquote "")    ""
-        stringFailOn "\"xyz"
-        stringFailOn "xyz\""
-        stringFailOn "xyz"
+        parseText (dquote "xyz") "xyz"
+        parseText (dquote "")    ""
+        textFailOn "\"xyz"
+        textFailOn "xyz\""
+        textFailOn "xyz"
       --xit "can parse escaped quotation marks, backslashes, and control characters" $ do
       --  parseString (dquote "backspace: \\b")               "backspace: \b"
       --  parseString (dquote "tab: \\t")                     "tab: \t"
@@ -266,11 +267,11 @@ spec_Parser = do
       --  stringFailOn (dquote "\\U001FFFFF")
     context "when the string is a literal string" $ do
       it "can parse strings surrounded by single quotes" $ do
-        parseString (squote "C:\\Users\\nodejs\\templates")    "C:\\Users\\nodejs\\templates"
-        parseString (squote "\\\\ServerX\\admin$\\system32\\") "\\\\ServerX\\admin$\\system32\\"
-        parseString (squote "Tom \"Dubs\" Preston-Werner")     "Tom \"Dubs\" Preston-Werner"
-        parseString (squote "<\\i\\c*\\s*>")                   "<\\i\\c*\\s*>"
-        parseString (squote "a \t tab")                        "a \t tab"
+        parseText (squote "C:\\Users\\nodejs\\templates")    "C:\\Users\\nodejs\\templates"
+        parseText (squote "\\\\ServerX\\admin$\\system32\\") "\\\\ServerX\\admin$\\system32\\"
+        parseText (squote "Tom \"Dubs\" Preston-Werner")     "Tom \"Dubs\" Preston-Werner"
+        parseText (squote "<\\i\\c*\\s*>")                   "<\\i\\c*\\s*>"
+        parseText (squote "a \t tab")                        "a \t tab"
       --xit "fails if the string is not on a single line" $ do
       --  stringFailOn (squote "\nabc")
       --  stringFailOn (squote "ab\r\nc")
@@ -278,8 +279,8 @@ spec_Parser = do
 
   describe "tableHeaderP" $ do
     it "can parse a TOML table" $ do
-      let key1KV = (makeKey ["key1"], AnyValue (String "some string"))
-          key2KV = (makeKey ["key2"], AnyValue (Int 123))
+      let key1KV = (makeKey ["key1"], AnyValue (Text "some string"))
+          key2KV = (makeKey ["key2"], AnyValue (Integer 123))
           table  = (makeKey ["table-1"], tomlFromList [key1KV, key2KV])
 
       parseTable "[table-1]\nkey1 = \"some string\"\nkey2 = 123" table
@@ -297,8 +298,8 @@ spec_Parser = do
                        \ name = \"Tom Preston-Werner\" \
                        \ enabled = true # First class dates"
 
-          titleKV    = (makeKey ["title"], AnyValue (String "TOML Example"))
-          nameKV     = (makeKey ["name"], AnyValue (String "Tom Preston-Werner"))
+          titleKV    = (makeKey ["title"], AnyValue (Text "TOML Example"))
+          nameKV     = (makeKey ["name"], AnyValue (Text "Tom Preston-Werner"))
           enabledKV  = (makeKey ["enabled"], AnyValue (Bool True))
           tomlPairs  = HashMap.fromList [titleKV]
           tomlTables = fromList [(makeKey ["owner"], tomlFromList [nameKV, enabledKV])]
