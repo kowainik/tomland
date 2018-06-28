@@ -16,7 +16,7 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, manyTill, option, sepEndBy, skipMany)
+import Control.Applicative.Combinators (between, manyTill, sepEndBy, skipMany)
 import Control.Monad (void)
 import Data.Char (digitToInt)
 import Data.List (foldl')
@@ -24,7 +24,7 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, char', digitChar, oneOf, space1)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space1, string)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -58,9 +58,6 @@ text = L.symbol sc
 
 text_ :: Text -> Parser ()
 text_ = void . text
-
-doubleP :: Parser Double
-doubleP = L.signed sc $ lexeme L.float
 
 ----------------------------------------------------------------------------
 -- TOML parser
@@ -110,22 +107,13 @@ integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
     mkNum b      = foldl' (step b) 0
     step b a c   = a * b + fromIntegral (digitToInt c)
 
-floatP :: Parser Double
-floatP = lexeme $ inf <|> nan <|> floatNum
+doubleP :: Parser Double
+doubleP = lexeme $ try $ L.signed sc (num <|> inf <|> nan)
   where
-    inf :: Parser Double
-    inf = try $ L.signed sc $ 1 / 0 <$ text "inf"
-    nan :: Parser Double
-    nan = try $ L.signed sc $ 0 / 0 <$ text "nan"
-    floatNum :: Parser Double
-    floatNum = fmap rd $ try (decimal <++> expo) <|> try (decimal <++> frac <++> option "" expo)
-      where
-        (<++>) a b = (++) <$> a <*> b
-        (<:>)  a b = (:)  <$> a <*> b
-        rd      = read :: String -> Double
-        decimal = show <$> (L.signed sc L.decimal :: Parser Integer)
-        frac    = char '.' <:> (some digitChar)
-        expo    = char' 'e' <:> decimal
+    num, inf, nan :: Parser Double
+    num = L.float
+    inf = 1 / 0 <$ string "inf"
+    nan = 0 / 0 <$ string "nan"
 
 boolP :: Parser Bool
 boolP = False <$ text "false"
@@ -145,7 +133,7 @@ arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
 
 valueP :: Parser UValue
 valueP = UBool    <$> boolP
-     <|> UDouble  <$> try doubleP
+     <|> UDouble  <$> doubleP
      <|> UInteger <$> integerP
      <|> UText    <$> textP
 --     <|> UDate   <$> dateTimeP
