@@ -64,30 +64,52 @@ text_ = void . text
 -- TOML parser
 ----------------------------------------------------------------------------
 
--- Keys
-
-bareKeyP :: Parser Text
-bareKeyP = lexeme $ Text.pack <$> bareStrP
-  where
-    bareStrP :: Parser String
-    bareStrP = some $ alphaNumChar <|> char '_' <|> char '-'
-
-literalStringP :: Parser Text
-literalStringP = lexeme $ Text.pack <$> (char '\'' *> anyChar `manyTill` char '\'')
-
--- TODO: this parser is incorrect, it doesn't recognize all strings
-basicStringP :: Parser Text
-basicStringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
+-- Strings
 
 textP :: Parser Text
 textP = multilineBasicStringP <|> multilineLiteralStringP <|> literalStringP <|> basicStringP
 
--- adds " or ' to both sides
-quote :: Text -> Text -> Text
-quote q t = q <> t <> q
-
 nonControlCharP :: Parser Text
 nonControlCharP = Text.singleton <$> satisfy (not . isControl)
+
+escapeSequenceP :: Parser Text
+escapeSequenceP = char '\\' >> anyChar >>= \case
+                    'b'  -> pure "\b"
+                    't'  -> pure "\t"
+                    'n'  -> pure "\n"
+                    'f'  -> pure "\f"
+                    'r'  -> pure "\r"
+                    '"'  -> pure "\""
+                    '\\' -> pure "\\"
+                    'u'  -> hexUnicodeP 4
+                    'U'  -> hexUnicodeP 8
+                    c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
+  where
+    hexUnicodeP :: Int -> Parser Text
+    hexUnicodeP n = count n hexDigitChar
+                    >>= \x -> case toUnicode $ hexToInt x of
+                          Just c  -> pure (Text.singleton c)
+                          Nothing -> fail $ "Invalid unicode character: " <> "\\" <> (if n == 4 then "u" else "U") <> x
+      where
+        hexToInt :: String -> Int
+        hexToInt xs = read $ "0x" ++ xs
+
+        toUnicode :: Int -> Maybe Char
+        toUnicode x
+          -- Ranges from "The Unicode Standard".
+          -- See definition D76 in Section 3.9, Unicode Encoding Forms.
+          | x >= 0      && x <= 0xD7FF   = Just (chr x)
+          | x >= 0xE000 && x <= 0x10FFFF = Just (chr x)
+          | otherwise                    = Nothing
+
+basicStringP :: Parser Text
+basicStringP = lexeme $ mconcat <$> (char '"' *> (escapeSequenceP <|> nonControlCharP) `manyTill` char '"')
+
+literalStringP :: Parser Text
+literalStringP = lexeme $ Text.pack <$> (char '\'' *> nonEolCharP `manyTill` char '\'')
+  where
+    nonEolCharP :: Parser Char
+    nonEolCharP = satisfy (\c -> c /= '\n' && c /= '\r')
 
 multilineP :: Parser Text -> Parser Text -> Parser Text
 multilineP quotesP allowedCharP = lexeme $ fmap mconcat $ quotesP >> optional eol >> allowedCharP `manyTill` quotesP
@@ -103,36 +125,6 @@ multilineBasicStringP = multilineP quotesP allowedCharP
     lineEndingBackslashP :: Parser Text
     lineEndingBackslashP = Text.empty <$ try (char '\\' >> eol >> space)
 
-    escapeSequenceP :: Parser Text
-    escapeSequenceP = char '\\' >> anyChar >>= \case
-                        'b'  -> pure "\b"
-                        't'  -> pure "\t"
-                        'n'  -> pure "\n"
-                        'f'  -> pure "\f"
-                        'r'  -> pure "\r"
-                        '"'  -> pure "\""
-                        '\\' -> pure "\\"
-                        'u'  -> hexUnicodeP 4
-                        'U'  -> hexUnicodeP 8
-                        c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
-      where
-        hexUnicodeP :: Int -> Parser Text
-        hexUnicodeP n = count n hexDigitChar
-                        >>= \x -> case toUnicode $ hexToInt x of
-                              Just c  -> pure (Text.singleton c)
-                              Nothing -> fail $ "Invalid unicode character: " <> "\\" <> (if n == 4 then "u" else "U") <> x
-          where
-            hexToInt :: String -> Int
-            hexToInt xs = read $ "0x" ++ xs
-
-            toUnicode :: Int -> Maybe Char
-            toUnicode x
-              -- Ranges from "The Unicode Standard".
-              -- See definition D76 in Section 3.9, Unicode Encoding Forms.
-              | x >= 0      && x <= 0xD7FF   = Just (chr x)
-              | x >= 0xE000 && x <= 0x10FFFF = Just (chr x)
-              | otherwise                    = Nothing
-
 multilineLiteralStringP :: Parser Text
 multilineLiteralStringP = multilineP quotesP allowedCharP
   where
@@ -140,6 +132,18 @@ multilineLiteralStringP = multilineP quotesP allowedCharP
 
     allowedCharP :: Parser Text
     allowedCharP = nonControlCharP <|> eol <|> Text.singleton <$> tab
+
+-- Keys
+
+bareKeyP :: Parser Text
+bareKeyP = lexeme $ Text.pack <$> bareStrP
+  where
+    bareStrP :: Parser String
+    bareStrP = some $ alphaNumChar <|> char '_' <|> char '-'
+
+-- adds " or ' to both sides
+quote :: Text -> Text -> Text
+quote q t = q <> t <> q
 
 keyComponentP :: Parser Piece
 keyComponentP = Piece <$> (bareKeyP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))
