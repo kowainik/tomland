@@ -14,7 +14,7 @@ module Toml.Prism
        , _Bool
        , _Integer
        , _Double
-       , _String
+       , _Text
        , _Array
 
          -- * Useful utility functions
@@ -24,7 +24,7 @@ module Toml.Prism
 import Control.Monad ((>=>))
 import Data.Text (Text)
 
-import Toml.Type (AnyValue (..), Value (..), ValueType (TArray), liftMatch, matchArray, matchBool,
+import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchArray, matchBool,
                   matchDouble, matchInteger, matchText, reifyAnyValues)
 
 import qualified Control.Category as Cat
@@ -77,15 +77,15 @@ _Bool = mkAnyValuePrism matchBool Bool
 
 -- | 'Integer' prism for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Integer :: Prism AnyValue Integer
-_Integer = mkAnyValuePrism matchInteger Int
+_Integer = mkAnyValuePrism matchInteger Integer
 
 -- | 'Double' prism for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Double :: Prism AnyValue Double
-_Double = mkAnyValuePrism matchDouble Float
+_Double = mkAnyValuePrism matchDouble Double
 
 -- | 'Text' prism for 'AnyValue'. Usually used with 'arrayOf' combinator.
-_String :: Prism AnyValue Text
-_String = mkAnyValuePrism matchText String
+_Text :: Prism AnyValue Text
+_Text = mkAnyValuePrism matchText Text
 
 -- | 'Array' prism for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Array :: Prism AnyValue a -> Prism AnyValue [a]

@@ -23,6 +23,10 @@ The change log is available [on GitHub][2].
   Replace `Valuer` with `Prism`.
 
   _Migration guide:_ replace any `fooV` with corresponding prism `_Foo`.
+* **Breaking change:** [#66](https://github.com/kowainik/tomland/issues/66):
+  Introduce consistent names according to Haskell types.
+
+  _Migration guide:_ see issue details to know which names to use.
 
 0.2.1
 =====
