@@ -55,12 +55,12 @@ genAnyValue = do
   let randB = Gen.bool
   let randI = toInteger <$> Gen.int (Range.constantBounded @Int)
   let randD = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
-  let randS = Gen.text (Range.constant 0 256) Gen.alphaNum
+  let randT = Gen.text (Range.constant 0 256) Gen.alphaNum
   Gen.choice
       [ AnyValue . Bool    <$> randB
       , AnyValue . Integer <$> randI
       , AnyValue . Double  <$> randD
-      , AnyValue . Text    <$> randS
+      , AnyValue . Text    <$> randT
       ]
 
 -- TODO: unicode support

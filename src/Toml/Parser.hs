@@ -127,12 +127,12 @@ arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
     spComma = char ',' *> sc
 
 valueP :: Parser UValue
-valueP = UBool <$> boolP
-     <|> UDouble <$> try doubleP
+valueP = UBool    <$> boolP
+     <|> UDouble  <$> try doubleP
      <|> UInteger <$> integerP
-     <|> UText <$> textP
+     <|> UText    <$> textP
 --     <|> UDate   <$> dateTimeP
-     <|> UArray <$> arrayP
+     <|> UArray   <$> arrayP
 
 -- TOML
 
