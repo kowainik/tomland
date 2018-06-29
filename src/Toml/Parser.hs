@@ -108,7 +108,7 @@ integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
     step b a c   = a * b + fromIntegral (digitToInt c)
 
 doubleP :: Parser Double
-doubleP = lexeme $ try $ L.signed sc (num <|> inf <|> nan)
+doubleP = lexeme $ L.signed sc (num <|> inf <|> nan)
   where
     num, inf, nan :: Parser Double
     num = L.float
@@ -133,7 +133,7 @@ arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
 
 valueP :: Parser UValue
 valueP = UBool    <$> boolP
-     <|> UDouble  <$> doubleP
+     <|> UDouble  <$> try doubleP
      <|> UInteger <$> integerP
      <|> UText    <$> textP
 --     <|> UDate   <$> dateTimeP
