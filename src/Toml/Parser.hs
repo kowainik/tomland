@@ -24,7 +24,7 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space1)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space1, string)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -58,9 +58,6 @@ text = L.symbol sc
 
 text_ :: Text -> Parser ()
 text_ = void . text
-
-doubleP :: Parser Double
-doubleP = L.signed sc $ lexeme L.float
 
 ----------------------------------------------------------------------------
 -- TOML parser
@@ -109,6 +106,14 @@ integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
     binDigitChar = oneOf ['0', '1']
     mkNum b      = foldl' (step b) 0
     step b a c   = a * b + fromIntegral (digitToInt c)
+
+doubleP :: Parser Double
+doubleP = lexeme $ L.signed sc (num <|> inf <|> nan)
+  where
+    num, inf, nan :: Parser Double
+    num = L.float
+    inf = 1 / 0 <$ string "inf"
+    nan = 0 / 0 <$ string "nan"
 
 boolP :: Parser Bool
 boolP = False <$ text "false"

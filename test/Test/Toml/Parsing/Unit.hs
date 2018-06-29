@@ -3,7 +3,7 @@
 module Test.Toml.Parsing.Unit where
 
 import Data.Semigroup ((<>))
-import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
+import Test.Hspec.Megaparsec (parseSatisfies, shouldFailOn, shouldParse)
 import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
@@ -16,8 +16,9 @@ import qualified Data.List.NonEmpty as NE
 
 spec_Parser :: Spec
 spec_Parser = do
-  let parseX p given expected = parse p "" given `shouldParse` expected
-      failOn p given          = parse p "" `shouldFailOn` given
+  let parseX p given expected   = parse p "" given `shouldParse` expected
+      failOn p given            = parse p "" `shouldFailOn` given
+      parseXSatisfies p given f = parse p "" given `parseSatisfies` f
 
       parseArray   = parseX arrayP
       parseBool    = parseX boolP
@@ -31,8 +32,11 @@ spec_Parser = do
 
       arrayFailOn  = failOn arrayP
       boolFailOn   = failOn boolP
+      doubleFailOn = failOn doubleP
       keyValFailOn = failOn keyValP
       textFailOn   = failOn textP
+
+      doubleSatisfies = parseXSatisfies doubleP
 
       quoteWith q t = q <> t <> q
       squote        = quoteWith "'"
@@ -106,6 +110,19 @@ spec_Parser = do
       it "can parse sign-prefixed zero" $ do
         parseDouble "+0.0" 0.0
         parseDouble "-0.0" (-0.0)
+      it "can parse positive and negative special float values (inf and nan)" $ do
+        parseDouble "inf" (1 / 0)
+        parseDouble "+inf" (1 / 0)
+        parseDouble "-inf" (-1 / 0)
+        doubleSatisfies "nan" isNaN
+        doubleSatisfies "+nan" isNaN
+        doubleSatisfies "-nan" isNaN
+      it "fails if `inf` or `nan` are not all lowercase" $ do
+        doubleFailOn "Inf"
+        doubleFailOn "INF"
+        doubleFailOn "Nan"
+        doubleFailOn "NAN"
+        doubleFailOn "NaN"
 
   describe "integerP" $ do
     context "when the integer is in decimal representation" $ do

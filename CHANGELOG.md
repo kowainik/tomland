@@ -4,6 +4,11 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+0.3.1
+=====
+* [#19](https://github.com/kowainik/tomland/issues/19):
+  Add proper parsing of floating point numbers.
+
 0.3
 =====
 
