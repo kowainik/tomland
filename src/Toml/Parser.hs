@@ -16,15 +16,16 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, manyTill, sepEndBy, skipMany)
+import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany)
 import Control.Monad (void)
-import Data.Char (digitToInt)
+import Data.Char (chr, digitToInt, isControl)
 import Data.List (foldl')
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space1, string)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, eol, hexDigitChar, oneOf, satisfy, space,
+                             space1, string, tab)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -79,11 +80,65 @@ basicStringP :: Parser Text
 basicStringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
 
 textP :: Parser Text
-textP = literalStringP <|> basicStringP
+textP = multilineStringP <|> multilineLiteralStringP <|> literalStringP <|> basicStringP
 
 -- adds " or ' to both sides
 quote :: Text -> Text -> Text
 quote q t = q <> t <> q
+
+nonControlChar :: Parser Text
+nonControlChar = Text.singleton <$> satisfy (not . isControl)
+
+multilineStringP :: Parser Text
+multilineStringP = lexeme $ fmap mconcat $ quotes3
+                                        >> optional eol
+                                        >> allowedChar `manyTill` quotes3
+  where
+    quotes3 = string "\"\"\""
+
+    allowedChar :: Parser Text
+    allowedChar = lineEndingBackslash <|> escapeSequence <|> nonControlChar <|> eol
+
+    lineEndingBackslash :: Parser Text
+    lineEndingBackslash = Text.empty <$ try (char '\\' >> eol >> space)
+
+    escapeSequence :: Parser Text
+    escapeSequence = char '\\' >> anyChar
+                 >>= \case
+                      'b'  -> return "\b"
+                      't'  -> return "\t"
+                      'n'  -> return "\n"
+                      'f'  -> return "\f"
+                      'r'  -> return "\r"
+                      '"'  -> return "\""
+                      '\\' -> return "\\"
+                      'u'  -> parseHexUnicode 4
+                      'U'  -> parseHexUnicode 8
+                      _    -> fail ""
+      where
+        parseHexUnicode :: Int -> Parser Text
+        parseHexUnicode n = count n hexDigitChar
+                        >>= \x -> case (toUnicode . toInt) x of
+                              Just c  -> return (Text.singleton c)
+                              Nothing -> fail ""
+          where
+            toInt xs = (read :: String -> Int) ("0x" ++ xs)
+            toUnicode x
+              -- Ranges from "The Unicode Standard".
+              -- See definition D76 in Section 3.9, Unicode Encoding Forms.
+              | x >= 0      && x <= 0xD7FF   = Just (chr x)
+              | x >= 0xE000 && x <= 0x10FFFF = Just (chr x)
+              | otherwise                    = Nothing
+
+multilineLiteralStringP :: Parser Text
+multilineLiteralStringP = lexeme $ fmap mconcat $ quotes3
+                                               >> optional eol
+                                               >> allowedChar `manyTill` quotes3
+  where
+    quotes3 = string "'''"
+
+    allowedChar :: Parser Text
+    allowedChar = nonControlChar <|> eol <|> Text.singleton <$> tab
 
 keyComponentP :: Parser Piece
 keyComponentP = Piece <$> (bareKeyP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))

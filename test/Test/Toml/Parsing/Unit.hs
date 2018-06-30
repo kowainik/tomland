@@ -282,6 +282,32 @@ spec_Parser = do
       --  stringFailOn (dquote "\\U0000")
       --  stringFailOn (dquote "\\uD8FF")
       --  stringFailOn (dquote "\\U001FFFFF")
+    context "when the string is a multi-line basic string" $ do
+      let dquote3 = quoteWith "\"\"\""
+
+      it "can parse multi-line strings surrounded by three double quotes" $ do
+        parseText (dquote3 "Roses are red\nViolets are blue") "Roses are red\nViolets are blue"
+      it "can parse single-line strings surrounded by three double quotes" $ do
+        parseText (dquote3 "Roses are red Violets are blue") "Roses are red Violets are blue"
+      it "can parse all of the escape sequences that are valid for basic strings" $ do
+        parseText (dquote3 "backspace: \\b")               "backspace: \b"
+        parseText (dquote3 "tab: \\t")                     "tab: \t"
+        parseText (dquote3 "linefeed: \\n")                "linefeed: \n"
+        parseText (dquote3 "form feed: \\f")               "form feed: \f"
+        parseText (dquote3 "carriage return: \\r")         "carriage return: \r"
+        parseText (dquote3 "quote: \\\"")                  "quote: \""
+        parseText (dquote3 "backslash: \\\\")              "backslash: \\"
+        parseText (dquote3 "a\\uD7FFxy\\U0010FFFF\\uE000") "a\55295xy\1114111\57344"
+      it "does not ignore whitespaces or newlines" $ do
+        parseText (dquote3 "\nabc  \n   xyz") "abc  \n   xyz"
+      it "ignores a newline only if it immediately follows the opening delimiter" $ do
+        parseText (dquote3 "\nThe quick brown") "The quick brown"
+      it "ignores whitespaces and newlines after line ending backslash" $ do
+        parseText (dquote3 "The quick brown \\\n\n   fox jumps over") "The quick brown fox jumps over"
+      it "fails if the string has an unescaped backslash, or control character" $ do
+        textFailOn (dquote3 "backslash \\ .")
+        textFailOn (dquote3 "backspace \b ..")
+        textFailOn (dquote3 "tab \t ..")
     context "when the string is a literal string" $ do
       it "can parse strings surrounded by single quotes" $ do
         parseText (squote "C:\\Users\\nodejs\\templates")    "C:\\Users\\nodejs\\templates"
@@ -293,6 +319,18 @@ spec_Parser = do
       --  stringFailOn (squote "\nabc")
       --  stringFailOn (squote "ab\r\nc")
       --  stringFailOn (squote "abc\n")
+    context "when the string is a multi-line literal string" $ do
+      let squote3 = quoteWith "'''"
+
+      it "can parse multi-line strings surrounded by three single quotes" $ do
+        parseText (squote3 "first line \nsecond.\n   3\n") "first line \nsecond.\n   3\n"
+      it "can parse single-line strings surrounded by three single quotes" $ do
+        parseText (squote3 "I [dw]on't need \\d{2} apples") "I [dw]on't need \\d{2} apples"
+      it "ignores a newline immediately following the opening delimiter" $ do
+        parseText (squote3 "\na newline \nsecond.\n   3\n") "a newline \nsecond.\n   3\n"
+      it "fails if the string has an unescaped control character other than tab" $ do
+        parseText (squote3 "\t") "\t"
+        textFailOn (squote3 "\b")
 
   describe "tableHeaderP" $ do
     it "can parse a TOML table" $ do

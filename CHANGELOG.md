@@ -8,6 +8,8 @@ The change log is available [on GitHub][2].
 =====
 * [#19](https://github.com/kowainik/tomland/issues/19):
   Add proper parsing of floating point numbers.
+* [#15](https://github.com/kowainik/tomland/issues/15):
+  Add parsing of multiline strings
 
 0.3
 =====
