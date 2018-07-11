@@ -80,7 +80,7 @@ basicStringP :: Parser Text
 basicStringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
 
 textP :: Parser Text
-textP = multilineStringP <|> multilineLiteralStringP <|> literalStringP <|> basicStringP
+textP = multilineBasicStringP <|> multilineLiteralStringP <|> literalStringP <|> basicStringP
 
 -- adds " or ' to both sides
 quote :: Text -> Text -> Text
@@ -89,10 +89,11 @@ quote q t = q <> t <> q
 nonControlChar :: Parser Text
 nonControlChar = Text.singleton <$> satisfy (not . isControl)
 
-multilineStringP :: Parser Text
-multilineStringP = lexeme $ fmap mconcat $ quotes3
-                                        >> optional eol
-                                        >> allowedChar `manyTill` quotes3
+multilineP :: Parser Text -> Parser Text -> Parser [Text]
+multilineP quotes allowedChar = quotes >> optional eol >> allowedChar `manyTill` quotes
+
+multilineBasicStringP :: Parser Text
+multilineBasicStringP = lexeme $ fmap mconcat $ multilineP quotes3 allowedChar
   where
     quotes3 = string "\"\"\""
 
@@ -103,24 +104,23 @@ multilineStringP = lexeme $ fmap mconcat $ quotes3
     lineEndingBackslash = Text.empty <$ try (char '\\' >> eol >> space)
 
     escapeSequence :: Parser Text
-    escapeSequence = char '\\' >> anyChar
-                 >>= \case
-                      'b'  -> return "\b"
-                      't'  -> return "\t"
-                      'n'  -> return "\n"
-                      'f'  -> return "\f"
-                      'r'  -> return "\r"
-                      '"'  -> return "\""
-                      '\\' -> return "\\"
+    escapeSequence = char '\\' >> anyChar >>= \case
+                      'b'  -> pure "\b"
+                      't'  -> pure "\t"
+                      'n'  -> pure "\n"
+                      'f'  -> pure "\f"
+                      'r'  -> pure "\r"
+                      '"'  -> pure "\""
+                      '\\' -> pure "\\"
                       'u'  -> parseHexUnicode 4
                       'U'  -> parseHexUnicode 8
-                      _    -> fail ""
+                      c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
       where
         parseHexUnicode :: Int -> Parser Text
         parseHexUnicode n = count n hexDigitChar
-                        >>= \x -> case (toUnicode . toInt) x of
-                              Just c  -> return (Text.singleton c)
-                              Nothing -> fail ""
+                        >>= \x -> case toUnicode $ toInt x of
+                              Just c  -> pure (Text.singleton c)
+                              Nothing -> fail $ "Invalid unicode character: " <> "\\" <> (if n == 4 then "u" else "U") <> x
           where
             toInt xs = (read :: String -> Int) ("0x" ++ xs)
             toUnicode x
@@ -131,9 +131,7 @@ multilineStringP = lexeme $ fmap mconcat $ quotes3
               | otherwise                    = Nothing
 
 multilineLiteralStringP :: Parser Text
-multilineLiteralStringP = lexeme $ fmap mconcat $ quotes3
-                                               >> optional eol
-                                               >> allowedChar `manyTill` quotes3
+multilineLiteralStringP = lexeme $ fmap mconcat $ multilineP quotes3 allowedChar
   where
     quotes3 = string "'''"
 
