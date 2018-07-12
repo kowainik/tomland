@@ -16,15 +16,16 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, manyTill, sepEndBy, skipMany)
+import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany)
 import Control.Monad (void)
-import Data.Char (digitToInt)
+import Data.Char (chr, digitToInt, isControl)
 import Data.List (foldl')
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, oneOf, space1, string)
+import Text.Megaparsec.Char (alphaNumChar, anyChar, char, eol, hexDigitChar, oneOf, satisfy, space,
+                             space1, string, tab)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, TOML (..), UValue (..), typeCheck)
@@ -79,11 +80,66 @@ basicStringP :: Parser Text
 basicStringP = lexeme $ Text.pack <$> (char '"' *> anyChar `manyTill` char '"')
 
 textP :: Parser Text
-textP = literalStringP <|> basicStringP
+textP = multilineBasicStringP <|> multilineLiteralStringP <|> literalStringP <|> basicStringP
 
 -- adds " or ' to both sides
 quote :: Text -> Text -> Text
 quote q t = q <> t <> q
+
+nonControlCharP :: Parser Text
+nonControlCharP = Text.singleton <$> satisfy (not . isControl)
+
+multilineP :: Parser Text -> Parser Text -> Parser Text
+multilineP quotesP allowedCharP = lexeme $ fmap mconcat $ quotesP >> optional eol >> allowedCharP `manyTill` quotesP
+
+multilineBasicStringP :: Parser Text
+multilineBasicStringP = multilineP quotesP allowedCharP
+  where
+    quotesP = string "\"\"\""
+
+    allowedCharP :: Parser Text
+    allowedCharP = lineEndingBackslashP <|> escapeSequenceP <|> nonControlCharP <|> eol
+
+    lineEndingBackslashP :: Parser Text
+    lineEndingBackslashP = Text.empty <$ try (char '\\' >> eol >> space)
+
+    escapeSequenceP :: Parser Text
+    escapeSequenceP = char '\\' >> anyChar >>= \case
+                        'b'  -> pure "\b"
+                        't'  -> pure "\t"
+                        'n'  -> pure "\n"
+                        'f'  -> pure "\f"
+                        'r'  -> pure "\r"
+                        '"'  -> pure "\""
+                        '\\' -> pure "\\"
+                        'u'  -> hexUnicodeP 4
+                        'U'  -> hexUnicodeP 8
+                        c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
+      where
+        hexUnicodeP :: Int -> Parser Text
+        hexUnicodeP n = count n hexDigitChar
+                        >>= \x -> case toUnicode $ hexToInt x of
+                              Just c  -> pure (Text.singleton c)
+                              Nothing -> fail $ "Invalid unicode character: " <> "\\" <> (if n == 4 then "u" else "U") <> x
+          where
+            hexToInt :: String -> Int
+            hexToInt xs = read $ "0x" ++ xs
+
+            toUnicode :: Int -> Maybe Char
+            toUnicode x
+              -- Ranges from "The Unicode Standard".
+              -- See definition D76 in Section 3.9, Unicode Encoding Forms.
+              | x >= 0      && x <= 0xD7FF   = Just (chr x)
+              | x >= 0xE000 && x <= 0x10FFFF = Just (chr x)
+              | otherwise                    = Nothing
+
+multilineLiteralStringP :: Parser Text
+multilineLiteralStringP = multilineP quotesP allowedCharP
+  where
+    quotesP = string "'''"
+
+    allowedCharP :: Parser Text
+    allowedCharP = nonControlCharP <|> eol <|> Text.singleton <$> tab
 
 keyComponentP :: Parser Piece
 keyComponentP = Piece <$> (bareKeyP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))
