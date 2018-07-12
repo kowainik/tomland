@@ -86,43 +86,46 @@ textP = multilineBasicStringP <|> multilineLiteralStringP <|> literalStringP <|>
 quote :: Text -> Text -> Text
 quote q t = q <> t <> q
 
-nonControlChar :: Parser Text
-nonControlChar = Text.singleton <$> satisfy (not . isControl)
+nonControlCharP :: Parser Text
+nonControlCharP = Text.singleton <$> satisfy (not . isControl)
 
-multilineP :: Parser Text -> Parser Text -> Parser [Text]
-multilineP quotes allowedChar = quotes >> optional eol >> allowedChar `manyTill` quotes
+multilineP :: Parser Text -> Parser Text -> Parser Text
+multilineP quotesP allowedCharP = lexeme $ fmap mconcat $ quotesP >> optional eol >> allowedCharP `manyTill` quotesP
 
 multilineBasicStringP :: Parser Text
-multilineBasicStringP = lexeme $ fmap mconcat $ multilineP quotes3 allowedChar
+multilineBasicStringP = multilineP quotesP allowedCharP
   where
-    quotes3 = string "\"\"\""
+    quotesP = string "\"\"\""
 
-    allowedChar :: Parser Text
-    allowedChar = lineEndingBackslash <|> escapeSequence <|> nonControlChar <|> eol
+    allowedCharP :: Parser Text
+    allowedCharP = lineEndingBackslashP <|> escapeSequenceP <|> nonControlCharP <|> eol
 
-    lineEndingBackslash :: Parser Text
-    lineEndingBackslash = Text.empty <$ try (char '\\' >> eol >> space)
+    lineEndingBackslashP :: Parser Text
+    lineEndingBackslashP = Text.empty <$ try (char '\\' >> eol >> space)
 
-    escapeSequence :: Parser Text
-    escapeSequence = char '\\' >> anyChar >>= \case
-                      'b'  -> pure "\b"
-                      't'  -> pure "\t"
-                      'n'  -> pure "\n"
-                      'f'  -> pure "\f"
-                      'r'  -> pure "\r"
-                      '"'  -> pure "\""
-                      '\\' -> pure "\\"
-                      'u'  -> parseHexUnicode 4
-                      'U'  -> parseHexUnicode 8
-                      c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
+    escapeSequenceP :: Parser Text
+    escapeSequenceP = char '\\' >> anyChar >>= \case
+                        'b'  -> pure "\b"
+                        't'  -> pure "\t"
+                        'n'  -> pure "\n"
+                        'f'  -> pure "\f"
+                        'r'  -> pure "\r"
+                        '"'  -> pure "\""
+                        '\\' -> pure "\\"
+                        'u'  -> hexUnicodeP 4
+                        'U'  -> hexUnicodeP 8
+                        c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
       where
-        parseHexUnicode :: Int -> Parser Text
-        parseHexUnicode n = count n hexDigitChar
-                        >>= \x -> case toUnicode $ toInt x of
+        hexUnicodeP :: Int -> Parser Text
+        hexUnicodeP n = count n hexDigitChar
+                        >>= \x -> case toUnicode $ hexToInt x of
                               Just c  -> pure (Text.singleton c)
                               Nothing -> fail $ "Invalid unicode character: " <> "\\" <> (if n == 4 then "u" else "U") <> x
           where
-            toInt xs = (read :: String -> Int) ("0x" ++ xs)
+            hexToInt :: String -> Int
+            hexToInt xs = read $ "0x" ++ xs
+
+            toUnicode :: Int -> Maybe Char
             toUnicode x
               -- Ranges from "The Unicode Standard".
               -- See definition D76 in Section 3.9, Unicode Encoding Forms.
@@ -131,12 +134,12 @@ multilineBasicStringP = lexeme $ fmap mconcat $ multilineP quotes3 allowedChar
               | otherwise                    = Nothing
 
 multilineLiteralStringP :: Parser Text
-multilineLiteralStringP = lexeme $ fmap mconcat $ multilineP quotes3 allowedChar
+multilineLiteralStringP = multilineP quotesP allowedCharP
   where
-    quotes3 = string "'''"
+    quotesP = string "'''"
 
-    allowedChar :: Parser Text
-    allowedChar = nonControlChar <|> eol <|> Text.singleton <$> tab
+    allowedCharP :: Parser Text
+    allowedCharP = nonControlCharP <|> eol <|> Text.singleton <$> tab
 
 keyComponentP :: Parser Piece
 keyComponentP = Piece <$> (bareKeyP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))
