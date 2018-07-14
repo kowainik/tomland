@@ -10,6 +10,8 @@ The change log is available [on GitHub][2].
   Add proper parsing of floating point numbers.
 * [#15](https://github.com/kowainik/tomland/issues/15):
   Add parsing of multiline strings
+* [#40](https://github.com/kowainik/tomland/issues/40):
+  Support full-featured string parser
 
 0.3
 =====

@@ -258,30 +258,30 @@ spec_Parser = do
         textFailOn "\"xyz"
         textFailOn "xyz\""
         textFailOn "xyz"
-      --xit "can parse escaped quotation marks, backslashes, and control characters" $ do
-      --  parseString (dquote "backspace: \\b")               "backspace: \b"
-      --  parseString (dquote "tab: \\t")                     "tab: \t"
-      --  parseString (dquote "linefeed: \\n")                "linefeed: \n"
-      --  parseString (dquote "form feed: \\f")               "form feed: \f"
-      --  parseString (dquote "carriage return: \\r")         "carriage return: \r"
-      --  parseString (dquote "quote: \\\"")                  "quote: \""
-      --  parseString (dquote "backslash: \\\\")              "backslash: \\"
-      --  parseString (dquote "a\\uD7FFxy\\U0010FFFF\\uE000") "a\55295xy\1114111\57344"
-      --xit "fails if the string has an unescaped backslash, or control character" $ do
-      --  stringFailOn (dquote "new \n line")
-      --  stringFailOn (dquote "back \\ slash")
-      --xit "fails if the string has an escape sequence that is not listed in the TOML specification" $ do
-      --  stringFailOn (dquote "xy\\z \\abc")
-      --xit "fails if the string is not on a single line" $ do
-      --  stringFailOn (dquote "\nabc")
-      --  stringFailOn (dquote "ab\r\nc")
-      --  stringFailOn (dquote "abc\n")
-      --xit "fails if escape codes are not valid Unicode scalar values" $ do
-      --  stringFailOn (dquote "\\u1")
-      --  stringFailOn (dquote "\\uxyzw")
-      --  stringFailOn (dquote "\\U0000")
-      --  stringFailOn (dquote "\\uD8FF")
-      --  stringFailOn (dquote "\\U001FFFFF")
+      it "can parse escaped quotation marks, backslashes, and control characters" $ do
+       parseText (dquote "backspace: \\b")               "backspace: \b"
+       parseText (dquote "tab: \\t")                     "tab: \t"
+       parseText (dquote "linefeed: \\n")                "linefeed: \n"
+       parseText (dquote "form feed: \\f")               "form feed: \f"
+       parseText (dquote "carriage return: \\r")         "carriage return: \r"
+       parseText (dquote "quote: \\\"")                  "quote: \""
+       parseText (dquote "backslash: \\\\")              "backslash: \\"
+       parseText (dquote "a\\uD7FFxy\\U0010FFFF\\uE000") "a\55295xy\1114111\57344"
+      it "fails if the string has an unescaped backslash, or control character" $ do
+       textFailOn (dquote "new \n line")
+       textFailOn (dquote "back \\ slash")
+      it "fails if the string has an escape sequence that is not listed in the TOML specification" $ do
+       textFailOn (dquote "xy\\z \\abc")
+      it "fails if the string is not on a single line" $ do
+       textFailOn (dquote "\nabc")
+       textFailOn (dquote "ab\r\nc")
+       textFailOn (dquote "abc\n")
+      it "fails if escape codes are not valid Unicode scalar values" $ do
+       textFailOn (dquote "\\u1")
+       textFailOn (dquote "\\uxyzw")
+       textFailOn (dquote "\\U0000")
+       textFailOn (dquote "\\uD8FF")
+       textFailOn (dquote "\\U001FFFFF")
     context "when the string is a multi-line basic string" $ do
       let dquote3 = quoteWith "\"\"\""
 
@@ -315,10 +315,10 @@ spec_Parser = do
         parseText (squote "Tom \"Dubs\" Preston-Werner")     "Tom \"Dubs\" Preston-Werner"
         parseText (squote "<\\i\\c*\\s*>")                   "<\\i\\c*\\s*>"
         parseText (squote "a \t tab")                        "a \t tab"
-      --xit "fails if the string is not on a single line" $ do
-      --  stringFailOn (squote "\nabc")
-      --  stringFailOn (squote "ab\r\nc")
-      --  stringFailOn (squote "abc\n")
+      it "fails if the string is not on a single line" $ do
+        textFailOn (squote "\nabc")
+        textFailOn (squote "ab\r\nc")
+        textFailOn (squote "abc\n")
     context "when the string is a multi-line literal string" $ do
       let squote3 = quoteWith "'''"
 
