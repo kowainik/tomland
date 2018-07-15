@@ -16,6 +16,7 @@ module Toml.Bi.Code
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Reader (Reader, runReader)
 import Control.Monad.State (State, execState)
+import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Bifunctor (first)
 import Data.Foldable (toList)
 import Data.Semigroup ((<>))
@@ -31,15 +32,26 @@ import qualified Data.Text as Text
 
 -- | Type of exception for converting from 'Toml' to user custom data type.
 data DecodeException
-    = KeyNotFound Key  -- ^ No such key
+    = TrivialError
+    | KeyNotFound Key  -- ^ No such key
     | TableNotFound Key  -- ^ No such table
     | TypeMismatch Key Text TValue  -- ^ Expected type vs actual type
     | ParseError ParseException  -- ^ Exception during parsing
     deriving (Eq, Show)  -- TODO: manual pretty show instances
 
+instance Semigroup DecodeException where
+    TrivialError <> e = e
+    e <> TrivialError = e
+    e <> _ = e
+
+instance Monoid DecodeException where
+    mempty = TrivialError
+    mappend = (<>)
+
 -- | Converts 'DecodeException' into pretty human-readable text.
 prettyException :: DecodeException -> Text
 prettyException = \case
+    TrivialError -> "Useing 'empty' parser"
     KeyNotFound name -> "Key " <> joinKey name <> " not found"
     TableNotFound name -> "Table [" <> joinKey name <> "] not found"
     TypeMismatch name expected actual -> "Expected type " <> expected <> " for key " <> joinKey name
@@ -53,9 +65,16 @@ prettyException = \case
 -- This is @r@ type variable in 'Bijection' data type.
 type Env = ExceptT DecodeException (Reader TOML)
 
--- | Mutable context for 'Toml' conversion.
+{- | Mutable context for 'Toml' conversion.
 -- This is @w@ type variable in 'Bijection' data type.
-type St = State TOML
+
+@
+MaybeT (State TOML) a
+    = State TOML (Maybe a)
+    = TOML -> (Maybe a, TOML)
+@
+-}
+type St = MaybeT (State TOML)
 
 -- | Specialied 'Bi' type alias for 'Toml' monad. Keeps 'TOML' object either as
 -- environment or state.
@@ -67,6 +86,7 @@ decode biToml text = do
     toml <- first ParseError (parse text)
     runReader (runExceptT $ biRead biToml) toml
 
--- | Convert object to textual representation.
+-- | Convert object to textual representation. Outputs empty string if for some
+-- reason not able to convert to 'Text'.
 encode :: BiToml a -> a -> Text
-encode bi obj = prettyToml $ execState (biWrite bi obj) mempty
+encode bi obj = prettyToml $ execState (runMaybeT $ biWrite bi obj) mempty
