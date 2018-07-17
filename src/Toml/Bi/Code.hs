@@ -51,7 +51,7 @@ instance Monoid DecodeException where
 -- | Converts 'DecodeException' into pretty human-readable text.
 prettyException :: DecodeException -> Text
 prettyException = \case
-    TrivialError -> "Useing 'empty' parser"
+    TrivialError -> "Using 'empty' parser"
     KeyNotFound name -> "Key " <> joinKey name <> " not found"
     TableNotFound name -> "Table [" <> joinKey name <> "] not found"
     TypeMismatch name expected actual -> "Expected type " <> expected <> " for key " <> joinKey name
@@ -86,7 +86,6 @@ decode biToml text = do
     toml <- first ParseError (parse text)
     runReader (runExceptT $ biRead biToml) toml
 
--- | Convert object to textual representation. Outputs empty string if for some
--- reason not able to convert to 'Text'.
+-- | Convert object to textual representation.
 encode :: BiToml a -> a -> Text
 encode bi obj = prettyToml $ execState (runMaybeT $ biWrite bi obj) mempty
