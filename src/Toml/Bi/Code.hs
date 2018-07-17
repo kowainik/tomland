@@ -19,6 +19,7 @@ import Control.Monad.State (State, execState)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Bifunctor (first)
 import Data.Foldable (toList)
+import Data.Semigroup (Semigroup (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 
@@ -41,7 +42,6 @@ data DecodeException
 
 instance Semigroup DecodeException where
     TrivialError <> e = e
-    e <> TrivialError = e
     e <> _ = e
 
 instance Monoid DecodeException where
@@ -66,7 +66,7 @@ prettyException = \case
 type Env = ExceptT DecodeException (Reader TOML)
 
 {- | Mutable context for 'Toml' conversion.
--- This is @w@ type variable in 'Bijection' data type.
+This is @w@ type variable in 'Bijection' data type.
 
 @
 MaybeT (State TOML) a
