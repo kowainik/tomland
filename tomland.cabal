@@ -44,6 +44,7 @@ library
                      , parser-combinators
                      , text
                      , time
+                     , transformers >= 0.5
                      , unordered-containers
 
   ghc-options:         -Wall

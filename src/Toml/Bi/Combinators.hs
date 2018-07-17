@@ -28,6 +28,7 @@ module Toml.Bi.Combinators
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
+import Control.Monad.Trans.Maybe (runMaybeT)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -192,7 +193,7 @@ table bi key = Bijection input output
     output a = do
         mTable <- gets $ Prefix.lookup key . tomlTables
         let toml = fromMaybe mempty mTable
-        let newToml = execState (biWrite bi a) toml
+        let newToml = execState (runMaybeT $ biWrite bi a) toml
         a <$ modify (insertTable key newToml)
 
     handleTableName :: DecodeException -> Env a

@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 -- | Contains general underlying monad for bidirectional TOML converion.
 
 module Toml.Bi.Monad
@@ -6,6 +8,9 @@ module Toml.Bi.Monad
        , dimap
        , (.=)
        ) where
+
+import Control.Applicative (Alternative (..))
+import Control.Monad (MonadPlus (..))
 
 {- | Monad for bidirectional Toml conversion. Contains pair of functions:
 
@@ -66,6 +71,23 @@ instance (Monad r, Monad w) => Monad (Bijection r w c) where
         { biRead  = biRead bi >>= \a -> biRead (f a)
         , biWrite = \c -> biWrite bi c >>= \a -> biWrite (f a) c
         }
+
+instance (Alternative r, Alternative w) => Alternative (Bijection r w c) where
+    empty :: Bijection r w c a
+    empty = Bijection
+        { biRead  = empty
+        , biWrite = \_ -> empty
+        }
+
+    (<|>) :: Bijection r w c a -> Bijection r w c a -> Bijection r w c a
+    bi1 <|> bi2 = Bijection
+        { biRead  = biRead bi1 <|> biRead bi2
+        , biWrite = \c -> biWrite bi1 c <|> biWrite bi2 c
+        }
+
+instance (MonadPlus r, MonadPlus w) => MonadPlus (Bijection r w c) where
+    mzero = empty
+    mplus = (<|>)
 
 {- | This is an instance of 'Profunctor' for 'Bijection'. But since there's no
 @Profunctor@ type class in @base@ or package with no dependencies (and we don't
