@@ -49,9 +49,9 @@ spec_Parser = do
       makeDay year month day            = Day $ fromGregorian year month day
       makeHours hour minute second      = Hours $ TimeOfDay hour minute second
       makeLocal (Day day) (Hours hours) = Local $ LocalTime day hours
-      makeLocal _          _            = undefined
+      makeLocal _          _            = error "Invalid arguments, unable to construct `Local`"
       makeZoned (Local local) offset    = Zoned $ ZonedTime local offset
-      makeZoned _                _      = undefined
+      makeZoned _             _         = error "Invalid arguments, unable to construct `Zoned`"
       makeOffset hours minutes          = minutesToTimeZone (hours * 60 + minutes * (signum hours))
 
       makeKey k = (Key . NE.fromList) (map Piece k)
@@ -343,8 +343,6 @@ spec_Parser = do
       parseDateTime "1979-05-27T07:32:00Z"             (makeZoned (makeLocal (makeDay 1979 5 27) (makeHours 7 32 0)) (makeOffset 0 0))
       parseDateTime "1979-05-27T00:32:00+07:10"        (makeZoned (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0)) (makeOffset 7 10))
       parseDateTime "1979-05-27T00:32:00.999999-07:25" (makeZoned (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0.999999)) (makeOffset (-7) 25))
-    it "can parse a date-time with an offset when the T delimiter is replaced with a space" $ do
-      parseDateTime "1979-05-27 07:32:00Z" (makeZoned (makeLocal (makeDay 1979 5 27) (makeHours 7 32 0)) (makeOffset 0 0))
     it "can parse a date-time without an offset" $ do
       parseDateTime "1979-05-27T17:32:00"        (makeLocal (makeDay 1979 5 27) (makeHours 17 32 0))
       parseDateTime "1979-05-27T00:32:00.999999" (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0.999999))
@@ -374,9 +372,9 @@ spec_Parser = do
       dateTimeFailOn "12-12-12"
     it "fails if the offset does not have any of the forms: 'Z', '+hh:mm', '-hh:mm'" $ do
       parseDateTime "1979-05-27T00:32:00X"     (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
-      parseDateTime "1979-05-27T00:32:00+07:1" (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
-      parseDateTime "1979-05-27T00:32:00+7:01" (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
-      parseDateTime "1979-05-27T00:32:0007:00" (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+      dateTimeFailOn "1979-05-27T00:32:00+07:1"
+      dateTimeFailOn "1979-05-27T00:32:00+7:01"
+      dateTimeFailOn "1979-05-27T00:32:0007:00"
 
 
   describe "tableHeaderP" $ do
