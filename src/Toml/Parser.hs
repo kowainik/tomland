@@ -191,9 +191,9 @@ dateTimeP = lexeme $ try hoursP <|> dayLocalZoned
     dayLocalZoned :: Parser DateTime
     dayLocalZoned = do
       let makeLocal (Day day) (Hours hours) = Local $ LocalTime day hours
-          makeLocal _         _             = undefined
+          makeLocal _         _             = error "Invalid arguments, unable to construct `Local`"
           makeZoned (Local localTime) mins = Zoned $ ZonedTime localTime (minutesToTimeZone mins)
-          makeZoned _                 _    = undefined
+          makeZoned _                 _    = error "Invalid arguments, unable to construct `Zoned`"
       day        <- try dayP
       maybeHours <- optional (try $ (char 'T' <|> char ' ') *> hoursP)
       case maybeHours of

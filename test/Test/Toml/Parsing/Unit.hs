@@ -49,9 +49,9 @@ spec_Parser = do
       makeDay year month day            = Day $ fromGregorian year month day
       makeHours hour minute second      = Hours $ TimeOfDay hour minute second
       makeLocal (Day day) (Hours hours) = Local $ LocalTime day hours
-      makeLocal _          _            = undefined
+      makeLocal _          _            = error "Invalid arguments, unable to construct `Local`"
       makeZoned (Local local) offset    = Zoned $ ZonedTime local offset
-      makeZoned _                _      = undefined
+      makeZoned _                _      = error "Invalid arguments, unable to construct `Zoned`"
       makeOffset hours minutes          = minutesToTimeZone (hours * 60 + minutes * (signum hours))
 
       makeKey k = (Key . NE.fromList) (map Piece k)
