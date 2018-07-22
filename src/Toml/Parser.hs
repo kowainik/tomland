@@ -20,11 +20,12 @@ import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany)
 import Control.Monad (void)
 import Data.Char (chr, digitToInt, isControl)
+import Data.Fixed (Pico)
 import Data.List (foldl')
 import Data.Semigroup ((<>))
 import Data.Text (Text)
-import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
-import Data.Time.Format.ISO8601 (iso8601ParseM)
+import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
+                  minutesToTimeZone)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, parseErrorPretty', try)
 import Text.Megaparsec.Char (alphaNumChar, anyChar, char, digitChar, eol, hexDigitChar, oneOf,
@@ -182,33 +183,72 @@ boolP :: Parser Bool
 boolP = False <$ text "false"
     <|> True  <$ text "true"
 
-dateTimeP:: Parser DateTime
-dateTimeP = lexeme $ replaceZ <$> allowedCharP >>= \x ->
-      Hours <$> hoursP x
-  <|> Zoned <$> zonedP x
-  <|> Local <$> localP x
-  <|> Day   <$> dayP x
+dateTimeP :: Parser DateTime
+dateTimeP = lexeme $ try hoursP <|> dayLocalZoned
   where
-    localP :: String -> Parser LocalTime
-    localP = iso8601ParseM
+    -- dayLocalZoned can parse: only a local date, a local date with time, or
+    -- a local date with a time and an offset
+    dayLocalZoned :: Parser DateTime
+    dayLocalZoned = do
+      let makeLocal (Day day) (Hours hours) = Local $ LocalTime day hours
+          makeLocal _         _             = undefined
+          makeZoned (Local localTime) mins = Zoned $ ZonedTime localTime (minutesToTimeZone mins)
+          makeZoned _                 _    = undefined
+      day        <- try dayP
+      maybeHours <- optional (try $ (char 'T' <|> char ' ') *> hoursP)
+      case maybeHours of
+        Nothing    -> return day
+        Just hours -> do
+          maybeOffset <- optional (try timeOffsetP)
+          case maybeOffset of
+            Nothing     -> return (makeLocal day hours)
+            Just offset -> return (makeZoned (makeLocal day hours) offset)
 
-    zonedP :: String -> Parser ZonedTime
-    zonedP = iso8601ParseM
+    timeOffsetP :: Parser Int
+    timeOffsetP = z <|> numOffset
+      where
+        z = pure 0 <* char 'Z'
+        numOffset = do
+          sign    <- char '+' <|> char '-'
+          hours   <- int2DigitsP
+          _       <- char ':'
+          minutes <- int2DigitsP
+          let totalMinutes = hours * 60 + minutes
+          if sign == '+'
+             then return totalMinutes
+             else return (negate totalMinutes)
 
-    hoursP :: String -> Parser TimeOfDay
-    hoursP = iso8601ParseM
+    hoursP :: Parser DateTime
+    hoursP = do
+      hours   <- int2DigitsP
+      _       <- char ':'
+      minutes <- int2DigitsP
+      _       <- char ':'
+      seconds <- picoTruncated
+      case makeTimeOfDayValid hours minutes seconds of
+        Just time -> return (Hours time)
+        Nothing   -> fail $ "Invalid time of day: " <> show hours <> ":" <> show minutes <> ":" <> show seconds
 
-    dayP :: String -> Parser Day
-    dayP = iso8601ParseM
+    dayP :: Parser DateTime
+    dayP = do
+      year  <- integer4DigitsP
+      _     <- char '-'
+      month <- int2DigitsP
+      _     <- char '-'
+      day   <- int2DigitsP
+      case fromGregorianValid year month day of
+        Just date -> return (Day date)
+        Nothing   -> fail $ "Invalid date: " <> show year <> "-" <> show month <> "-" <> show day
 
-    allowedCharP :: Parser String
-    allowedCharP = many $ digitChar <|> oneOf ['.', '-', ':', '+', '-', 'T', 'Z']
-
-    replaceZ :: String -> String
-    replaceZ [] = []
-    replaceZ xs = if last xs /= 'Z'
-                     then xs
-                     else init xs ++ "+00:00"
+    integer4DigitsP = (read :: String -> Integer) <$> count 4 digitChar
+    int2DigitsP     = (read :: String -> Int)     <$> count 2 digitChar
+    picoTruncated   = do
+      let rdPico = read :: String -> Pico
+      int <- count 2 digitChar
+      frc <- optional (char '.' >> take 12 <$> some digitChar)
+      case frc of
+        Nothing   -> return (rdPico int)
+        Just frc' -> return (rdPico $ int ++ "." ++ frc')
 
 arrayP :: Parser [UValue]
 arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
@@ -221,7 +261,7 @@ arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
 
 valueP :: Parser UValue
 valueP = UBool    <$> boolP
-     <|> UDate    <$> try dateTimeP
+     <|> UDate    <$> dateTimeP
      <|> UDouble  <$> try doubleP
      <|> UInteger <$> integerP
      <|> UText    <$> textP
