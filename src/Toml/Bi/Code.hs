@@ -6,21 +6,24 @@ module Toml.Bi.Code
 
          -- * Exceptions
        , DecodeException (..)
+       , LoadTomlException (..)
        , prettyException
 
          -- * Encode/Decode
        , decode
+       , decodeFile
        , encode
        ) where
 
+import Control.Exception (Exception, throwIO)
 import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Reader (Reader, runReader)
 import Control.Monad.State (State, execState)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Bifunctor (first)
 import Data.Foldable (toList)
 import Data.Semigroup (Semigroup (..))
-import Data.Semigroup ((<>))
 import Data.Text (Text)
 
 import Toml.Bi.Monad (Bi, Bijection (..))
@@ -30,6 +33,7 @@ import Toml.Printer (prettyToml)
 import Toml.Type (TOML (..), TValue, showType)
 
 import qualified Data.Text as Text
+import qualified Data.Text.IO as TIO
 
 -- | Type of exception for converting from 'Toml' to user custom data type.
 data DecodeException
@@ -89,3 +93,20 @@ decode biToml text = do
 -- | Convert object to textual representation.
 encode :: BiToml a -> a -> Text
 encode bi obj = prettyToml $ execState (runMaybeT $ biWrite bi obj) mempty
+
+-- | File loading error data type.
+data LoadTomlException = LoadTomlException FilePath Text
+
+instance Show LoadTomlException where
+    show (LoadTomlException filePath msg) = "Couldnt parse file " ++ filePath ++ ": " ++ show msg
+
+instance Exception LoadTomlException
+
+-- | Decode a value from a file. In case of parse errors, throws 'LoadTomlException'.
+decodeFile :: (MonadIO m) => BiToml a -> FilePath -> m a
+decodeFile biToml filePath = liftIO $
+    (decode biToml <$> TIO.readFile filePath) >>= errorWhenLeft
+  where
+    errorWhenLeft :: Either DecodeException a -> IO a
+    errorWhenLeft (Left e)   = throwIO $ LoadTomlException filePath $ prettyException e
+    errorWhenLeft (Right pc) = pure pc
