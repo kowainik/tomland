@@ -13,7 +13,8 @@ The change log is available [on GitHub][2].
 * [#40](https://github.com/kowainik/tomland/issues/40):
   Support full-featured string parser
 * [#18](https://github.com/kowainik/tomland/issues/18):
-  Add dates parsing
+  Add dates parsing.
+* Add useful combinators for `newtype` wrappers.
 
 0.3
 =====

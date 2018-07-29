@@ -12,6 +12,8 @@ import Toml.Type (DateTime (..), TOML (..), Value (..))
 import qualified Data.Text.IO as TIO
 import qualified Toml
 
+newtype N = N Text
+
 data Test = Test
     { testB :: Bool
     , testI :: Int
@@ -21,6 +23,7 @@ data Test = Test
     , testM :: Maybe Bool
     , testX :: TestInside
     , testY :: Maybe TestInside
+    , testN :: N
     }
 
 newtype TestInside = TestInside { unInside :: Text }
@@ -38,6 +41,7 @@ testT = Test
     <*> Toml.maybeT Toml.bool "testM" .= testM
     <*> Toml.table insideT "testX" .= testX
     <*> Toml.maybeT (Toml.table insideT) "testY" .= testY
+    <*> Toml.wrapper Toml.text "testN" .= testN
 
 main :: IO ()
 main = do
