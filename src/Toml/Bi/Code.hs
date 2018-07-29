@@ -33,6 +33,7 @@ import Toml.Printer (prettyToml)
 import Toml.Type (TOML (..), TValue, showType)
 
 import qualified Data.Text as Text
+import qualified Data.Text.IO as TIO
 
 -- | Type of exception for converting from 'Toml' to user custom data type.
 data DecodeException
@@ -104,7 +105,7 @@ instance Exception LoadTomlException
 -- | Decode a value from a file. In case of parse errors, throws 'LoadTomlException'.
 decodeFile :: (MonadIO m) => BiToml a -> FilePath -> m a
 decodeFile biToml filePath = liftIO $
-    (decode biToml . Text.pack <$> readFile filePath) >>= errorWhenLeft
+    (decode biToml <$> TIO.readFile filePath) >>= errorWhenLeft
   where
     errorWhenLeft :: Either DecodeException a -> IO a
     errorWhenLeft (Left e)   = throwIO $ LoadTomlException filePath $ prettyException e
