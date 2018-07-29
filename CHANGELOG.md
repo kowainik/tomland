@@ -15,6 +15,8 @@ The change log is available [on GitHub][2].
 * [#18](https://github.com/kowainik/tomland/issues/18):
   Add dates parsing.
 * Add useful combinators for `newtype` wrappers.
+* [#58](https://github.com/kowainik/tomland/issues/58):
+  Add `decodeFile` function.
 
 0.3
 =====
