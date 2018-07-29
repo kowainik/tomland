@@ -23,12 +23,14 @@ module Toml.Bi.Combinators
        , arrayOf
        , maybeT
        , table
+       , wrapper
        ) where
 
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
 import Control.Monad.Trans.Maybe (runMaybeT)
+import Data.Coerce (Coercible, coerce)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -201,3 +203,7 @@ table bi key = Bijection input output
     handleTableName (TableNotFound name)      = throwError $ TableNotFound (key <> name)
     handleTableName (TypeMismatch name t1 t2) = throwError $ TypeMismatch (key <> name) t1 t2
     handleTableName e                         = throwError e
+
+-- | Used for @newtype@ wrappers.
+wrapper :: forall b a . Coercible a b => (Key -> BiToml a) -> Key -> BiToml b
+wrapper bi key = dimap coerce coerce (bi key)
