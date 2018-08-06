@@ -1,5 +1,5 @@
 name:                tomland
-version:             0.3
+version:             0.3.1
 synopsis:            TOML parser
 description:         See README.md for details.
 homepage:            https://github.com/kowainik/tomland
