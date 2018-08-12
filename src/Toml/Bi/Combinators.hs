@@ -41,7 +41,7 @@ import Toml.Bi.Code (BiToml, DecodeException (..), Env, St)
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Prism (Prism (..), match, _Array)
+import Toml.Prism (Prism (..), matchPreview, _Array)
 import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..), insertKeyVal, insertTable,
                   matchBool, matchDouble, matchInteger, matchText, valueType)
 
@@ -156,7 +156,7 @@ arrayOf prism key = Bijection input output
             Nothing -> throwError $ KeyNotFound key
             Just (AnyValue (Array arr)) -> case arr of
                 []      -> pure []
-                l@(x:_) -> case mapM (match prism) l of
+                l@(x:_) -> case mapM (matchPreview prism) l of
                     Nothing   -> throwError $ TypeMismatch key (typeName @a) (valueType x)
                     Just vals -> pure vals
             Just _ -> throwError $ TypeMismatch key (typeName @a) TArray

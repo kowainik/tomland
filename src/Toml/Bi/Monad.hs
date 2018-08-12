@@ -6,6 +6,7 @@ module Toml.Bi.Monad
        ( Bijection (..)
        , Bi
        , dimap
+       , (<!>)
        , (.=)
        ) where
 
@@ -89,6 +90,11 @@ instance (MonadPlus r, MonadPlus w) => MonadPlus (Bijection r w c) where
     mzero = empty
     mplus = (<|>)
 
+infixl 3 <!>
+-- | Alternative instance for function arrow but without 'empty'.
+(<!>) :: Alternative f => (a -> f x) -> (a -> f x) -> (a -> f x)
+f <!> g = \a -> f a <|> g a
+
 {- | This is an instance of 'Profunctor' for 'Bijection'. But since there's no
 @Profunctor@ type class in @base@ or package with no dependencies (and we don't
 want to bring extra dependencies) this instance is implemented as a single
@@ -141,7 +147,6 @@ dimap f g bi = Bijection
   { biRead  = g <$> biRead bi
   , biWrite = fmap g . biWrite bi . f
   }
-
 
 {- | Operator to connect two operations:
 
