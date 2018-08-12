@@ -95,7 +95,6 @@ infixl 3 <!>
 (<!>) :: Alternative f => (a -> f x) -> (a -> f x) -> (a -> f x)
 f <!> g = \a -> f a <|> g a
 
-
 {- | This is an instance of 'Profunctor' for 'Bijection'. But since there's no
 @Profunctor@ type class in @base@ or package with no dependencies (and we don't
 want to bring extra dependencies) this instance is implemented as a single

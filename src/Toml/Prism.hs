@@ -7,7 +7,7 @@
 module Toml.Prism
        ( -- * Prism idea
          Prism (..)
-       , liftPreview
+       , matchPreview
        , mkAnyValuePrism
 
          -- * General prisms
@@ -68,8 +68,8 @@ mkAnyValuePrism matchValue toValue = Prism
     }
 
 -- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
-liftPreview :: Prism AnyValue a -> Value t -> Maybe a
-liftPreview = liftMatch . preview
+matchPreview :: Prism AnyValue a -> Value t -> Maybe a
+matchPreview = liftMatch . preview
 
 ----------------------------------------------------------------------------
 -- General purpose prisms
