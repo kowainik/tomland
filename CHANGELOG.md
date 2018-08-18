@@ -10,6 +10,7 @@ The change log is available [on GitHub][2].
 * [#54](https://github.com/kowainik/tomland/issues/54):
   Add support for sum types.
   Rename `Prism` to `BiMap`.
+  Rename `bijectionMaker` to `match`.
   Add `string` codec.
 
 0.3.1
