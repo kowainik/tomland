@@ -5,6 +5,13 @@ testS = "foobar"
 testA = [   "abacaba", "foo", 'bar'    ]
 testN = "newtype"
 
+# either.Left = 3
+either.Right = "Right"
+
+either = 3.5
+# Also works!
+# either = "fo  o"
+
 [testX]
   inside = "xxx"
 

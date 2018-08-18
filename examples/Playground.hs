@@ -1,29 +1,32 @@
 module Main where
 
+import Control.Applicative ((<|>))
+import Control.Arrow ((>>>))
 import Data.Text (Text)
 import Data.Time (fromGregorian)
 
-import Toml.Bi (BiToml, (.=))
+import Toml (BiToml, ParseException (..), prettyToml, (.=), (<!>))
 import Toml.Edsl (mkToml, table, (=:))
-import Toml.Parser (ParseException (..), parse)
-import Toml.Printer (prettyToml)
 import Toml.Type (DateTime (..), TOML (..), Value (..))
 
 import qualified Data.Text.IO as TIO
 import qualified Toml
 
+
 newtype N = N Text
 
 data Test = Test
-    { testB :: Bool
-    , testI :: Int
-    , testF :: Double
-    , testS :: Text
-    , testA :: [Text]
-    , testM :: Maybe Bool
-    , testX :: TestInside
-    , testY :: Maybe TestInside
-    , testN :: N
+    { testB  :: Bool
+    , testI  :: Int
+    , testF  :: Double
+    , testS  :: Text
+    , testA  :: [Text]
+    , testM  :: Maybe Bool
+    , testX  :: TestInside
+    , testY  :: Maybe TestInside
+    , testN  :: N
+    , testE1 :: Either Integer String
+    , testE2 :: Either String Double
     }
 
 newtype TestInside = TestInside { unInside :: Text }
@@ -42,6 +45,19 @@ testT = Test
     <*> Toml.table insideT "testX" .= testX
     <*> Toml.maybeT (Toml.table insideT) "testY" .= testY
     <*> Toml.wrapper Toml.text "testN" .= testN
+    <*> eitherT1 .= testE1
+    <*> eitherT2 .= testE2
+  where
+    -- different keys for sum type
+    eitherT1 :: BiToml (Either Integer String)
+    eitherT1 = Toml.match (Toml._Integer >>> Toml._Left)  "either.Left"
+           <|> Toml.match (Toml._String  >>> Toml._Right) "either.Right"
+
+    -- same key for sum type
+    eitherT2 :: BiToml (Either String Double)
+    eitherT2 = ( Toml.match (Toml._String >>> Toml._Left)
+             <!> Toml.match (Toml._Double >>> Toml._Right)
+               ) "either"
 
 main :: IO ()
 main = do
@@ -50,7 +66,7 @@ main = do
 
     TIO.putStrLn "=== Printing parsed TOML ==="
     content <- TIO.readFile "test.toml"
-    case parse content of
+    case Toml.parse content of
         Left (ParseException e) -> TIO.putStrLn e
         Right toml              -> TIO.putStrLn $ prettyToml toml
 

@@ -1,35 +1,33 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Contains TOML-specific combinators for converting between TOML and user data types.
 
 module Toml.Bi.Combinators
-       ( -- * Converters
-         bijectionMaker
-       , dimapNum
-       , mdimap
-
-         -- * Toml parsers
-       , bool
+       ( -- * Toml codecs
+         bool
        , int
        , integer
        , double
        , text
+       , string
        , arrayOf
+
+         -- * Combinators
+       , match
        , maybeT
        , table
        , wrapper
+       , dimapNum
+       , mdimap
        ) where
 
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
-import Control.Monad.Trans.Maybe (runMaybeT)
+import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import Data.Coerce (Coercible, coerce)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
@@ -39,11 +37,11 @@ import Data.Typeable (Typeable, typeRep)
 
 import Toml.Bi.Code (BiToml, DecodeException (..), Env, St)
 import Toml.Bi.Monad (Bi, Bijection (..), dimap)
+import Toml.BiMap (BiMap (..), matchValueForward, _Array, _Bool, _Double, _Integer, _String, _Text)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Prism (Prism (..), matchPreview, _Array)
-import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..), insertKeyVal, insertTable,
-                  matchBool, matchDouble, matchInteger, matchText, valueType)
+import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..), insertKeyAnyVal, insertTable,
+                  valueType)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
@@ -56,25 +54,24 @@ import qualified Toml.PrefixTree as Prefix
 typeName :: forall a . Typeable a => Text
 typeName = Text.pack $ show $ typeRep $ Proxy @a
 
--- | General function to create bidirectional converters for values.
-bijectionMaker :: forall a t . Typeable a
-               => (forall f . Value f -> Maybe a)  -- ^ How to convert from 'AnyValue' to @a@
-               -> (a -> Value t)                   -- ^ Convert @a@ to 'Anyvale'
-               -> Key                              -- ^ Key of the value
-               -> BiToml a
-bijectionMaker fromVal toVal key = Bijection input output
+{- | General function to create bidirectional converters for values.
+-}
+match :: forall a . Typeable a => BiMap AnyValue a -> Key -> BiToml a
+match BiMap{..} key = Bijection input output
   where
     input :: Env a
     input = do
         mVal <- asks $ HashMap.lookup key . tomlPairs
         case mVal of
             Nothing -> throwError $ KeyNotFound key
-            Just (AnyValue val) -> case fromVal val of
+            Just anyVal@(AnyValue val) -> case forward anyVal of
                 Just v  -> pure v
                 Nothing -> throwError $ TypeMismatch key (typeName @a) (valueType val)
 
     output :: a -> St a
-    output a = a <$ modify (insertKeyVal key (toVal a))
+    output a = do
+        anyVal <- MaybeT $ pure $ backward a
+        a <$ modify (insertKeyAnyVal key anyVal)
 
 -- | Helper dimapper to turn 'integer' parser into parser for 'Int', 'Natural', 'Word', etc.
 dimapNum :: forall n r w . (Integral n, Functor r, Functor w)
@@ -125,11 +122,11 @@ mdimap toString toMaybe bi = Bijection
 
 -- | Parser for boolean values.
 bool :: Key -> BiToml Bool
-bool = bijectionMaker matchBool Bool
+bool = match _Bool
 
 -- | Parser for integer values.
 integer :: Key -> BiToml Integer
-integer = bijectionMaker matchInteger Integer
+integer = match _Integer
 
 -- | Parser for integer values.
 int :: Key -> BiToml Int
@@ -137,17 +134,21 @@ int = dimapNum . integer
 
 -- | Parser for floating values.
 double :: Key -> BiToml Double
-double = bijectionMaker matchDouble Double
+double = match _Double
 
 -- | Parser for string values.
 text :: Key -> BiToml Text
-text = bijectionMaker matchText Text
+text = match _Text
+
+-- | Codec for 'String'.
+string :: Key -> BiToml String
+string = match _String
 
 -- TODO: implement using bijectionMaker
 -- | Parser for array of values. Takes converter for single array element and
 -- returns list of values.
-arrayOf :: forall a . Typeable a => Prism AnyValue a -> Key -> BiToml [a]
-arrayOf prism key = Bijection input output
+arrayOf :: forall a . Typeable a => BiMap AnyValue a -> Key -> BiToml [a]
+arrayOf bimap key = Bijection input output
   where
     input :: Env [a]
     input = do
@@ -156,15 +157,15 @@ arrayOf prism key = Bijection input output
             Nothing -> throwError $ KeyNotFound key
             Just (AnyValue (Array arr)) -> case arr of
                 []      -> pure []
-                l@(x:_) -> case mapM (matchPreview prism) l of
+                l@(x:_) -> case mapM (matchValueForward bimap) l of
                     Nothing   -> throwError $ TypeMismatch key (typeName @a) (valueType x)
                     Just vals -> pure vals
             Just _ -> throwError $ TypeMismatch key (typeName @a) TArray
 
     output :: [a] -> St [a]
     output a = do
-        let val = review (_Array prism) a
-        a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key val vals) tables)
+        anyVal <- MaybeT $ pure $ backward (_Array bimap) a
+        a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key anyVal vals) tables)
 
 -- | Bidirectional converter for @Maybe smth@ values.
 maybeT :: forall a . (Key -> BiToml a) -> Key -> BiToml (Maybe a)
