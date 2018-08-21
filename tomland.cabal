@@ -1,6 +1,6 @@
 name:                tomland
-version:             0.3.1
-synopsis:            TOML parser
+version:             0.4.0
+synopsis:            Bidirectional TOML parser
 description:         See README.md for details.
 homepage:            https://github.com/kowainik/tomland
 bug-reports:         https://github.com/kowainik/tomland/issues
@@ -26,11 +26,11 @@ library
                            Toml.Bi.Code
                            Toml.Bi.Combinators
                            Toml.Bi.Monad
+                         Toml.BiMap
                          Toml.Edsl
                          Toml.Parser
                          Toml.PrefixTree
                          Toml.Printer
-                         Toml.Prism
                          Toml.Type
                            Toml.Type.AnyValue
                            Toml.Type.TOML
@@ -68,6 +68,7 @@ executable play-tomland
   hs-source-dirs:      examples
   default-language:    Haskell2010
   ghc-options:         -threaded -Wall
+                       -freverse-errors
   default-extensions:  OverloadedStrings
                        RecordWildCards
 

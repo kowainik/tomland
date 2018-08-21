@@ -1,6 +1,7 @@
 module Toml.Type.TOML
        ( TOML (..)
        , insertKeyVal
+       , insertKeyAnyVal
        , insertTable
        ) where
 
@@ -34,7 +35,11 @@ instance Monoid TOML where
 
 -- | Inserts given key-value into the 'TOML'.
 insertKeyVal :: Key -> Value a -> TOML -> TOML
-insertKeyVal k v toml = toml {tomlPairs = HashMap.insert k (AnyValue v) (tomlPairs toml)}
+insertKeyVal k v = insertKeyAnyVal k (AnyValue v)
+
+-- | Inserts given key-value into the 'TOML'.
+insertKeyAnyVal :: Key -> AnyValue -> TOML -> TOML
+insertKeyAnyVal k av toml =toml { tomlPairs = HashMap.insert k av (tomlPairs toml) }
 
 -- | Inserts given table into the 'TOML'.
 insertTable :: Key -> TOML -> TOML -> TOML
