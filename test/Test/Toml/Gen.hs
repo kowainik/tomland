@@ -22,9 +22,11 @@ import GHC.Stack (HasCallStack)
 import Hedgehog (MonadGen, PropertyT, property)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
+import Data.Time (LocalTime(..), TimeOfDay (..), ZonedTime(..), fromGregorian,  TimeZone(..))
+import Data.Fixed (Fixed(..))
 
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
-import Toml.Type (AnyValue (..), TOML (..), Value (..))
+import Toml.Type (AnyValue (..), TOML (..), Value (..), DateTime (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Hedgehog.Gen as Gen
@@ -56,11 +58,19 @@ genAnyValue = do
   let randI = toInteger <$> Gen.int (Range.constantBounded @Int)
   let randD = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
   let randT = Gen.text (Range.constant 0 256) Gen.alphaNum
+  let randDay = genDay
+  let randH = genHours
+  let randZ = genZoned
+  let randL = genLocal 
   Gen.choice
       [ AnyValue . Bool    <$> randB
       , AnyValue . Integer <$> randI
       , AnyValue . Double  <$> randD
       , AnyValue . Text    <$> randT
+      , AnyValue . Date    <$> randZ 
+      , AnyValue . Date    <$> randL
+      , AnyValue . Date    <$> randDay
+      , AnyValue . Date    <$> randH
       ]
 
 -- TODO: unicode support
@@ -119,3 +129,35 @@ genToml = do
     kv     <- HashMap.fromList <$> genKeyAnyValueList
     tables <- Gen.list (Range.linear 0 10) genTableHeader
     pure $ TOML kv (fromList tables)
+
+genDay :: MonadGen m => m DateTime
+genDay = do
+    y <- toInteger <$> Gen.int (Range.constant 2000 2019)
+    m <- Gen.int (Range.constant 1 12)
+    d <- Gen.int (Range.constant 1 28)
+    let day = fromGregorian y m d
+    pure $ Day day
+
+genHours :: MonadGen m => m DateTime
+genHours = do
+    secs <- MkFixed <$> Gen.integral (Range.constant 0 61)
+    mins <- Gen.int (Range.constant 0 59)
+    hours <- Gen.int (Range.constant 0 23)
+    pure $ Hours $ TimeOfDay hours mins secs
+
+genLocal :: MonadGen m => m DateTime
+genLocal = do
+    Day day <- genDay
+    Hours time <- genHours
+    let local = LocalTime day time
+    pure $ Local local
+
+genZoned :: MonadGen m => m DateTime
+genZoned = do
+    Local local <- genLocal
+    zMin <- Gen.int (Range.constant 0 59)
+    zSummer <- Gen.bool
+    zName <- Gen.string (Range.constant 0 4) Gen.alphaNum
+    let zTime = TimeZone zMin zSummer zName
+    let zoned = ZonedTime local zTime
+    pure $ Zoned zoned

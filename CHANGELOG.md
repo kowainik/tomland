@@ -4,6 +4,12 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+0.4.1
+=====
+
+* [#72](https://github.com/kowainik/tomland/issues/72):
+  Improve 'AnyValue' generator for property-based tests.
+
 0.4.0
 =====
 
