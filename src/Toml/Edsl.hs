@@ -5,10 +5,10 @@ __Example:__
 @
 exampleToml :: TOML
 exampleToml = mkToml $ do
-    "key1" =: 1
-    "key2" =: Bool True
-    table "tableName" $
-        "tableKey" =: Array ["Oh", "Hi", "Mark"]
+    \"key1\" =: 1
+    \"key2\" =: Bool True
+    table \"tableName\" $
+        \"tableKey\" =: Array [\"Oh\", \"Hi\", \"Mark\"]
 @
 
 -}
