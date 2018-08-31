@@ -22,7 +22,7 @@ import GHC.Stack (HasCallStack)
 import Hedgehog (MonadGen, PropertyT, property)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
-import Data.Time (LocalTime(..), TimeOfDay (..), ZonedTime(..), fromGregorian,  TimeZone(..))
+import Data.Time (LocalTime(..), TimeOfDay (..), ZonedTime(..), fromGregorian, minutesToTimeZone )
 import Data.Fixed (Fixed(..))
 
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
@@ -132,7 +132,7 @@ genToml = do
 
 genDay :: MonadGen m => m DateTime
 genDay = do
-    y <- toInteger <$> Gen.int (Range.constant 2000 2019)
+    y <- toInteger <$> Gen.int (Range.constant 1968 2019)
     m <- Gen.int (Range.constant 1 12)
     d <- Gen.int (Range.constant 1 28)
     let day = fromGregorian y m d
@@ -155,9 +155,7 @@ genLocal = do
 genZoned :: MonadGen m => m DateTime
 genZoned = do
     Local local <- genLocal
-    zMin <- Gen.int (Range.constant 0 59)
-    zSummer <- Gen.bool
-    zName <- Gen.string (Range.constant 0 4) Gen.alphaNum
-    let zTime = TimeZone zMin zSummer zName
+    zMin <- Gen.int (Range.constant 1 720)
+    let zTime = minutesToTimeZone zMin
     let zoned = ZonedTime local zTime
     pure $ Zoned zoned

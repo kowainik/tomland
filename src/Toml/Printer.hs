@@ -10,6 +10,8 @@ module Toml.Printer
 import Data.HashMap.Strict (HashMap)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import Data.Time (formatTime, defaultTimeLocale, ZonedTime)
+import Data.List (splitAt)
 
 import Toml.PrefixTree (Key (..), Piece (..), PrefixMap, PrefixTree (..))
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), Value (..))
@@ -78,13 +80,20 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
 
     timeText :: DateTime -> Text
-    timeText (Zoned z) = showText z
+    timeText (Zoned z) = showZoneTime z
     timeText (Local l) = showText l
     timeText (Day d)   = showText d
     timeText (Hours h) = showText h
 
     showText :: Show a => a -> Text
     showText = Text.pack . show
+
+    showZoneTime :: ZonedTime -> Text
+    showZoneTime 
+        = Text.pack 
+        . (\(x,y) -> x ++ ":" ++ y) 
+        . (\z -> splitAt (length z - 2) z)
+        . formatTime defaultTimeLocale "%FT%T%Q%z"
 
 -- | Returns pretty formatted tables section of the 'TOML'.
 prettyTables :: Int -> Text -> PrefixMap TOML -> Text
