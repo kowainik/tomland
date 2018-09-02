@@ -8,7 +8,7 @@ The change log is available [on GitHub][2].
 =====
 
 * [#72](https://github.com/kowainik/tomland/issues/72):
-  Improve 'AnyValue' generator for property-based tests.
+  Add `Data` generator for property-based tests.
 
 0.4.0
 =====

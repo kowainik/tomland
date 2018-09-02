@@ -80,7 +80,7 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
 
     timeText :: DateTime -> Text
-    timeText (Zoned z) = showZoneTime z
+    timeText (Zoned z) = showZonedTime z
     timeText (Local l) = showText l
     timeText (Day d)   = showText d
     timeText (Hours h) = showText h
@@ -88,12 +88,14 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     showText :: Show a => a -> Text
     showText = Text.pack . show
 
-    showZoneTime :: ZonedTime -> Text
-    showZoneTime 
-        = Text.pack 
-        . (\(x,y) -> x ++ ":" ++ y) 
-        . (\z -> splitAt (length z - 2) z)
-        . formatTime defaultTimeLocale "%FT%T%Q%z"
+    showZonedTime :: ZonedTime -> Text
+    showZonedTime t = Text.pack $ showZonedDateTime t <> showZonedZone t
+      where 
+        showZonedDateTime = formatTime defaultTimeLocale "%FT%T%Q"
+        showZonedZone 
+            = (\(x,y) -> x ++ ":" ++ y) 
+            . (\z -> splitAt (length z - 2) z)
+            . formatTime defaultTimeLocale "%z"
 
 -- | Returns pretty formatted tables section of the 'TOML'.
 prettyTables :: Int -> Text -> PrefixMap TOML -> Text
