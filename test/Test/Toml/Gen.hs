@@ -22,9 +22,11 @@ import GHC.Stack (HasCallStack)
 import Hedgehog (MonadGen, PropertyT, property)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
+import Data.Time (LocalTime(..), TimeOfDay (..), Day, ZonedTime(..), fromGregorian, minutesToTimeZone )
+import Data.Fixed (Fixed(..))
 
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
-import Toml.Type (AnyValue (..), TOML (..), Value (..))
+import Toml.Type (AnyValue (..), TOML (..), Value (..), DateTime (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Hedgehog.Gen as Gen
@@ -52,15 +54,16 @@ genVal = Gen.int (Range.constant 0 256)
 -- | Generates random value of 'AnyValue' type.
 genAnyValue :: MonadGen m => m AnyValue
 genAnyValue = do
-  let randB = Gen.bool
-  let randI = toInteger <$> Gen.int (Range.constantBounded @Int)
-  let randD = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
-  let randT = Gen.text (Range.constant 0 256) Gen.alphaNum
+  let genBool = Gen.bool
+  let genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
+  let genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
+  let genText = Gen.text (Range.constant 0 256) Gen.alphaNum
   Gen.choice
-      [ AnyValue . Bool    <$> randB
-      , AnyValue . Integer <$> randI
-      , AnyValue . Double  <$> randD
-      , AnyValue . Text    <$> randT
+      [ AnyValue . Bool    <$> genBool
+      , AnyValue . Integer <$> genInteger
+      , AnyValue . Double  <$> genDouble
+      , AnyValue . Text    <$> genText
+      , AnyValue . Date    <$> genDate
       ]
 
 -- TODO: unicode support
@@ -119,3 +122,37 @@ genToml = do
     kv     <- HashMap.fromList <$> genKeyAnyValueList
     tables <- Gen.list (Range.linear 0 10) genTableHeader
     pure $ TOML kv (fromList tables)
+
+genDay :: MonadGen m => m Day
+genDay = do
+    y <- toInteger <$> Gen.int (Range.constant 1968 2019)
+    m <- Gen.int (Range.constant 1 12)
+    d <- Gen.int (Range.constant 1 28)
+    pure $ fromGregorian y m d
+
+genHours :: MonadGen m => m TimeOfDay
+genHours = do
+    secs <- MkFixed <$> Gen.integral (Range.constant 0 61)
+    mins <- Gen.int (Range.constant 0 59)
+    hours <- Gen.int (Range.constant 0 23)
+    pure $ TimeOfDay hours mins secs
+
+genLocal :: MonadGen m => m LocalTime
+genLocal = do
+    day <- genDay
+    LocalTime day <$> genHours
+
+genZoned :: MonadGen m => m ZonedTime
+genZoned = do
+    local <- genLocal
+    zMin <- Gen.int (Range.constant (-720) 720)
+    let zTime = minutesToTimeZone zMin
+    pure $ ZonedTime local zTime
+
+genDate :: MonadGen m => m DateTime
+genDate = Gen.choice 
+    [ Day   <$> genDay
+    , Hours <$> genHours
+    , Local <$> genLocal
+    , Zoned <$> genZoned
+    ]

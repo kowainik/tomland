@@ -4,6 +4,12 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+0.4.1
+=====
+
+* [#85](https://github.com/kowainik/tomland/issues/85):
+  Add `Date` generator for property-based tests.
+
 0.4.0
 =====
 
