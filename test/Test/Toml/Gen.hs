@@ -1,7 +1,7 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE DataKinds          #-}
 
 -- | This module contains all generators for @tomland@ testing.
 
@@ -19,18 +19,19 @@ module Test.Toml.Gen
 
 import Control.Applicative (liftA2)
 import Control.Monad (forM)
+import Data.Fixed (Fixed (..))
+import Data.Maybe (fromMaybe)
+import Data.Text (Text)
+import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian,
+                  minutesToTimeZone)
 import GHC.Stack (HasCallStack)
 import Hedgehog (MonadGen, PropertyT, property)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
-import Data.Time (LocalTime(..), TimeOfDay (..), Day, ZonedTime(..), fromGregorian, minutesToTimeZone )
-import Data.Fixed (Fixed(..))
-import Data.Text (Text)
-import Data.Maybe (fromMaybe)
 
 import Toml.BiMap (toMArray)
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
-import Toml.Type (AnyValue (..), TOML (..), Value (..), DateTime (..), TValue(..))
+import Toml.Type (AnyValue (..), DateTime (..), TOML (..), TValue (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Hedgehog.Gen as Gen
@@ -57,16 +58,14 @@ genVal = Gen.int (Range.constant 0 256)
 -- TODO: Arrays and Date.
 -- | Generates random value of 'AnyValue' type.
 genAnyValue :: MonadGen m => m AnyValue
-genAnyValue = do
-  let genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
-  Gen.choice
-      [ AnyValue . Bool    <$> genBool
-      , AnyValue . Integer <$> genInteger
-      , AnyValue . Double  <$> genDouble
-      , AnyValue . Text    <$> genText
-      , AnyValue . Date    <$> genDate
-      , AnyValue           <$> genList
-      ]
+genAnyValue = Gen.choice
+    [ AnyValue . Bool    <$> genBool
+    , AnyValue . Integer <$> genInteger
+    , AnyValue . Double  <$> genDouble
+    , AnyValue . Text    <$> genText
+    , AnyValue . Date    <$> genDate
+    , AnyValue           <$> genArray
+    ]
 
 -- TODO: unicode support
 genPiece :: MonadGen m => m Piece
@@ -152,42 +151,55 @@ genZoned = do
     pure $ ZonedTime local zTime
 
 genDate :: MonadGen m => m DateTime
-genDate = Gen.choice 
+genDate = Gen.choice
     [ Day   <$> genDay
     , Hours <$> genHours
     , Local <$> genLocal
     , Zoned <$> genZoned
     ]
 
-genBool :: MonadGen m => m Bool    
+genBool :: MonadGen m => m Bool
 genBool = Gen.bool
 
 genInteger :: MonadGen m => m Integer
 genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
 
+genDouble :: MonadGen m => m Double
+genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
+
 genText :: MonadGen m => m Text
 genText = Gen.text (Range.constant 0 256) Gen.alphaNum
 
-genListBool :: MonadGen m => m [Value 'TBool]
-genListBool = Gen.list (Range.constant 1 10) $ Bool <$> genBool
+genListBoolR :: MonadGen m => m [Value 'TBool]
+genListBoolR = Gen.recursive Gen.choice [genListBool] [genListBoolR]
+  where 
+    genListBool = Gen.list (Range.constant 1 10) $ Bool <$> genBool
 
-genListInteger :: MonadGen m => m [Value 'TInteger]
-genListInteger = Gen.list (Range.constant 1 10) $ Integer <$> genInteger
+genListIntegerR :: MonadGen m => m [Value 'TInteger]
+genListIntegerR = Gen.recursive Gen.choice [genListInteger] [genListIntegerR]
+  where 
+    genListInteger = Gen.list (Range.constant 1 10) $ Integer <$> genInteger
 
-genListText :: MonadGen m => m [Value 'TText]
-genListText = Gen.list (Range.constant 1 10) $ Text <$> genText
+genListDoubleR :: MonadGen m => m [Value 'TDouble]
+genListDoubleR = Gen.recursive Gen.choice [genListDouble] [genListDoubleR]
+  where 
+    genListDouble = Gen.list (Range.constant 1 10) $ Double <$> genDouble
 
-genListDate :: MonadGen m => m [Value 'TDate]
-genListDate = Gen.list (Range.constant 1 10) $ Date <$> genDate
+genListTextR :: MonadGen m =>  m [Value 'TText]
+genListTextR = Gen.recursive Gen.choice [genListText] [genListTextR]
+  where 
+    genListText = Gen.list (Range.constant 1 10) $ Text <$> genText
 
-genListOfList :: MonadGen m => m [Value 'TArray]
-genListOfList = Gen.list (Range.constant 1 10) $ Array <$> genListText
+genListDateR :: MonadGen m => m [Value 'TDate]
+genListDateR = Gen.recursive Gen.choice [genListDate] [genListDateR]
+  where
+    genListDate = Gen.list (Range.constant 1 10) $ Date <$> genDate
 
-genList :: MonadGen m => m (Value 'TArray)
-genList = fromMaybe (error "Something is wrong") . toMArray <$> sequence 
-    [ AnyValue . Array   <$> genListText
-    , AnyValue . Array   <$> genListInteger
-    , AnyValue . Array   <$> genListBool
-    , AnyValue . Array   <$> genListDate
-    , AnyValue . Array   <$> genListOfList
+genArray :: MonadGen m => m (Value 'TArray)
+genArray = fromMaybe (error "Something is wrong") . toMArray <$> sequence
+    [ AnyValue . Array   <$> genListTextR
+    , AnyValue . Array   <$> genListIntegerR
+    , AnyValue . Array   <$> genListBoolR
+    , AnyValue . Array   <$> genListDateR
+    , AnyValue . Array   <$> genListDoubleR
     ]
