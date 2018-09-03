@@ -9,6 +9,8 @@ The change log is available [on GitHub][2].
 
 * [#85](https://github.com/kowainik/tomland/issues/85):
   Add `Date` generator for property-based tests.
+* [#88](https://github.com/kowainik/tomland/issues/88):
+  Add `Array` generator for property-based tests.
 
 0.4.0
 =====

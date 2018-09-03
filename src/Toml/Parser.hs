@@ -164,7 +164,7 @@ integerP :: Parser Integer
 integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
   where
     decimal      = L.signed sc L.decimal
-    binary       = try (char '0' >> char 'b') >> mkNum 2 <$> (some binDigitChar)
+    binary       = try (char '0' >> char 'b') >> mkNum 2 <$> some binDigitChar
     octal        = try (char '0' >> char 'o') >> L.octal
     hexadecimal  = try (char '0' >> char 'x') >> L.hexadecimal
     binDigitChar = oneOf ['0', '1']
@@ -207,7 +207,7 @@ dateTimeP = lexeme $ try hoursP <|> dayLocalZoned
     timeOffsetP :: Parser Int
     timeOffsetP = z <|> numOffset
       where
-        z = pure 0 <* char 'Z'
+        z = 0 <$ char 'Z'
         numOffset = do
           sign    <- char '+' <|> char '-'
           hours   <- int2DigitsP

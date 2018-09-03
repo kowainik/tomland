@@ -1,6 +1,7 @@
 {-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE DataKinds          #-}
 
 -- | This module contains all generators for @tomland@ testing.
 
@@ -24,9 +25,12 @@ import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
 import Data.Time (LocalTime(..), TimeOfDay (..), Day, ZonedTime(..), fromGregorian, minutesToTimeZone )
 import Data.Fixed (Fixed(..))
+import Data.Text (Text)
+import Data.Maybe (fromMaybe)
 
+import Toml.BiMap (toMArray)
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
-import Toml.Type (AnyValue (..), TOML (..), Value (..), DateTime (..))
+import Toml.Type (AnyValue (..), TOML (..), Value (..), DateTime (..), TValue(..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Hedgehog.Gen as Gen
@@ -54,16 +58,14 @@ genVal = Gen.int (Range.constant 0 256)
 -- | Generates random value of 'AnyValue' type.
 genAnyValue :: MonadGen m => m AnyValue
 genAnyValue = do
-  let genBool = Gen.bool
-  let genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
   let genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
-  let genText = Gen.text (Range.constant 0 256) Gen.alphaNum
   Gen.choice
       [ AnyValue . Bool    <$> genBool
       , AnyValue . Integer <$> genInteger
       , AnyValue . Double  <$> genDouble
       , AnyValue . Text    <$> genText
       , AnyValue . Date    <$> genDate
+      , AnyValue           <$> genList
       ]
 
 -- TODO: unicode support
@@ -155,4 +157,37 @@ genDate = Gen.choice
     , Hours <$> genHours
     , Local <$> genLocal
     , Zoned <$> genZoned
+    ]
+
+genBool :: MonadGen m => m Bool    
+genBool = Gen.bool
+
+genInteger :: MonadGen m => m Integer
+genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
+
+genText :: MonadGen m => m Text
+genText = Gen.text (Range.constant 0 256) Gen.alphaNum
+
+genListBool :: MonadGen m => m [Value 'TBool]
+genListBool = Gen.list (Range.constant 1 10) $ Bool <$> genBool
+
+genListInteger :: MonadGen m => m [Value 'TInteger]
+genListInteger = Gen.list (Range.constant 1 10) $ Integer <$> genInteger
+
+genListText :: MonadGen m => m [Value 'TText]
+genListText = Gen.list (Range.constant 1 10) $ Text <$> genText
+
+genListDate :: MonadGen m => m [Value 'TDate]
+genListDate = Gen.list (Range.constant 1 10) $ Date <$> genDate
+
+genListOfList :: MonadGen m => m [Value 'TArray]
+genListOfList = Gen.list (Range.constant 1 10) $ Array <$> genListText
+
+genList :: MonadGen m => m (Value 'TArray)
+genList = fromMaybe (error "Something is wrong") . toMArray <$> sequence 
+    [ AnyValue . Array   <$> genListText
+    , AnyValue . Array   <$> genListInteger
+    , AnyValue . Array   <$> genListBool
+    , AnyValue . Array   <$> genListDate
+    , AnyValue . Array   <$> genListOfList
     ]
