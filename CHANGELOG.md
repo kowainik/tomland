@@ -7,8 +7,8 @@ The change log is available [on GitHub][2].
 0.4.1
 =====
 
-* [#72](https://github.com/kowainik/tomland/issues/72):
-  Add `Data` generator for property-based tests.
+* [#85](https://github.com/kowainik/tomland/issues/85):
+  Add `Date` generator for property-based tests.
 
 0.4.0
 =====
