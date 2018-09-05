@@ -64,7 +64,8 @@ genAnyValue = Gen.choice
     , AnyValue . Double  <$> genDouble
     , AnyValue . Text    <$> genText
     , AnyValue . Date    <$> genDate
-    , AnyValue           <$> genArray
+    , AnyValue <$> genArray
+    , AnyValue <$> genArrayList
     ]
 
 -- TODO: unicode support
@@ -170,36 +171,22 @@ genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
 genText :: MonadGen m => m Text
 genText = Gen.text (Range.constant 0 256) Gen.alphaNum
 
-genListBoolR :: MonadGen m => m [Value 'TBool]
-genListBoolR = Gen.recursive Gen.choice [genListBool] [genListBoolR]
-  where 
-    genListBool = Gen.list (Range.constant 1 10) $ Bool <$> genBool
+noneArrayList :: MonadGen m => [m AnyValue]
+noneArrayList =
+    [ AnyValue . Bool    <$> genBool
+    , AnyValue . Integer <$> genInteger
+    , AnyValue . Double  <$> genDouble
+    , AnyValue . Text    <$> genText
+    , AnyValue . Date    <$> genDate
+    ]
 
-genListIntegerR :: MonadGen m => m [Value 'TInteger]
-genListIntegerR = Gen.recursive Gen.choice [genListInteger] [genListIntegerR]
-  where 
-    genListInteger = Gen.list (Range.constant 1 10) $ Integer <$> genInteger
-
-genListDoubleR :: MonadGen m => m [Value 'TDouble]
-genListDoubleR = Gen.recursive Gen.choice [genListDouble] [genListDoubleR]
-  where 
-    genListDouble = Gen.list (Range.constant 1 10) $ Double <$> genDouble
-
-genListTextR :: MonadGen m =>  m [Value 'TText]
-genListTextR = Gen.recursive Gen.choice [genListText] [genListTextR]
-  where 
-    genListText = Gen.list (Range.constant 1 10) $ Text <$> genText
-
-genListDateR :: MonadGen m => m [Value 'TDate]
-genListDateR = Gen.recursive Gen.choice [genListDate] [genListDateR]
-  where
-    genListDate = Gen.list (Range.constant 1 10) $ Date <$> genDate
+genArrayFrom :: MonadGen m => m AnyValue -> m (Value 'TArray)
+genArrayFrom noneArray = fromMaybe (error "Error in genArrayFrom") . toMArray <$> Gen.list (Range.constant 3 6) noneArray
 
 genArray :: MonadGen m => m (Value 'TArray)
-genArray = fromMaybe (error "Something is wrong") . toMArray <$> sequence
-    [ AnyValue . Array   <$> genListTextR
-    , AnyValue . Array   <$> genListIntegerR
-    , AnyValue . Array   <$> genListBoolR
-    , AnyValue . Array   <$> genListDateR
-    , AnyValue . Array   <$> genListDoubleR
-    ]
+genArray = Gen.recursive Gen.choice
+    [Gen.choice $ map genArrayFrom noneArrayList]
+    [genArray]
+
+genArrayList :: MonadGen m => m (Value 'TArray)
+genArrayList = Array <$> Gen.list (Range.constant 3 6) genArray
