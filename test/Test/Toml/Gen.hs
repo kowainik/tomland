@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
@@ -18,15 +19,19 @@ module Test.Toml.Gen
 
 import Control.Applicative (liftA2)
 import Control.Monad (forM)
+import Data.Fixed (Fixed (..))
+import Data.Maybe (fromMaybe)
+import Data.Text (Text)
+import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian,
+                  minutesToTimeZone)
 import GHC.Stack (HasCallStack)
 import Hedgehog (MonadGen, PropertyT, property)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
-import Data.Time (LocalTime(..), TimeOfDay (..), Day, ZonedTime(..), fromGregorian, minutesToTimeZone )
-import Data.Fixed (Fixed(..))
 
+import Toml.BiMap (toMArray)
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
-import Toml.Type (AnyValue (..), TOML (..), Value (..), DateTime (..))
+import Toml.Type (AnyValue (..), DateTime (..), TOML (..), TValue (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Hedgehog.Gen as Gen
@@ -53,20 +58,10 @@ genVal = Gen.int (Range.constant 0 256)
 -- TODO: Arrays and Date.
 -- | Generates random value of 'AnyValue' type.
 genAnyValue :: MonadGen m => m AnyValue
-genAnyValue = do
-  let genBool = Gen.bool
-  let genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
-  let genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
-  let genText = Gen.text (Range.constant 0 256) Gen.alphaNum
-  Gen.choice
-      [ AnyValue . Bool    <$> genBool
-      , AnyValue . Integer <$> genInteger
-      , AnyValue . Double  <$> genDouble
-      , AnyValue . Text    <$> genText
-      , AnyValue . Date    <$> genDate
-      ]
+genAnyValue = Gen.choice $
+    (AnyValue <$> genArray) : noneArrayList
 
--- TODO: unicode support
+    -- TODO: unicode support
 genPiece :: MonadGen m => m Piece
 genPiece = Piece <$> Gen.text (Range.constant 1 50) Gen.alphaNum
 
@@ -150,9 +145,48 @@ genZoned = do
     pure $ ZonedTime local zTime
 
 genDate :: MonadGen m => m DateTime
-genDate = Gen.choice 
+genDate = Gen.choice
     [ Day   <$> genDay
     , Hours <$> genHours
     , Local <$> genLocal
     , Zoned <$> genZoned
     ]
+
+genBool :: MonadGen m => m Bool
+genBool = Gen.bool
+
+genInteger :: MonadGen m => m Integer
+genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
+
+genDouble :: MonadGen m => m Double
+genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
+
+genText :: MonadGen m => m Text
+genText = Gen.text (Range.constant 0 256) Gen.alphaNum
+
+-- | List of AnyValue generators.
+noneArrayList :: MonadGen m => [m AnyValue]
+noneArrayList =
+    [ AnyValue . Bool    <$> genBool
+    , AnyValue . Integer <$> genInteger
+    , AnyValue . Double  <$> genDouble
+    , AnyValue . Text    <$> genText
+    , AnyValue . Date    <$> genDate
+    ]
+
+genArrayFrom :: MonadGen m => m AnyValue -> m (Value 'TArray)
+genArrayFrom noneArray
+    = fromMaybe (error "Error in genArrayFrom")
+    . toMArray
+  <$> Gen.list (Range.constant 0 5) noneArray
+
+{- | Generate arrays and nested arrays. For example:
+Common array:
+Array [Double (-563397.0197456297),Double (-308866.62837749254),Double (-29555.32072604308),Double 772371.8575471763,Double (-880016.1210667372),Double 182763.78796234122,Double (-462893.41157520143),Double 814856.6483699235,Double (-454629.17640282493)]
+Nested array of AnyValue:
+Array [Array [Text "ACyz38VcLz0hxwdFkHTU6PYK8h8CeaiEpI2xAaiZTKBQ3zC1W717cZY35lk8EAK6pPw3WvwIdNktxIV2LrvFSpU8ee6zkXvpvePitW9aspAeeOCF9Q9ry20y7skFZ2qShi7CSx8888zWIqyc8iBkoLNvq4fONLtuUqSw2SlNee4hDIwrnx5O4RuHW1dQfJcnC34h9S0DlIGYP08qq6QHxO4E0HE74cNmiViGm3xpDC8Ro5D8Y6p0FLSN1ELq9Lwm",Text "HhNv0LKICdlKxN"],Array [Integer 986479839551009895,Integer 8636972066308796678,Integer (-3464941350081979804),Integer (-6560688879547055621),Integer (-4749037439349044738)],Array []]
+-}
+genArray :: MonadGen m => m (Value 'TArray)
+genArray = Gen.recursive Gen.choice
+    [Gen.choice $ map genArrayFrom noneArrayList]
+    [Array <$> Gen.list (Range.constant 0 5) genArray]

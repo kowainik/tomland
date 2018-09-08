@@ -1,3 +1,4 @@
+cabal-version:       2.0
 name:                tomland
 version:             0.4.1
 synopsis:            Bidirectional TOML parser
@@ -13,7 +14,6 @@ category:            Data, Text, Configuration, TOML
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-cabal-version:       1.24
 tested-with:         GHC == 8.4.3
                    , GHC == 8.2.2
                    , GHC == 8.0.2
@@ -39,7 +39,7 @@ library
 
   build-depends:       base >= 4.9 && < 5
                      , hashable
-                     , megaparsec
+                     , megaparsec ^>= 6.5.0
                      , mtl
                      , parser-combinators
                      , text
