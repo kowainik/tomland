@@ -163,7 +163,7 @@ genDouble :: MonadGen m => m Double
 genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
 
 genAlphaNum :: MonadGen m => m Text
-genAlphaNum = Gen.text (Range.constant 0 256) Gen.alphaNum
+genAlphaNum = Gen.text (Range.constant 1 20) Gen.alphaNum
 
 -- | Generatates control sympol.
 genEscapeSequence :: MonadGen m => m Text
@@ -194,16 +194,10 @@ genUniHex8Color = do
     hex <- genDiffHex 8
     pure . Text.pack $ "\\U" ++ hex
 
+-- | Generates text from different symbols.
 genText :: MonadGen m => m Text
-genText = Text.concat <$>
-    (Gen.shuffle =<< sequenceA
-        [ genAlphaNum
-        , genEscapeSequence
-        , genPunctuation
-        , genUniHex4Color
-        , genUniHex8Color
-        ]
-    )
+genText =  fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
+    [ genAlphaNum, genEscapeSequence, genPunctuation, genUniHex4Color, genUniHex8Color]
 
 -- | List of AnyValue generators.
 noneArrayList :: MonadGen m => [m AnyValue]
