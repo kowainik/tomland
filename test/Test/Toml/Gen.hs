@@ -18,7 +18,7 @@ module Test.Toml.Gen
        ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad (forM)
+import Control.Monad (forM, replicateM)
 import Data.Fixed (Fixed (..))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -170,9 +170,17 @@ genEscapeSequence :: MonadGen m => m Text
 genEscapeSequence = Gen.element
     [ "\n", "\b", "\f", "\r", "\t", "\\", "\"" ]
 
+-- | Generatates punctuation.
+genPunctuation :: MonadGen m => m Text
+genPunctuation = Gen.element
+    [ ",", ".", ":", ";", "'", "?", "!", "`"
+    , "-", "_", "*", "$", "#", "@", "(", ")"
+    , " ", "^", "#", "/","&", ">", "<"
+    ]
+
 -- | Generatates n length list of hex chars.
 genDiffHex :: MonadGen m => Int -> m String
-genDiffHex n = sequenceA $ replicate n Gen.hexit
+genDiffHex n = replicateM n Gen.hexit
 
 -- | Generates unicode color string (u1234)
 genUniHex4Color :: MonadGen m => m Text
@@ -191,6 +199,7 @@ genText = Text.concat <$>
     (Gen.shuffle =<< sequenceA
         [ genAlphaNum
         , genEscapeSequence
+        , genPunctuation
         , genUniHex4Color
         , genUniHex8Color
         ]
