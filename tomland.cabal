@@ -1,4 +1,4 @@
-cabal-version:       2.0
+cabal-version:       2.2
 name:                tomland
 version:             0.4.1
 synopsis:            Bidirectional TOML parser

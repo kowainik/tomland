@@ -18,7 +18,7 @@ module Test.Toml.Gen
        ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad (forM)
+import Control.Monad (forM, replicateM)
 import Data.Fixed (Fixed (..))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -34,6 +34,7 @@ import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTr
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), TValue (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text as Text
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
@@ -161,8 +162,44 @@ genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
 genDouble :: MonadGen m => m Double
 genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
 
+-- | Generatates control sympol.
+genEscapeSequence :: MonadGen m => m Text
+genEscapeSequence = Gen.element
+    [ "\n", "\b", "\f", "\r", "\t", "\\", "\"" ]
+
+-- | Generatates punctuation.
+genPunctuation :: MonadGen m => m Text
+genPunctuation = Gen.element
+    [ ",", ".", ":", ";", "'", "?", "!", "`"
+    , "-", "_", "*", "$", "#", "@", "(", ")"
+    , " ", "^", "#", "/","&", ">", "<"
+    ]
+
+-- | Generatates n length list of hex chars.
+genDiffHex :: MonadGen m => Int -> m String
+genDiffHex n = replicateM n Gen.hexit
+
+-- | Generates unicode color string (u1234)
+genUniHex4Color :: MonadGen m => m Text
+genUniHex4Color = do
+    hex <- genDiffHex 4
+    pure . Text.pack $ "\\u" ++ hex
+
+-- | Generates unicode color string (u12345678)
+genUniHex8Color :: MonadGen m => m Text
+genUniHex8Color = do
+    hex <- genDiffHex 8
+    pure . Text.pack $ "\\U" ++ hex
+
+-- | Generates text from different symbols.
 genText :: MonadGen m => m Text
-genText = Gen.text (Range.constant 0 256) Gen.alphaNum
+genText =  fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
+    [ Text.singleton <$> Gen.alphaNum
+    , genEscapeSequence
+    , genPunctuation
+    , genUniHex4Color
+    , genUniHex8Color
+    ]
 
 -- | List of AnyValue generators.
 noneArrayList :: MonadGen m => [m AnyValue]
