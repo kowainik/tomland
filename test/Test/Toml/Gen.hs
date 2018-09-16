@@ -162,6 +162,13 @@ genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
 genDouble :: MonadGen m => m Double
 genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
 
+genDoubleText :: MonadGen m => m Double
+genDoubleText = Gen.element
+    [ 1/0
+    , negate 1/0
+    , 0/0
+    ]
+
 -- | Generatates control sympol.
 genEscapeSequence :: MonadGen m => m Text
 genEscapeSequence = Gen.element
@@ -207,6 +214,7 @@ noneArrayList =
     [ AnyValue . Bool    <$> genBool
     , AnyValue . Integer <$> genInteger
     , AnyValue . Double  <$> genDouble
+    , AnyValue . Double  <$> genDoubleText
     , AnyValue . Text    <$> genText
     , AnyValue . Date    <$> genDate
     ]

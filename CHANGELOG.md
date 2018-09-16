@@ -12,7 +12,9 @@ The change log is available [on GitHub][2].
 * [#88](https://github.com/kowainik/tomland/issues/88):
   Add `Array` generator for property-based tests.
 * [#86](https://github.com/kowainik/tomland/issues/86):
-  Add `String` generator for property-based tests.
+  Improve `String` generator for property-based tests.
+* [#87](https://github.com/kowainik/tomland/issues/87):
+  Improve `Double` generator for property-based tests.
 
 0.4.0
 =====
