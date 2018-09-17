@@ -19,6 +19,7 @@ module Toml.Type.AnyValue
 
 import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
+import Data.Either (isRight)
 
 import Toml.Type.Value (DateTime, TValue, TypeMismatchError, Value (..), eqValueList, sameValue)
 
@@ -31,7 +32,7 @@ instance Show AnyValue where
 instance Eq AnyValue where
     (AnyValue (Bool b1))    == (AnyValue (Bool b2))    = b1 == b2
     (AnyValue (Integer i1)) == (AnyValue (Integer i2)) = i1 == i2
-    (AnyValue (Double f1))  == (AnyValue (Double f2))  = f1 == f2
+    (AnyValue (Double f1))  == (AnyValue (Double f2))  = isRight $ sameValue (Double f1) (Double f2)
     (AnyValue (Text s1))    == (AnyValue (Text s2))    = s1 == s2
     (AnyValue (Date d1))    == (AnyValue (Date d2))    = d1 == d2
     (AnyValue (Array a1))   == (AnyValue (Array a2))   = eqValueList a1 a2

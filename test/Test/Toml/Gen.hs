@@ -160,13 +160,11 @@ genInteger :: MonadGen m => m Integer
 genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
 
 genDouble :: MonadGen m => m Double
-genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
-
-genDoubleText :: MonadGen m => m Double
-genDoubleText = Gen.element
-    [ 1/0
-    , negate 1/0
-    , 0/0
+genDouble = Gen.frequency
+    [ (50, Gen.double $ Range.constant @Double (-1000000.0) 1000000.0)
+    , (5, Gen.constant $ 1/0)
+    , (5, Gen.constant $ -1/0)
+    , (5, Gen.constant $ 0/0)
     ]
 
 -- | Generatates control sympol.
@@ -214,7 +212,6 @@ noneArrayList =
     [ AnyValue . Bool    <$> genBool
     , AnyValue . Integer <$> genInteger
     , AnyValue . Double  <$> genDouble
-    , AnyValue . Double  <$> genDoubleText
     , AnyValue . Text    <$> genText
     , AnyValue . Date    <$> genDate
     ]

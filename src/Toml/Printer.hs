@@ -89,13 +89,10 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     showText = Text.pack . show
 
     showDouble :: Double -> Text
-    showDouble d | isInfinite d && isNegate d = "-inf"
+    showDouble d | isInfinite d && d < 0 = "-inf"
                  | isInfinite d = "inf"
                  | isNaN d = "nan"
                  | otherwise = showText d
-      where
-        isNegate :: Double -> Bool
-        isNegate x = take 1 (show x) == "-"
 
     showZonedTime :: ZonedTime -> Text
     showZonedTime t = Text.pack $ showZonedDateTime t <> showZonedZone t
