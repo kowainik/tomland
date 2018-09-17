@@ -21,7 +21,7 @@ import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
 import Data.Either (isRight)
 
-import Toml.Type.Value (DateTime, TValue, TypeMismatchError, Value (..), sameValue)
+import Toml.Type.Value (DateTime, TValue, TypeMismatchError, Value (..), eqValueList, sameValue)
 
 -- | Existential wrapper for 'Value'.
 data AnyValue = forall (t :: TValue) . AnyValue (Value t)
@@ -30,7 +30,15 @@ instance Show AnyValue where
     show (AnyValue v) = show v
 
 instance Eq AnyValue where
-    (AnyValue val1)  == (AnyValue val2)  = isRight $ sameValue val1 val2
+    (AnyValue (Bool b1))    == (AnyValue (Bool b2))    = b1 == b2
+    (AnyValue (Integer i1)) == (AnyValue (Integer i2)) = i1 == i2
+    (AnyValue (Double f1))  == (AnyValue (Double f2))
+        | isNaN f1 && isNaN f2 && isRight (sameValue (Double f1) (Double f2)) = True
+        | otherwise = f1 == f2
+    (AnyValue (Text s1))    == (AnyValue (Text s2))    = s1 == s2
+    (AnyValue (Date d1))    == (AnyValue (Date d2))    = d1 == d2
+    (AnyValue (Array a1))   == (AnyValue (Array a2))   = eqValueList a1 a2
+    _                       == _                       = False
 
 ----------------------------------------------------------------------------
 -- Matching functions for values
