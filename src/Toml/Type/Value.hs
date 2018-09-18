@@ -116,7 +116,9 @@ instance (t ~ 'TText) => IsString (Value t) where
 instance Eq (Value t) where
     (Bool b1)    == (Bool b2)    = b1 == b2
     (Integer i1) == (Integer i2) = i1 == i2
-    (Double f1)  == (Double f2)  = f1 == f2
+    (Double f1)  == (Double f2)
+        | isNaN f1 && isNaN f2 = True
+        | otherwise = f1 == f2
     (Text s1)    == (Text s2)    = s1 == s2
     (Date d1)    == (Date d2)    = d1 == d2
     (Array a1)   == (Array a2)   = eqValueList a1 a2

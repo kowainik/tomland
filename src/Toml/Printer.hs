@@ -74,7 +74,7 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     valText :: Value t -> Text
     valText (Bool b)    = Text.toLower $ showText b
     valText (Integer n) = showText n
-    valText (Double d)  = showText d
+    valText (Double d)  = showDouble d
     valText (Text s)    = showText s
     valText (Date d)    = timeText d
     valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
@@ -88,12 +88,18 @@ prettyKeyValue i = Text.concat . map kvText . HashMap.toList
     showText :: Show a => a -> Text
     showText = Text.pack . show
 
+    showDouble :: Double -> Text
+    showDouble d | isInfinite d && d < 0 = "-inf"
+                 | isInfinite d = "inf"
+                 | isNaN d = "nan"
+                 | otherwise = showText d
+
     showZonedTime :: ZonedTime -> Text
     showZonedTime t = Text.pack $ showZonedDateTime t <> showZonedZone t
-      where 
+      where
         showZonedDateTime = formatTime defaultTimeLocale "%FT%T%Q"
-        showZonedZone 
-            = (\(x,y) -> x ++ ":" ++ y) 
+        showZonedZone
+            = (\(x,y) -> x ++ ":" ++ y)
             . (\z -> splitAt (length z - 2) z)
             . formatTime defaultTimeLocale "%z"
 

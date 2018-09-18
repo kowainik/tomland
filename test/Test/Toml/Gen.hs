@@ -160,7 +160,12 @@ genInteger :: MonadGen m => m Integer
 genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
 
 genDouble :: MonadGen m => m Double
-genDouble = Gen.double $ Range.constant @Double (-1000000.0) 1000000.0
+genDouble = Gen.frequency
+    [ (50, Gen.double $ Range.constant @Double (-1000000.0) 1000000.0)
+    , (5, Gen.constant $ 1/0)
+    , (5, Gen.constant $ -1/0)
+    , (5, Gen.constant $ 0/0)
+    ]
 
 -- | Generatates control sympol.
 genEscapeSequence :: MonadGen m => m Text
