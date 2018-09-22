@@ -1,4 +1,4 @@
-cabal-version:       2.2
+cabal-version:       2.0
 name:                tomland
 version:             0.4.1
 synopsis:            Bidirectional TOML parser
@@ -14,9 +14,13 @@ category:            Data, Text, Configuration, TOML
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-tested-with:         GHC == 8.4.3
+tested-with:         GHC == 8.6.1
+                   , GHC == 8.4.3
                    , GHC == 8.2.2
-                   , GHC == 8.0.2
+
+source-repository head
+  type:                git
+  location:            https://github.com/kowainik/tomland.git
 
 library
   hs-source-dirs:      src
@@ -37,15 +41,15 @@ library
                            Toml.Type.UValue
                            Toml.Type.Value
 
-  build-depends:       base >= 4.9 && < 5
-                     , hashable
+  build-depends:       base >= 4.10 && < 5
+                     , hashable ^>= 1.2
                      , megaparsec ^>= 6.5.0
-                     , mtl
+                     , mtl ^>= 2.2
                      , parser-combinators
-                     , text
-                     , time
-                     , transformers >= 0.5
-                     , unordered-containers
+                     , text ^>= 1.2
+                     , time >= 1.8 && < 1.10
+                     , transformers ^>= 0.5
+                     , unordered-containers ^>= 0.2.7
 
   ghc-options:         -Wall
   default-language:    Haskell2010
@@ -78,32 +82,29 @@ test-suite tomland-test
   main-is:             Spec.hs
 
   other-modules:       Test.Toml.Gen
-  other-modules:       Test.Toml.Property
+                       Test.Toml.Property
                        Test.Toml.Parsing.Property
                        Test.Toml.Parsing.Unit
                        Test.Toml.PrefixTree.Property
                        Test.Toml.PrefixTree.Unit
                        Test.Toml.TOML.Property
 
-  build-tool-depends:  tasty-discover:tasty-discover
+  build-tool-depends:  tasty-discover:tasty-discover ^>= 4.2.1
   build-depends:       base
-                     , tomland
-                     , hedgehog
+                     , hedgehog ^>= 0.6
                      , hspec-megaparsec
                      , megaparsec
-                     , tasty
-                     , tasty-hedgehog
-                     , tasty-hspec
+                     , tasty ^>= 1.1.0.3
+                     , tasty-hedgehog ^>= 0.2.0.0
+                     , tasty-hspec ^>= 1.1
                      , text
                      , time
+                     , tomland
                      , unordered-containers
 
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
 
   default-language:    Haskell2010
-  default-extensions:  OverloadedStrings
+  default-extensions:  LambdaCase
+                       OverloadedStrings
                        RecordWildCards
-
-source-repository head
-  type:                git
-  location:            https://github.com/kowainik/tomland.git

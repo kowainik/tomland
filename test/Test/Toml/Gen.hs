@@ -77,9 +77,8 @@ genKeyAnyValueList = Gen.list (Range.linear 0 10) genKeyAnyValue
 
 -- Generates key-value pair for PrefixMap
 genEntry :: MonadGen m => m (Piece, Key)
-genEntry = do
-    key@(piece :|| _) <- genKey
-    pure (piece, key)
+genEntry = genKey >>= \case
+    key@(piece :|| _) -> pure (piece, key)
 
 genPrefixMap :: MonadGen m => m (PrefixMap V)
 genPrefixMap = do

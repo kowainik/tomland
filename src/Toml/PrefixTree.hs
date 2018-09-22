@@ -1,5 +1,4 @@
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE ViewPatterns    #-}
 
 module Toml.PrefixTree
        ( PrefixTree (..)
@@ -25,7 +24,6 @@ module Toml.PrefixTree
 
 import Prelude hiding (lookup)
 
-import Control.Arrow ((&&&))
 import Data.Bifunctor (first)
 import Data.Coerce (coerce)
 import Data.Foldable (foldl')
@@ -78,9 +76,9 @@ instance IsString Key where
             x:xs -> coerce @(NonEmpty Text) @Key (x :| xs)
 
 pattern (:||) :: Piece -> [Piece] -> Key
-pattern x :|| xs <- ((NonEmpty.head &&& NonEmpty.tail) . unKey -> (x, xs))
+pattern x :|| xs <- Key (x :| xs)
   where
-    x :|| xs = Key $ x :| xs
+    x :|| xs = Key (x :| xs)
 
 {-# COMPLETE (:||) #-}
 
