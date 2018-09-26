@@ -4,9 +4,13 @@ Change log
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
-0.4.1
+0.5.0
 =====
 
+* [#81](https://github.com/kowainik/tomland/issues/81):
+  **Important:** Rename data types.
+  _Migration guide:_ rename `Bijection` to `Codec`, `Bi` to `BiCodec` and
+  `BiToml` to `TomlCodec`.
 * [#85](https://github.com/kowainik/tomland/issues/85):
   Add `Date` generator for property-based tests.
 * [#88](https://github.com/kowainik/tomland/issues/88):

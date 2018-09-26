@@ -5,7 +5,7 @@ import Control.Arrow ((>>>))
 import Data.Text (Text)
 import Data.Time (fromGregorian)
 
-import Toml (BiToml, ParseException (..), prettyToml, (.=), (<!>))
+import Toml (ParseException (..), TomlCodec, prettyToml, (.=), (<!>))
 import Toml.Edsl (mkToml, table, (=:))
 import Toml.Type (DateTime (..), TOML (..), Value (..))
 
@@ -31,10 +31,10 @@ data Test = Test
 
 newtype TestInside = TestInside { unInside :: Text }
 
-insideT :: BiToml TestInside
+insideT :: TomlCodec TestInside
 insideT = Toml.dimap unInside TestInside $ Toml.text "inside"
 
-testT :: BiToml Test
+testT :: TomlCodec Test
 testT = Test
     <$> Toml.bool "testB" .= testB
     <*> Toml.int "testI" .= testI
@@ -49,14 +49,14 @@ testT = Test
     <*> eitherT2 .= testE2
   where
     -- different keys for sum type
-    eitherT1 :: BiToml (Either Integer String)
+    eitherT1 :: TomlCodec (Either Integer String)
     eitherT1 = Toml.match (Toml._Integer >>> Toml._Left)  "either.Left"
            <|> Toml.match (Toml._String  >>> Toml._Right) "either.Right"
 
     -- same key for sum type;
     -- doesn't work if you have something like `Either String String`,
     -- you should distinguish these cases by different keys like in `eitherT1` example
-    eitherT2 :: BiToml (Either String Double)
+    eitherT2 :: TomlCodec (Either String Double)
     eitherT2 = ( Toml.match (Toml._String >>> Toml._Left)
              <!> Toml.match (Toml._Double >>> Toml._Right)
                ) "either"
