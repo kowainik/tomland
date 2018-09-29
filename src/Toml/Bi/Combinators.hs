@@ -35,8 +35,8 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable, typeRep)
 
-import Toml.Bi.Code (BiToml, DecodeException (..), Env, St)
-import Toml.Bi.Monad (Bi, Bijection (..), dimap)
+import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
+import Toml.Bi.Monad (BiCodec, Codec (..), dimap)
 import Toml.BiMap (BiMap (..), matchValueForward, _Array, _Bool, _Double, _Integer, _String, _Text)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
@@ -56,8 +56,8 @@ typeName = Text.pack $ show $ typeRep $ Proxy @a
 
 {- | General function to create bidirectional converters for values.
 -}
-match :: forall a . Typeable a => BiMap AnyValue a -> Key -> BiToml a
-match BiMap{..} key = Bijection input output
+match :: forall a . Typeable a => BiMap AnyValue a -> Key -> TomlCodec a
+match BiMap{..} key = Codec input output
   where
     input :: Env a
     input = do
@@ -74,9 +74,10 @@ match BiMap{..} key = Bijection input output
         a <$ modify (insertKeyAnyVal key anyVal)
 
 -- | Helper dimapper to turn 'integer' parser into parser for 'Int', 'Natural', 'Word', etc.
-dimapNum :: forall n r w . (Integral n, Functor r, Functor w)
-         => Bi r w Integer
-         -> Bi r w n
+dimapNum
+    :: forall n r w . (Integral n, Functor r, Functor w)
+    => BiCodec r w Integer
+    -> BiCodec r w n
 dimapNum = dimap toInteger fromIntegral
 
 {- | Almost same as 'dimap'. Useful when you want to have fields like this
@@ -102,15 +103,15 @@ converter for pretty-printing.
 mdimap :: (Monad r, Monad w, MonadError DecodeException r)
        => (c -> d)  -- ^ Convert from safe to unsafe value
        -> (a -> Maybe b)  -- ^ Parser for more type safe value
-       -> Bijection r w d a  -- ^ Source 'Bijection' object
-       -> Bijection r w c b
-mdimap toString toMaybe bi = Bijection
-  { biRead  = (toMaybe <$> biRead bi) >>= \case
+       -> Codec r w d a  -- ^ Source 'Codec' object
+       -> Codec r w c b
+mdimap toString toMaybe codec = Codec
+  { codecRead  = (toMaybe <$> codecRead codec) >>= \case
         Nothing -> throwError $ ParseError $ ParseException "Can't parse" -- TODO
         Just b  -> pure b
 
-  , biWrite = \s -> do
-        retS <- biWrite bi $ toString s
+  , codecWrite = \s -> do
+        retS <- codecWrite codec $ toString s
         case toMaybe retS of
             Nothing -> error $ "Given pair of functions for 'mdimap' doesn't satisfy roundtrip property"
             Just b  -> pure b
@@ -121,34 +122,34 @@ mdimap toString toMaybe bi = Bijection
 ----------------------------------------------------------------------------
 
 -- | Parser for boolean values.
-bool :: Key -> BiToml Bool
+bool :: Key -> TomlCodec Bool
 bool = match _Bool
 
 -- | Parser for integer values.
-integer :: Key -> BiToml Integer
+integer :: Key -> TomlCodec Integer
 integer = match _Integer
 
 -- | Parser for integer values.
-int :: Key -> BiToml Int
+int :: Key -> TomlCodec Int
 int = dimapNum . integer
 
 -- | Parser for floating values.
-double :: Key -> BiToml Double
+double :: Key -> TomlCodec Double
 double = match _Double
 
 -- | Parser for string values.
-text :: Key -> BiToml Text
+text :: Key -> TomlCodec Text
 text = match _Text
 
 -- | Codec for 'String'.
-string :: Key -> BiToml String
+string :: Key -> TomlCodec String
 string = match _String
 
 -- TODO: implement using bijectionMaker
 -- | Parser for array of values. Takes converter for single array element and
 -- returns list of values.
-arrayOf :: forall a . Typeable a => BiMap AnyValue a -> Key -> BiToml [a]
-arrayOf bimap key = Bijection input output
+arrayOf :: forall a . Typeable a => BiMap AnyValue a -> Key -> TomlCodec [a]
+arrayOf bimap key = Codec input output
   where
     input :: Env [a]
     input = do
@@ -168,12 +169,12 @@ arrayOf bimap key = Bijection input output
         a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key anyVal vals) tables)
 
 -- | Bidirectional converter for @Maybe smth@ values.
-maybeT :: forall a . (Key -> BiToml a) -> Key -> BiToml (Maybe a)
-maybeT converter key = let bi = converter key in Bijection
-    { biRead  = (Just <$> biRead bi) `catchError` handleNotFound
-    , biWrite = \case
+maybeT :: forall a . (Key -> TomlCodec a) -> Key -> TomlCodec (Maybe a)
+maybeT converter key = let codec = converter key in Codec
+    { codecRead  = (Just <$> codecRead codec) `catchError` handleNotFound
+    , codecWrite = \case
         Nothing -> pure Nothing
-        Just v  -> biWrite bi v >> pure (Just v)
+        Just v  -> codecWrite codec v >> pure (Just v)
     }
   where
     handleNotFound :: DecodeException -> Env (Maybe a)
@@ -182,21 +183,21 @@ maybeT converter key = let bi = converter key in Bijection
         | otherwise = throwError e
 
 -- | Parser for tables. Use it when when you have nested objects.
-table :: forall a . BiToml a -> Key -> BiToml a
-table bi key = Bijection input output
+table :: forall a . TomlCodec a -> Key -> TomlCodec a
+table codec key = Codec input output
   where
     input :: Env a
     input = do
         mTable <- asks $ Prefix.lookup key . tomlTables
         case mTable of
             Nothing   -> throwError $ TableNotFound key
-            Just toml -> local (const toml) (biRead bi) `catchError` handleTableName
+            Just toml -> local (const toml) (codecRead codec) `catchError` handleTableName
 
     output :: a -> St a
     output a = do
         mTable <- gets $ Prefix.lookup key . tomlTables
         let toml = fromMaybe mempty mTable
-        let newToml = execState (runMaybeT $ biWrite bi a) toml
+        let newToml = execState (runMaybeT $ codecWrite codec a) toml
         a <$ modify (insertTable key newToml)
 
     handleTableName :: DecodeException -> Env a
@@ -206,5 +207,5 @@ table bi key = Bijection input output
     handleTableName e                         = throwError e
 
 -- | Used for @newtype@ wrappers.
-wrapper :: forall b a . Coercible a b => (Key -> BiToml a) -> Key -> BiToml b
+wrapper :: forall b a . Coercible a b => (Key -> TomlCodec a) -> Key -> TomlCodec b
 wrapper bi key = dimap coerce coerce (bi key)

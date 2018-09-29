@@ -1,6 +1,6 @@
 module Toml.Bi.Code
        ( -- * Types
-         BiToml
+         TomlCodec
        , Env
        , St
 
@@ -26,7 +26,7 @@ import Data.Foldable (toList)
 import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
 
-import Toml.Bi.Monad (Bi, Bijection (..))
+import Toml.Bi.Monad (BiCodec, Codec (..))
 import Toml.Parser (ParseException (..), parse)
 import Toml.PrefixTree (Key (..), unPiece)
 import Toml.Printer (prettyToml)
@@ -66,11 +66,11 @@ prettyException = \case
     joinKey = Text.intercalate "." . map unPiece . toList . unKey
 
 -- | Immutable environment for 'Toml' conversion.
--- This is @r@ type variable in 'Bijection' data type.
+-- This is @r@ type variable in 'Codec' data type.
 type Env = ExceptT DecodeException (Reader TOML)
 
 {- | Mutable context for 'Toml' conversion.
-This is @w@ type variable in 'Bijection' data type.
+This is @w@ type variable in 'Codec' data type.
 
 @
 MaybeT (State TOML) a
@@ -82,17 +82,17 @@ type St = MaybeT (State TOML)
 
 -- | Specialied 'Bi' type alias for 'Toml' monad. Keeps 'TOML' object either as
 -- environment or state.
-type BiToml a = Bi Env St a
+type TomlCodec a = BiCodec Env St a
 
 -- | Convert textual representation of toml into user data type.
-decode :: BiToml a -> Text -> Either DecodeException a
-decode biToml text = do
+decode :: TomlCodec a -> Text -> Either DecodeException a
+decode codec text = do
     toml <- first ParseError (parse text)
-    runReader (runExceptT $ biRead biToml) toml
+    runReader (runExceptT $ codecRead codec) toml
 
 -- | Convert object to textual representation.
-encode :: BiToml a -> a -> Text
-encode bi obj = prettyToml $ execState (runMaybeT $ biWrite bi obj) mempty
+encode :: TomlCodec a -> a -> Text
+encode codec obj = prettyToml $ execState (runMaybeT $ codecWrite codec obj) mempty
 
 -- | File loading error data type.
 data LoadTomlException = LoadTomlException FilePath Text
@@ -103,9 +103,9 @@ instance Show LoadTomlException where
 instance Exception LoadTomlException
 
 -- | Decode a value from a file. In case of parse errors, throws 'LoadTomlException'.
-decodeFile :: (MonadIO m) => BiToml a -> FilePath -> m a
-decodeFile biToml filePath = liftIO $
-    (decode biToml <$> TIO.readFile filePath) >>= errorWhenLeft
+decodeFile :: (MonadIO m) => TomlCodec a -> FilePath -> m a
+decodeFile codec filePath = liftIO $
+    (decode codec <$> TIO.readFile filePath) >>= errorWhenLeft
   where
     errorWhenLeft :: Either DecodeException a -> IO a
     errorWhenLeft (Left e)   = throwIO $ LoadTomlException filePath $ prettyException e
