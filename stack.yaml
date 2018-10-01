@@ -1,1 +1,4 @@
 resolver: lts-12.8
+extra-deps:
+  - megaparsec-7.0.1
+  - hspec-megaparsec-2.0.0

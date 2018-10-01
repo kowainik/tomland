@@ -7,6 +7,8 @@ The change log is available [on GitHub][2].
 0.5.0
 =====
 
+* [#96](https://github.com/kowainik/tomland/issues/96):
+  Migrate to megaparsec 7.0
 * [#81](https://github.com/kowainik/tomland/issues/81):
   **Important:** Rename data types.
   _Migration guide:_ rename `Bijection` to `Codec`, `Bi` to `BiCodec` and

@@ -19,17 +19,16 @@ module Toml.Parser
 import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany)
 import Control.Monad (void)
-import Data.Char (chr, digitToInt, isControl)
+import Data.Char (chr, isControl)
 import Data.Fixed (Pico)
-import Data.List (foldl')
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
                   minutesToTimeZone)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, parseErrorPretty', try)
-import Text.Megaparsec.Char (alphaNumChar, anyChar, char, digitChar, eol, hexDigitChar, oneOf,
-                             satisfy, space, space1, string, tab)
+import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, satisfy, try)
+import Text.Megaparsec.Char (alphaNumChar, char, digitChar, eol, hexDigitChar, space, space1,
+                             string, tab)
 
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue, DateTime (..), TOML (..), UValue (..), typeCheck)
@@ -77,7 +76,7 @@ nonControlCharP :: Parser Text
 nonControlCharP = Text.singleton <$> satisfy (not . isControl)
 
 escapeSequenceP :: Parser Text
-escapeSequenceP = char '\\' >> anyChar >>= \case
+escapeSequenceP = char '\\' >> anySingle >>= \case
                     'b'  -> pure "\b"
                     't'  -> pure "\t"
                     'n'  -> pure "\n"
@@ -164,12 +163,9 @@ integerP :: Parser Integer
 integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
   where
     decimal      = L.signed sc L.decimal
-    binary       = try (char '0' >> char 'b') >> mkNum 2 <$> some binDigitChar
+    binary       = try (char '0' >> char 'b') >> L.binary
     octal        = try (char '0' >> char 'o') >> L.octal
     hexadecimal  = try (char '0' >> char 'x') >> L.hexadecimal
-    binDigitChar = oneOf ['0', '1']
-    mkNum b      = foldl' (step b) 0
-    step b a c   = a * b + fromIntegral (digitToInt c)
 
 doubleP :: Parser Double
 doubleP = lexeme $ L.signed sc (num <|> inf <|> nan)
@@ -307,5 +303,5 @@ newtype ParseException = ParseException Text
 -- | Parses 'Text' as 'TOML' object.
 parse :: Text -> Either ParseException TOML
 parse t = case Mega.parse tomlP "" t of
-    Left err   -> Left $ ParseException $ Text.pack $ parseErrorPretty' t err
+    Left err   -> Left $ ParseException $ Text.pack $ errorBundlePretty err
     Right toml -> Right toml
