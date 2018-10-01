@@ -38,6 +38,7 @@ spec_Parser = do
         dateTimeFailOn  = failOn dateTimeP
         doubleFailOn    = failOn doubleP
         keyValFailOn    = failOn keyValP
+        integerFailOn   = failOn integerP
         textFailOn      = failOn textP
 
         doubleSatisfies = parseXSatisfies doubleP
@@ -161,15 +162,15 @@ spec_Parser = do
                 $ do
                       parseInteger "-9223372036854775808" (-9223372036854775808)
                       parseInteger "9223372036854775807"  9223372036854775807
-          --xit "can parse numbers with underscores between digits" $ do
-          --  parseInt "1_000" 1000
-          --  parseInt "5_349_221" 5349221
-          --  parseInt "1_2_3_4_5" 12345
-          --  parseInt "1_2_3_" 1
-          --  parseInt "13_" 13
-          --  intFailOn "_123_"
-          --  intFailOn "_13"
-          --  intFailOn "_"
+            it "can parse numbers with underscores between digits" $ do
+               parseInteger "1_000" 1000
+               parseInteger "5_349_221" 5349221
+               parseInteger "1_2_3_4_5" 12345
+               integerFailOn "1_2_3_"
+               integerFailOn "13_"
+               integerFailOn "_123_"
+               integerFailOn "_13"
+               integerFailOn "_"
           --xit "does not parse numbers with leading zeros" $ do
           --  parseInt "0123" 0
           --  parseInt "-023" 0
