@@ -43,7 +43,7 @@ library
 
   build-depends:       base >= 4.10 && < 5
                      , hashable ^>= 1.2
-                     , megaparsec ^>= 6.5.0
+                     , megaparsec ^>= 7.0.1
                      , mtl ^>= 2.2
                      , parser-combinators
                      , text ^>= 1.2
