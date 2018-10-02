@@ -29,7 +29,7 @@ import Data.Text (Text)
 import Toml.Bi.Monad (BiCodec, Codec (..))
 import Toml.Parser (ParseException (..), parse)
 import Toml.PrefixTree (Key (..), unPiece)
-import Toml.Printer (prettyToml)
+import Toml.Printer (pretty)
 import Toml.Type (TOML (..), TValue, showType)
 
 import qualified Data.Text as Text
@@ -92,7 +92,7 @@ decode codec text = do
 
 -- | Convert object to textual representation.
 encode :: TomlCodec a -> a -> Text
-encode codec obj = prettyToml $ execState (runMaybeT $ codecWrite codec obj) mempty
+encode codec obj = pretty $ execState (runMaybeT $ codecWrite codec obj) mempty
 
 -- | File loading error data type.
 data LoadTomlException = LoadTomlException FilePath Text
