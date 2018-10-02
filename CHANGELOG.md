@@ -7,6 +7,8 @@ The change log is available [on GitHub][2].
 0.5.0
 =====
 
+* [#97](https://github.com/kowainik/tomland/pull/97)
+  Allow underscores in integers*.
 * [#96](https://github.com/kowainik/tomland/issues/96):
   Migrate to megaparsec 7.0
 * [#81](https://github.com/kowainik/tomland/issues/81):
