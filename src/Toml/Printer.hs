@@ -32,9 +32,16 @@ data PrintOptions = PrintOptions
 defaultOptions :: PrintOptions
 defaultOptions = PrintOptions True 2
 
--- Tab is equal to 2 spaces now.
-tab :: Int -> Text
-tab n = Text.cons '\n' (Text.replicate (2*n) " ")
+-- Returns an indentation prefix
+tabWith :: PrintOptions -> Int -> Text
+tabWith options n =
+    Text.cons '\n' (Text.replicate (n * indent options) " ")
+
+-- Returns a proper sorting function
+orderWith :: Ord k => PrintOptions -> [(k, v)] -> [(k, v)]
+orderWith options
+    | shouldSort options = sortOn fst
+    | otherwise          = id
 
 {- | Converts 'TOML' type into 'Text' (using 'defaultOptions').
 
@@ -84,12 +91,15 @@ prettyTomlInd options i prefix TOML{..} =
 
 -- | Returns pretty formatted  key-value pairs of the 'TOML'.
 prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> Text
-prettyKeyValue options i = Text.concat . map kvText . order . HashMap.toList
+prettyKeyValue options i =
+    Text.concat . map kvText . orderWith options . HashMap.toList
   where
-    order | shouldSort options = sortOn fst
-          | otherwise          = id
     kvText :: (Key, AnyValue) -> Text
-    kvText (k, AnyValue v) = tab i <> prettyKey k <> " = " <> valText v
+    kvText (k, AnyValue v) = mconcat
+        [ tabWith options i
+        , prettyKey k
+        , " = "
+        , valText v ]
 
     valText :: Value t -> Text
     valText (Bool b)    = Text.toLower $ showText b
@@ -125,13 +135,15 @@ prettyKeyValue options i = Text.concat . map kvText . order . HashMap.toList
 
 -- | Returns pretty formatted tables section of the 'TOML'.
 prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> Text
-prettyTables options i pref = Text.concat . map prettyTable . HashMap.elems
+prettyTables options i pref =
+    Text.concat . map (prettyTable . snd) . orderWith options . HashMap.toList
   where
     prettyTable :: PrefixTree TOML -> Text
     prettyTable (Leaf k toml) =
-        let name = getPref k in
-        tab i <> prettyTableName name
-              <> prettyTomlInd options (i + indent options) name toml
+        let name = getPref k in mconcat
+            [ tabWith options i
+            , prettyTableName name
+            , prettyTomlInd options (i + indent options) name toml ]
     prettyTable (Branch k mToml prefMap) =
         let name  = getPref k
             nextI = i + indent options
@@ -139,7 +151,7 @@ prettyTables options i pref = Text.concat . map prettyTable . HashMap.elems
                         Nothing -> ""
                         Just t  -> prettyTomlInd options nextI name t
         in mconcat
-            [ tab i
+            [ tabWith options i
             , prettyTableName name
             , toml
             , prettyTables options nextI name prefMap ]
