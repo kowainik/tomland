@@ -26,7 +26,7 @@ import Data.Text (Text)
 import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
                   minutesToTimeZone)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, satisfy, try)
+import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, satisfy, try, notFollowedBy)
 import Text.Megaparsec.Char (alphaNumChar, char, digitChar, eol, hexDigitChar, space, space1,
                              string, tab)
 
@@ -162,7 +162,11 @@ tableNameP = lexeme $ between (char '[') (char ']') keyP
 integerP :: Parser Integer
 integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
   where
-    decimal      = L.signed sc L.decimal
+    decimal      = L.signed sc (noLeadingZero <|> zero)
+      where
+        noLeadingZero = notFollowedBy (char '0') >> L.decimal
+        zero = 0 <$ (char '0' >> notFollowedBy digitChar)
+
     binary       = try (char '0' >> char 'b') >> L.binary
     octal        = try (char '0' >> char 'o') >> L.octal
     hexadecimal  = try (char '0' >> char 'x') >> L.hexadecimal

@@ -39,7 +39,7 @@ insertKeyVal k v = insertKeyAnyVal k (AnyValue v)
 
 -- | Inserts given key-value into the 'TOML'.
 insertKeyAnyVal :: Key -> AnyValue -> TOML -> TOML
-insertKeyAnyVal k av toml =toml { tomlPairs = HashMap.insert k av (tomlPairs toml) }
+insertKeyAnyVal k av toml = toml { tomlPairs = HashMap.insert k av (tomlPairs toml) }
 
 -- | Inserts given table into the 'TOML'.
 insertTable :: Key -> TOML -> TOML -> TOML

@@ -38,6 +38,7 @@ spec_Parser = do
         dateTimeFailOn  = failOn dateTimeP
         doubleFailOn    = failOn doubleP
         keyValFailOn    = failOn keyValP
+        integerFailOn   = failOn integerP
         textFailOn      = failOn textP
 
         doubleSatisfies = parseXSatisfies doubleP
@@ -156,8 +157,12 @@ spec_Parser = do
             it "can parse sign-prefixed zero as an unprefixed zero" $ do
                 parseInteger "+0" 0
                 parseInteger "-0" 0
-            it
-                    "can parse both the minimum and maximum numbers in the 64 bit range"
+            it "will fail for numbers with a leading zero" $ do
+                integerFailOn "00"
+                integerFailOn "01234"
+                integerFailOn "+0333"
+                integerFailOn "-02"
+            it "can parse both the minimum and maximum numbers in the 64 bit range"
                 $ do
                       parseInteger "-9223372036854775808" (-9223372036854775808)
                       parseInteger "9223372036854775807"  9223372036854775807
