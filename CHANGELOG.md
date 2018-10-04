@@ -7,6 +7,8 @@ The change log is available [on GitHub][2].
 0.5.0
 =====
 
+* [#100](https://github.com/kowainik/tomland/pull/100)
+  Add `PrintOptions` (sorting, indentation) for pretty printer.
 * [#97](https://github.com/kowainik/tomland/pull/97)
   Allow underscores in integers*.
 * [#96](https://github.com/kowainik/tomland/issues/96):
