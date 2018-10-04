@@ -2,6 +2,7 @@
 
 module Toml.PrefixTree
        ( PrefixTree (..)
+       , (<|)
        , singleT
        , insertT
        , lookupT

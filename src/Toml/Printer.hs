@@ -49,16 +49,15 @@ For example, this
 
 @
 TOML
-    { tomlPairs  = HashMap.fromList [(Key "title", String "TOML example")]
-    , tomlTables = HashMap.fromList
-          [( TableId (NonEmpty.fromList ["example", "owner"])
-           , TOML
-                 { tomlPairs  = HashMap.fromList [(Key "name", String "Kowainik")]
-                 , tomlTables = mempty
-                 , tomlTableArrays = mempty
+    { tomlPairs  = HashMap.fromList
+          [("title", AnyValue $ Text "TOML example")]
+    , tomlTables = PrefixTree.fromList
+          [( "example" <| "owner"
+           , mempty
+                 { tomlPairs  = HashMap.fromList
+                       [("name", AnyValue $ Text "Kowainik")]
                  }
            )]
-    , tomlTableArrays = mempty
     }
 @
 
