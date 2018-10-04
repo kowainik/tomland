@@ -4,6 +4,7 @@
 
 module Toml.Printer
        ( PrintOptions(..)
+       , defaultOptions
        , pretty
        , prettyOptions
        , prettyTomlInd
