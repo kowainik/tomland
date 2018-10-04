@@ -1,0 +1,14 @@
+a = "a"
+c = "cccc"
+d = "ddd"
+b = "bb"
+
+[doo]
+
+[foo]
+
+[baz]
+
+[qux.doo]
+egg = "?"
+spam = "!"
