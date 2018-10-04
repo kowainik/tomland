@@ -5,7 +5,7 @@ import Control.Arrow ((>>>))
 import Data.Text (Text)
 import Data.Time (fromGregorian)
 
-import Toml (ParseException (..), TomlCodec, prettyToml, (.=), (<!>))
+import Toml (ParseException (..), TomlCodec, pretty, (.=), (<!>))
 import Toml.Edsl (mkToml, table, (=:))
 import Toml.Type (DateTime (..), TOML (..), Value (..))
 
@@ -64,13 +64,13 @@ testT = Test
 main :: IO ()
 main = do
     TIO.putStrLn "=== Printing manually specified TOML ==="
-    TIO.putStrLn $ prettyToml myToml
+    TIO.putStrLn $ pretty myToml
 
     TIO.putStrLn "=== Printing parsed TOML ==="
     content <- TIO.readFile "test.toml"
     case Toml.parse content of
         Left (ParseException e) -> TIO.putStrLn e
-        Right toml              -> TIO.putStrLn $ prettyToml toml
+        Right toml              -> TIO.putStrLn $ pretty toml
 
     TIO.putStrLn "=== Testing bidirectional conversion ==="
     biFile <- TIO.readFile "examples/biTest.toml"
