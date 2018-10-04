@@ -6,11 +6,12 @@ module Toml.Bi.Monad
        ( Codec (..)
        , BiCodec
        , dimap
+       , dioptional
        , (<!>)
        , (.=)
        ) where
 
-import Control.Applicative (Alternative (..))
+import Control.Applicative (Alternative (..), optional)
 import Control.Monad (MonadPlus (..))
 
 {- | Monad for bidirectional conversion. Contains pair of functions:
@@ -147,6 +148,13 @@ dimap f g codec = Codec
   { codecRead  = g <$> codecRead codec
   , codecWrite = fmap g . codecWrite codec . f
   }
+
+-- | Bidirectional converter for @Maybe smth@ values.
+dioptional :: (Alternative r, Applicative w) => Codec r w c a -> Codec r w (Maybe c) (Maybe a)
+dioptional Codec{..} = Codec
+    { codecRead = optional codecRead
+    , codecWrite = traverse codecWrite
+    }
 
 {- | Operator to connect two operations:
 

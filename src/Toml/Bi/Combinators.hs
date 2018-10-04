@@ -17,7 +17,6 @@ module Toml.Bi.Combinators
 
          -- * Combinators
        , match
-       , maybeT
        , table
        , wrapper
        , dimapNum
@@ -167,20 +166,6 @@ arrayOf bimap key = Codec input output
     output a = do
         anyVal <- MaybeT $ pure $ backward (_Array bimap) a
         a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key anyVal vals) tables)
-
--- | Bidirectional converter for @Maybe smth@ values.
-maybeT :: forall a . (Key -> TomlCodec a) -> Key -> TomlCodec (Maybe a)
-maybeT converter key = let codec = converter key in Codec
-    { codecRead  = (Just <$> codecRead codec) `catchError` handleNotFound
-    , codecWrite = \case
-        Nothing -> pure Nothing
-        Just v  -> codecWrite codec v >> pure (Just v)
-    }
-  where
-    handleNotFound :: DecodeException -> Env (Maybe a)
-    handleNotFound e
-        | e `elem` [KeyNotFound key, TableNotFound key] = pure Nothing
-        | otherwise = throwError e
 
 -- | Parser for tables. Use it when when you have nested objects.
 table :: forall a . TomlCodec a -> Key -> TomlCodec a
