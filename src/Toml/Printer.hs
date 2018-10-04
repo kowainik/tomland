@@ -143,10 +143,10 @@ prettyTables options i pref =
         let name = getPref k in mconcat
             [ tabWith options i
             , prettyTableName name
-            , prettyTomlInd options (i + indent options) name toml ]
+            , prettyTomlInd options (i + 1) name toml ]
     prettyTable (Branch k mToml prefMap) =
         let name  = getPref k
-            nextI = i + indent options
+            nextI = i + 1
             toml  = case mToml of
                         Nothing -> ""
                         Just t  -> prettyTomlInd options nextI name t
