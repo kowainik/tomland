@@ -27,6 +27,8 @@ The change log is available [on GitHub][2].
   Improve `Double` generator for property-based tests.
 * Add support for GHC 8.6.1.
   Drop support for GHC 8.0.2.
+* [#82](https://github.com/kowainik/tomland/issues/82):
+  Remove `maybeT`. Add `diOptional`.
 
 0.4.0
 =====
