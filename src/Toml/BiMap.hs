@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds      #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE Rank2Types     #-}
-{-# LANGUAGE TypeFamilies     #-}
 
 {- | Implementation of partial bidirectional mapping as a data type.
 -}
@@ -16,7 +15,7 @@ module Toml.BiMap
          -- * Helpers for BiMap and AnyValue
        , matchValueForward
        , mkAnyValueBiMap
-       -- , mkAnyTypeBiMap
+       , mkAnyTypeBiMap
 
          -- * Some predefined bi mappings
        , _Array
@@ -38,7 +37,7 @@ import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 import Data.Text (Text)
 
-import Toml.Type (AnyValue (..), TValue (..), DateTime (..), Value (..), liftMatch, matchArray, matchBool,
+import Toml.Type (AnyValue (..), TValue (TArray), DateTime (..), Value (..), liftMatch, matchArray, matchBool,
                   matchDouble, matchInteger, matchText, matchDate, reifyAnyValues)
 
 import qualified Control.Category as Cat
@@ -99,8 +98,8 @@ _Right = invert $ prism (either (const Nothing) Just) Right
 mkAnyValueBiMap :: (forall t . Value t -> Maybe a)
                 -> (a -> Value tag)
                 -> BiMap AnyValue a
-mkAnyValueBiMap matchValue e =
-    prism (\(AnyValue value) -> matchValue value) (AnyValue . e)
+mkAnyValueBiMap matchVal toVal =
+    prism (\(AnyValue value) -> matchVal value) (AnyValue . toVal)
 
 -- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
 matchValueForward :: BiMap AnyValue a -> Value t -> Maybe a
