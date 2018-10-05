@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds      #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE Rank2Types     #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 {- | Implementation of partial bidirectional mapping as a data type.
 -}
@@ -15,6 +16,7 @@ module Toml.BiMap
          -- * Helpers for BiMap and AnyValue
        , matchValueForward
        , mkAnyValueBiMap
+       -- , mkAnyTypeBiMap
 
          -- * Some predefined bi mappings
        , _Array
@@ -36,8 +38,8 @@ import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 import Data.Text (Text)
 
-import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchArray, matchBool,
-                  matchDouble, matchInteger, matchText, reifyAnyValues)
+import Toml.Type (AnyValue (..), TValue (..), DateTime (..), Value (..), liftMatch, matchArray, matchBool,
+                  matchDouble, matchInteger, matchText, matchDate, reifyAnyValues)
 
 import qualified Control.Category as Cat
 import qualified Data.Text as T
@@ -97,8 +99,8 @@ _Right = invert $ prism (either (const Nothing) Just) Right
 mkAnyValueBiMap :: (forall t . Value t -> Maybe a)
                 -> (a -> Value tag)
                 -> BiMap AnyValue a
-mkAnyValueBiMap matchValue toValue =
-    prism (\(AnyValue value) -> matchValue value) (AnyValue . toValue)
+mkAnyValueBiMap matchValue e =
+    prism (\(AnyValue value) -> matchValue value) (AnyValue . e)
 
 -- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
 matchValueForward :: BiMap AnyValue a -> Value t -> Maybe a
@@ -141,3 +143,35 @@ toMArray [] = Just $ Array []
 toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
     Left _     -> Nothing
     Right vals -> Just $ Array (x : vals)
+
+-- | Used to create prisms for 'AnyValue' from original Types.
+class Valuable m where
+  toValue :: m -> AnyValue
+  matchValue :: AnyValue -> Maybe m
+
+instance Valuable Bool where
+  toValue = AnyValue . Bool
+  matchValue (AnyValue t) = matchBool t
+
+instance Valuable Integer where
+  toValue = AnyValue . Integer
+  matchValue (AnyValue t) = matchInteger t
+
+instance Valuable Double where
+  toValue = AnyValue . Double
+  matchValue (AnyValue t) = matchDouble t
+
+instance Valuable Text where
+  toValue = AnyValue . Text
+  matchValue (AnyValue t) = matchText t
+
+instance Valuable DateTime where
+  toValue = AnyValue . Date
+  matchValue (AnyValue t) = matchDate t
+
+-- | Creates prism for 'AnyValue' from original Type.
+mkAnyTypeBiMap :: Valuable m => (a -> m) -> (m -> Maybe a) -> BiMap AnyValue a
+mkAnyTypeBiMap showA parseA = BiMap
+        { forward = \ anyVal -> matchValue anyVal >>= parseA
+        , backward = Just . toValue . showA
+        }
