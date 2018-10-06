@@ -15,16 +15,18 @@ module Toml.BiMap
          -- * Helpers for BiMap and AnyValue
        , matchValueForward
        , mkAnyValueBiMap
-       , mkAnyTypeBiMap
+       , _TextBy
 
          -- * Some predefined bi mappings
        , _Array
        , _Bool
        , _Double
        , _Integer
-       , _String
        , _Text
        , _TextToString
+       , _String
+       , _StringToShow
+       , _Show
 
        , _Left
        , _Right
@@ -37,8 +39,8 @@ import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 import Data.Text (Text)
 
-import Toml.Type (AnyValue (..), TValue (TArray), DateTime (..), Value (..), liftMatch, matchArray, matchBool,
-                  matchDouble, matchInteger, matchText, matchDate, reifyAnyValues)
+import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchArray, matchBool,
+                  matchDouble, matchInteger, matchText, reifyAnyValues)
 
 import qualified Control.Category as Cat
 import qualified Data.Text as T
@@ -98,8 +100,13 @@ _Right = invert $ prism (either (const Nothing) Just) Right
 mkAnyValueBiMap :: (forall t . Value t -> Maybe a)
                 -> (a -> Value tag)
                 -> BiMap AnyValue a
-mkAnyValueBiMap matchVal toVal =
-    prism (\(AnyValue value) -> matchVal value) (AnyValue . toVal)
+mkAnyValueBiMap matchValue toValue =
+    prism (\(AnyValue value) -> matchValue value) (AnyValue . toValue)
+
+-- | Creates prism for 'Text' to 'AnyValue' bimap with custom functions
+_TextBy :: (Text -> Maybe a) -> (a -> Text) -> BiMap AnyValue a
+_TextBy parseText toText =
+  mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
 
 -- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
 matchValueForward :: BiMap AnyValue a -> Value t -> Maybe a
@@ -127,6 +134,12 @@ _TextToString = iso T.unpack T.pack
 _String :: BiMap AnyValue String
 _String = _Text >>> _TextToString
 
+_StringToShow :: (Show a, Read a) => BiMap String a
+_StringToShow = iso read show
+
+_Show :: (Show a, Read a) => BiMap AnyValue a
+_Show = _String >>> _StringToShow
+
 -- | 'Array' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Array :: BiMap AnyValue a -> BiMap AnyValue [a]
 _Array elementBimap = BiMap
@@ -142,35 +155,3 @@ toMArray [] = Just $ Array []
 toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
     Left _     -> Nothing
     Right vals -> Just $ Array (x : vals)
-
--- | Used to create prisms for 'AnyValue' from original Types.
-class Valuable m where
-  toValue :: m -> AnyValue
-  matchValue :: AnyValue -> Maybe m
-
-instance Valuable Bool where
-  toValue = AnyValue . Bool
-  matchValue (AnyValue t) = matchBool t
-
-instance Valuable Integer where
-  toValue = AnyValue . Integer
-  matchValue (AnyValue t) = matchInteger t
-
-instance Valuable Double where
-  toValue = AnyValue . Double
-  matchValue (AnyValue t) = matchDouble t
-
-instance Valuable Text where
-  toValue = AnyValue . Text
-  matchValue (AnyValue t) = matchText t
-
-instance Valuable DateTime where
-  toValue = AnyValue . Date
-  matchValue (AnyValue t) = matchDate t
-
--- | Creates prism for 'AnyValue' from original Type.
-mkAnyTypeBiMap :: Valuable m => (a -> m) -> (m -> Maybe a) -> BiMap AnyValue a
-mkAnyTypeBiMap showA parseA = BiMap
-        { forward = \ anyVal -> matchValue anyVal >>= parseA
-        , backward = Just . toValue . showA
-        }
