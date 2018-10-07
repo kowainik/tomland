@@ -38,6 +38,7 @@ module Toml.BiMap
 import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 import Data.Text (Text)
+import Text.Read (readMaybe)
 
 import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchArray, matchBool,
                   matchDouble, matchInteger, matchText, reifyAnyValues)
@@ -135,7 +136,7 @@ _String :: BiMap AnyValue String
 _String = _Text >>> _TextToString
 
 _StringToShow :: (Show a, Read a) => BiMap String a
-_StringToShow = iso read show
+_StringToShow = prism readMaybe show
 
 _Show :: (Show a, Read a) => BiMap AnyValue a
 _Show = _String >>> _StringToShow
