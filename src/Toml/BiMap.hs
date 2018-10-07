@@ -8,7 +8,6 @@
 module Toml.BiMap
        ( -- * BiMap idea
          BiMap (..)
-       , invert
        , iso
        , prism
 
@@ -69,10 +68,6 @@ instance Cat.Category BiMap where
         { forward  =  forward ab >=>  forward bc
         , backward = backward bc >=> backward ab
         }
-
--- | Inverts bidirectional mapping.
-invert :: BiMap a b -> BiMap b a
-invert (BiMap f g) = BiMap g f
 
 -- | Creates 'BiMap' from isomorphism.
 iso :: (a -> b) -> (b -> a) -> BiMap a b
