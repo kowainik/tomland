@@ -15,15 +15,18 @@ module Toml.BiMap
          -- * Helpers for BiMap and AnyValue
        , matchValueForward
        , mkAnyValueBiMap
+       , _TextBy
 
          -- * Some predefined bi mappings
        , _Array
        , _Bool
        , _Double
        , _Integer
-       , _String
        , _Text
        , _TextToString
+       , _String
+       , _StringToShow
+       , _Show
 
        , _Left
        , _Right
@@ -35,6 +38,7 @@ module Toml.BiMap
 import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 import Data.Text (Text)
+import Text.Read (readMaybe)
 
 import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchArray, matchBool,
                   matchDouble, matchInteger, matchText, reifyAnyValues)
@@ -100,6 +104,11 @@ mkAnyValueBiMap :: (forall t . Value t -> Maybe a)
 mkAnyValueBiMap matchValue toValue =
     prism (\(AnyValue value) -> matchValue value) (AnyValue . toValue)
 
+-- | Creates prism for 'Text' to 'AnyValue' bimap with custom functions
+_TextBy :: (Text -> Maybe a) -> (a -> Text) -> BiMap AnyValue a
+_TextBy parseText toText =
+  mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
+
 -- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
 matchValueForward :: BiMap AnyValue a -> Value t -> Maybe a
 matchValueForward = liftMatch . forward
@@ -125,6 +134,12 @@ _TextToString = iso T.unpack T.pack
 
 _String :: BiMap AnyValue String
 _String = _Text >>> _TextToString
+
+_StringToShow :: (Show a, Read a) => BiMap String a
+_StringToShow = prism readMaybe show
+
+_Show :: (Show a, Read a) => BiMap AnyValue a
+_Show = _String >>> _StringToShow
 
 -- | 'Array' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Array :: BiMap AnyValue a -> BiMap AnyValue [a]

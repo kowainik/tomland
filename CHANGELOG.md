@@ -6,7 +6,8 @@ The change log is available [on GitHub][2].
 
 0.5.0
 =====
-
+* [#104](https://github.com/kowainik/tomland/pull/104)
+  Add `_TextBy` and `_Show` combinators
 * [#100](https://github.com/kowainik/tomland/pull/100)
   Add `PrintOptions` (sorting, indentation) for pretty printer.
 * [#97](https://github.com/kowainik/tomland/pull/97)
