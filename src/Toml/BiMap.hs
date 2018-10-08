@@ -27,6 +27,13 @@ module Toml.BiMap
        , _String
        , _StringToShow
        , _Show
+       , _UnsignedToInteger
+       , _Natural
+       , _Word
+       , _RealFracToRealFrac
+       , _Float
+       , _TextToByteString
+       , _ByteString
 
        , _Left
        , _Right
@@ -37,7 +44,12 @@ module Toml.BiMap
 
 import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
+
+import Data.ByteString (ByteString)
 import Data.Text (Text)
+import Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import Data.Word (Word)
+import Numeric.Natural (Natural)
 import Text.Read (readMaybe)
 
 import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchArray, matchBool,
@@ -140,6 +152,31 @@ _StringToShow = prism readMaybe show
 
 _Show :: (Show a, Read a) => BiMap AnyValue a
 _Show = _String >>> _StringToShow
+
+_UnsignedToInteger :: (Integral n) => BiMap Integer n
+_UnsignedToInteger = BiMap (Just . fromIntegral) maybeInteger
+  where maybeInteger n
+          | n < 0     = Nothing
+          | otherwise = Just (toInteger n)
+
+_Natural :: BiMap AnyValue Natural
+_Natural = _Integer >>> _UnsignedToInteger
+
+_Word :: BiMap AnyValue Word
+_Word = _Integer >>> _UnsignedToInteger
+
+_RealFracToRealFrac ::  (Real a, Real b, Fractional a, Fractional b) => BiMap a b
+_RealFracToRealFrac = iso realToFrac realToFrac
+
+_Float :: BiMap AnyValue Float
+_Float = _Double >>> _RealFracToRealFrac
+
+_TextToByteString :: BiMap Text ByteString
+_TextToByteString = BiMap (Just . encodeUtf8) maybeText
+  where maybeText = either (const Nothing) Just . decodeUtf8'
+
+_ByteString:: BiMap AnyValue ByteString
+_ByteString = _Text >>> _TextToByteString
 
 -- | 'Array' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Array :: BiMap AnyValue a -> BiMap AnyValue [a]
