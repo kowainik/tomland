@@ -28,7 +28,7 @@ import Data.Text (Text)
 import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
                   minutesToTimeZone)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, match, satisfy, try, notFollowedBy)
+import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, satisfy, try)
 import Text.Megaparsec.Char (alphaNumChar, char, digitChar, eol, hexDigitChar, space, space1,
                              string, tab)
 
@@ -44,7 +44,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 ----------------------------------------------------------------------------
 -- Library for parsing (boilerplate copy-pasted from megaparsec tutorial)
-----------------------------------------------------------------------------
+------------------------------------------------------ ----------------------
 
 type Parser = Parsec Void Text
 
