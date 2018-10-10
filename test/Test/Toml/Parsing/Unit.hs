@@ -171,9 +171,9 @@ spec_Parser = do
                integerFailOn "_123_"
                integerFailOn "_13"
                integerFailOn "_"
-          --xit "does not parse numbers with leading zeros" $ do
-          --  parseInt "0123" 0
-          --  parseInt "-023" 0
+            it "does not parse numbers with leading zeros" $ do
+              integerFailOn "0123"
+              integerFailOn "-023"
         context "when the integer is in binary representation" $ do
             it "can parse numbers prefixed with `0b`" $ do
                 parseInteger "0b1101" 13
