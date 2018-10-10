@@ -17,16 +17,18 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany)
+import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany, some, sepBy1)
 import Control.Monad (void)
+--import Control.Monad.Fail (fail)
 import Data.Char (chr, isControl)
+import Data.Either (fromRight)
 import Data.Fixed (Pico)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
                   minutesToTimeZone)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, satisfy, try, notFollowedBy)
+import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, match, satisfy, try, notFollowedBy)
 import Text.Megaparsec.Char (alphaNumChar, char, digitChar, eol, hexDigitChar, space, space1,
                              string, tab)
 
@@ -36,6 +38,7 @@ import Toml.Type (AnyValue, DateTime (..), TOML (..), UValue (..), typeCheck)
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.HashMap.Lazy as HashMap
 import qualified Data.Text as Text
+import qualified Data.Text.Read as TR
 import qualified Text.Megaparsec as Mega (parse)
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -158,15 +161,35 @@ tableNameP :: Parser Key
 tableNameP = lexeme $ between (char '[') (char ']') keyP
 
 -- Values
+decimalP :: Parser Integer
+decimalP = matchInteger >>= validateInteger
+  where
+    textToInt :: Text -> Integer
+    textToInt = fst . fromRight (error "Underscore parser has a bug") . TR.decimal
+
+    {-
+      Requires that `chars` be only digits 0-9. Returns a `Parser Integer` instead of an `Integer` to be easily changed if proper warning/error handling is implmented.
+    -}
+    validateInteger :: [Char] -> Parser Integer
+    validateInteger chars = case chars of
+      '0':[] -> pure 0
+      '0':_  -> fail "Can't parse a non-zero number starting with '0'"
+      _      -> pure . textToInt . Text.pack $ chars
+    
+    {-
+      Matches a list of characters if
+        * The first and last charactors are digits
+        * There are between 0 and 1 underscores between each character
+    -}
+    matchInteger :: Parser [Char]
+    matchInteger = sepBy1 digitChar (optional (char '_'))
+
+
 
 integerP :: Parser Integer
 integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
   where
-    decimal      = L.signed sc (noLeadingZero <|> zero)
-      where
-        noLeadingZero = notFollowedBy (char '0') >> L.decimal
-        zero = 0 <$ (char '0' >> notFollowedBy digitChar)
-
+    decimal      = L.signed sc decimalP
     binary       = try (char '0' >> char 'b') >> L.binary
     octal        = try (char '0' >> char 'o') >> L.octal
     hexadecimal  = try (char '0' >> char 'x') >> L.hexadecimal
