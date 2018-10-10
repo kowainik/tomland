@@ -8,6 +8,7 @@
 module Toml.BiMap
        ( -- * BiMap idea
          BiMap (..)
+       , invert
        , iso
        , prism
 
@@ -22,13 +23,14 @@ module Toml.BiMap
        , _Double
        , _Integer
        , _Text
-       , _StringToText
+       , _StringText
        , _String
-       , _ShowToString
+       , _ShowString
        , _Show
 
        , _Left
        , _Right
+       , _Just
 
          -- * Useful utility functions
        , toMArray
@@ -70,23 +72,30 @@ instance Cat.Category BiMap where
         , backward = backward bc >=> backward ab
         }
 
+-- | Inverts bidirectional mapping.
+invert :: BiMap a b -> BiMap b a
+invert (BiMap f g) = BiMap g f
+
 -- | Creates 'BiMap' from isomorphism.
 iso :: (a -> b) -> (b -> a) -> BiMap a b
 iso f g = BiMap (Just . f) (Just . g)
 
 -- | Creates 'BiMap' from prism-like pair of functions.
-prism :: (object -> Maybe field) -> (field -> object) -> BiMap object field
-prism preview review = BiMap preview (Just . review)
+prism :: (field -> object) -> (object -> Maybe field) -> BiMap object field
+prism review preview = BiMap preview (Just . review)
 
 ----------------------------------------------------------------------------
 -- General purpose bimaps
 ----------------------------------------------------------------------------
 
 _Left :: BiMap (Either l r) l
-_Left = prism (either Just (const Nothing)) Left
+_Left = prism Left (either Just (const Nothing))
 
 _Right :: BiMap (Either l r) r
-_Right = prism (either (const Nothing) Just) Right
+_Right = prism Right (either (const Nothing) Just)
+
+_Just :: BiMap (Maybe a) a
+_Just = prism Just id
 
 ----------------------------------------------------------------------------
 --  BiMaps for value
@@ -99,19 +108,14 @@ mkAnyValueBiMap :: (forall t . Value t -> Maybe a)
 mkAnyValueBiMap matchValue toValue =
     BiMap (Just . AnyValue . toValue) (\(AnyValue value) -> matchValue value)
 
+-- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
+matchValueBackward :: BiMap a AnyValue -> Value t -> Maybe a
+matchValueBackward = liftMatch . backward
+
 -- | Creates prism for 'Text' to 'AnyValue' with custom functions
 _TextBy :: (Text -> Maybe a) -> (a -> Text) -> BiMap a AnyValue
 _TextBy parseText toText =
   mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
-
--- | Creates prism for 'Text' to 'AnyValue' bimap with custom functions
-_TextBy :: (Text -> Maybe a) -> (a -> Text) -> BiMap AnyValue a
-_TextBy parseText toText =
-  mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
-
--- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
-matchValueBackward :: BiMap a AnyValue -> Value t -> Maybe a
-matchValueBackward = liftMatch . backward
 
 -- | 'Bool' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Bool :: BiMap Bool AnyValue
@@ -129,23 +133,17 @@ _Double = mkAnyValueBiMap matchDouble Double
 _Text :: BiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
 
-_StringToText :: BiMap String Text
-_StringToText = iso T.pack T.unpack
+_StringText :: BiMap String Text
+_StringText = iso T.pack T.unpack
 
 _String :: BiMap String AnyValue
-_String = _StringToText >>> _Text
+_String = _StringText >>> _Text
 
-_ShowToString :: (Show a, Read a) => BiMap a String
-_ShowToString = BiMap (Just . show) (Just . read)
+_ShowString :: (Show a, Read a) => BiMap a String
+_ShowString = BiMap (Just . show) readMaybe
 
 _Show :: (Show a, Read a) => BiMap a AnyValue
-_Show = _ShowToString >>> _String
-
-_StringToShow :: (Show a, Read a) => BiMap String a
-_StringToShow = prism readMaybe show
-
-_Show :: (Show a, Read a) => BiMap AnyValue a
-_Show = _String >>> _StringToShow
+_Show = _ShowString >>> _String
 
 -- | 'Array' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Array :: BiMap a AnyValue -> BiMap [a] AnyValue
