@@ -6,6 +6,9 @@ The change log is available [on GitHub][2].
 
 0.5.0
 =====
+
+* [#106](https://github.com/kowainik/tomland/pull/106)
+  Swap fields in BiMaps for consistency with `lens` package. 
 * [#104](https://github.com/kowainik/tomland/pull/104)
   Add `_TextBy` and `_Show` combinators
 * [#100](https://github.com/kowainik/tomland/pull/100)
