@@ -7,15 +7,15 @@ The change log is available [on GitHub][2].
 0.5.0
 =====
 
-* [#106](https://github.com/kowainik/tomland/pull/106)
-  Swap fields in BiMaps for consistency with `lens` package. 
-* [#104](https://github.com/kowainik/tomland/pull/104)
+* [#95](https://github.com/kowainik/tomland/issues/95
+  Swap fields in BiMaps for consistency with `lens` package.
+* [#70](https://github.com/kowainik/tomland/issues/70)
   Add `_TextBy` and `_Show` combinators
-* [#100](https://github.com/kowainik/tomland/pull/100)
+* [#11](https://github.com/kowainik/tomland/issues/11)
   Add `PrintOptions` (sorting, indentation) for pretty printer.
-* [#97](https://github.com/kowainik/tomland/pull/97)
+* [#17](https://github.com/kowainik/tomland/issues/17)
   Allow underscores in integers*.
-* [#96](https://github.com/kowainik/tomland/issues/96):
+* [#90](https://github.com/kowainik/tomland/issues/90):
   Migrate to megaparsec 7.0
 * [#81](https://github.com/kowainik/tomland/issues/81):
   **Important:** Rename data types.
