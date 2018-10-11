@@ -50,15 +50,15 @@ testT = Test
   where
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)
-    eitherT1 = Toml.match (Toml._Integer >>> Toml._Left)  "either.Left"
-           <|> Toml.match (Toml._String  >>> Toml._Right) "either.Right"
+    eitherT1 = Toml.match (Toml._Left >>> Toml._Integer)  "either.Left"
+           <|> Toml.match (Toml._Right >>> Toml._String) "either.Right"
 
     -- same key for sum type;
     -- doesn't work if you have something like `Either String String`,
     -- you should distinguish these cases by different keys like in `eitherT1` example
     eitherT2 :: TomlCodec (Either String Double)
-    eitherT2 = ( Toml.match (Toml._String >>> Toml._Left)
-             <!> Toml.match (Toml._Double >>> Toml._Right)
+    eitherT2 = ( Toml.match (Toml._Left >>> Toml._String)
+             <!> Toml.match (Toml._Right >>> Toml._Double)
                ) "either"
 
 main :: IO ()
