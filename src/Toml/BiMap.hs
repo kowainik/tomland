@@ -113,8 +113,8 @@ matchValueBackward :: BiMap a AnyValue -> Value t -> Maybe a
 matchValueBackward = liftMatch . backward
 
 -- | Creates prism for 'Text' to 'AnyValue' with custom functions
-_TextBy :: (Text -> Maybe a) -> (a -> Text) -> BiMap a AnyValue
-_TextBy parseText toText =
+_TextBy :: (a -> Text) -> (Text -> Maybe a) -> BiMap a AnyValue
+_TextBy toText parseText =
   mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
 
 -- | 'Bool' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
