@@ -27,12 +27,12 @@ module Toml.BiMap
        , _String
        , _ShowString
        , _Show
-       , _UnsignedToInteger
+       , _UnsignedInteger
        , _Natural
        , _Word
-       , _RealFracToRealFrac
+       , _RealReal
        , _Float
-       , _TextToByteString
+       , _ByteStringText
        , _ByteString
 
        , _Left
@@ -157,30 +157,30 @@ _ShowString = BiMap (Just . show) readMaybe
 _Show :: (Show a, Read a) => BiMap a AnyValue
 _Show = _ShowString >>> _String
 
-_UnsignedToInteger :: (Integral n) => BiMap Integer n
-_UnsignedToInteger = BiMap (Just . fromIntegral) maybeInteger
+_UnsignedInteger :: (Integral n) => BiMap n Integer
+_UnsignedInteger = prism fromIntegral maybeInteger
   where maybeInteger n
           | n < 0     = Nothing
           | otherwise = Just (toInteger n)
 
-_Natural :: BiMap AnyValue Natural
-_Natural = _Integer >>> _UnsignedToInteger
+_Natural :: BiMap Natural AnyValue
+_Natural = _UnsignedInteger >>> _Integer
 
-_Word :: BiMap AnyValue Word
-_Word = _Integer >>> _UnsignedToInteger
+_Word :: BiMap Word AnyValue
+_Word = _UnsignedInteger >>> _Integer
 
-_RealFracToRealFrac ::  (Real a, Real b, Fractional a, Fractional b) => BiMap a b
-_RealFracToRealFrac = iso realToFrac realToFrac
+_RealReal ::  (Real a, Real b, Fractional a, Fractional b) => BiMap a b
+_RealReal = iso realToFrac realToFrac
 
-_Float :: BiMap AnyValue Float
-_Float = _Double >>> _RealFracToRealFrac
+_Float :: BiMap Float AnyValue
+_Float = _RealReal >>> _Double
 
-_TextToByteString :: BiMap Text ByteString
-_TextToByteString = BiMap (Just . encodeUtf8) maybeText
+_ByteStringText :: BiMap ByteString Text
+_ByteStringText = prism encodeUtf8 maybeText
   where maybeText = either (const Nothing) Just . decodeUtf8'
 
-_ByteString:: BiMap AnyValue ByteString
-_ByteString = _Text >>> _TextToByteString
+_ByteString:: BiMap ByteString AnyValue
+_ByteString = _ByteStringText >>> _Text
 
 -- | 'Array' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Array :: BiMap a AnyValue -> BiMap [a] AnyValue
