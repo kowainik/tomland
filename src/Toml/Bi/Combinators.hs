@@ -36,7 +36,7 @@ import Data.Typeable (Typeable, typeRep)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (BiCodec, Codec (..), dimap)
-import Toml.BiMap (BiMap (..), matchValueForward, _Array, _Bool, _Double, _Integer, _String, _Text)
+import Toml.BiMap (BiMap (..), matchValueBackward, _Array, _Bool, _Double, _Integer, _String, _Text)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..), insertKeyAnyVal, insertTable,
@@ -55,7 +55,7 @@ typeName = Text.pack $ show $ typeRep $ Proxy @a
 
 {- | General function to create bidirectional converters for values.
 -}
-match :: forall a . Typeable a => BiMap AnyValue a -> Key -> TomlCodec a
+match :: forall a . Typeable a => BiMap a AnyValue -> Key -> TomlCodec a
 match BiMap{..} key = Codec input output
   where
     input :: Env a
@@ -63,13 +63,13 @@ match BiMap{..} key = Codec input output
         mVal <- asks $ HashMap.lookup key . tomlPairs
         case mVal of
             Nothing -> throwError $ KeyNotFound key
-            Just anyVal@(AnyValue val) -> case forward anyVal of
+            Just anyVal@(AnyValue val) -> case backward anyVal of
                 Just v  -> pure v
                 Nothing -> throwError $ TypeMismatch key (typeName @a) (valueType val)
 
     output :: a -> St a
     output a = do
-        anyVal <- MaybeT $ pure $ backward a
+        anyVal <- MaybeT $ pure $ forward a
         a <$ modify (insertKeyAnyVal key anyVal)
 
 -- | Helper dimapper to turn 'integer' parser into parser for 'Int', 'Natural', 'Word', etc.
@@ -147,7 +147,7 @@ string = match _String
 -- TODO: implement using bijectionMaker
 -- | Parser for array of values. Takes converter for single array element and
 -- returns list of values.
-arrayOf :: forall a . Typeable a => BiMap AnyValue a -> Key -> TomlCodec [a]
+arrayOf :: forall a . Typeable a => BiMap a AnyValue -> Key -> TomlCodec [a]
 arrayOf bimap key = Codec input output
   where
     input :: Env [a]
@@ -157,14 +157,14 @@ arrayOf bimap key = Codec input output
             Nothing -> throwError $ KeyNotFound key
             Just (AnyValue (Array arr)) -> case arr of
                 []      -> pure []
-                l@(x:_) -> case mapM (matchValueForward bimap) l of
+                l@(x:_) -> case mapM (matchValueBackward bimap) l of
                     Nothing   -> throwError $ TypeMismatch key (typeName @a) (valueType x)
                     Just vals -> pure vals
             Just _ -> throwError $ TypeMismatch key (typeName @a) TArray
 
     output :: [a] -> St [a]
     output a = do
-        anyVal <- MaybeT $ pure $ backward (_Array bimap) a
+        anyVal <- MaybeT $ pure $ forward (_Array bimap) a
         a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key anyVal vals) tables)
 
 -- | Parser for tables. Use it when when you have nested objects.
