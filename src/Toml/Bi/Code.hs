@@ -12,6 +12,7 @@ module Toml.Bi.Code
          -- * Encode/Decode
        , decode
        , decodeFile
+       , decodeToml
        , encode
        ) where
 
@@ -88,7 +89,12 @@ type TomlCodec a = BiCodec Env St a
 decode :: TomlCodec a -> Text -> Either DecodeException a
 decode codec text = do
     toml <- first ParseError (parse text)
-    runReader (runExceptT $ codecRead codec) toml
+    decodeToml codec toml
+
+-- | Convert toml into user data type.
+decodeToml :: TomlCodec a -> TOML -> Either DecodeException a
+decodeToml codec =
+    runReader (runExceptT $ codecRead codec)
 
 -- | Convert object to textual representation.
 encode :: TomlCodec a -> a -> Text
