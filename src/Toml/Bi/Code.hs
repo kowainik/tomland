@@ -14,6 +14,7 @@ module Toml.Bi.Code
        , decodeFile
        , runTomlCodec
        , encode
+       , execTomlCodec
        ) where
 
 import Control.Exception (Exception, throwIO)
