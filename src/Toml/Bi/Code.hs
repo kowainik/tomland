@@ -12,7 +12,9 @@ module Toml.Bi.Code
          -- * Encode/Decode
        , decode
        , decodeFile
+       , runTomlCodec
        , encode
+       , execTomlCodec
        ) where
 
 import Control.Exception (Exception, throwIO)
@@ -88,11 +90,18 @@ type TomlCodec a = BiCodec Env St a
 decode :: TomlCodec a -> Text -> Either DecodeException a
 decode codec text = do
     toml <- first ParseError (parse text)
-    runReader (runExceptT $ codecRead codec) toml
+    runTomlCodec codec toml
+
+-- | Convert toml into user data type.
+runTomlCodec :: TomlCodec a -> TOML -> Either DecodeException a
+runTomlCodec codec = runReader (runExceptT $ codecRead codec)
 
 -- | Convert object to textual representation.
 encode :: TomlCodec a -> a -> Text
-encode codec obj = pretty $ execState (runMaybeT $ codecWrite codec obj) mempty
+encode codec obj = pretty $ execTomlCodec codec obj
+
+execTomlCodec :: TomlCodec a -> a -> TOML
+execTomlCodec codec obj = execState (runMaybeT $ codecWrite codec obj) mempty
 
 -- | File loading error data type.
 data LoadTomlException = LoadTomlException FilePath Text

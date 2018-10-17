@@ -33,6 +33,8 @@ The change log is available [on GitHub][2].
   Drop support for GHC 8.0.2.
 * [#82](https://github.com/kowainik/tomland/issues/82):
   Remove `maybeT`. Add `diOptional`.
+* [#109](https://github.com/kowainik/tomland/issues/109):
+  Add function `decodeToml`.
 
 0.4.0
 =====
