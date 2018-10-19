@@ -1,0 +1,21 @@
+# TOML document for benchmark tests
+
+title = "TOML Example"
+atom = 6.626e-34
+cash = true
+chars = ["a", "b", "?", "!", "`", "-", "  d", "\t", "\\", "\"" ]
+digits = [1.0, 2.0, nan, -nan, +inf, -inf, 1.0]
+bool = [false, true, false]
+# date = [1979-05-27]
+# today = 1979-05-27T07:32:00Z
+
+[fruit]
+name = "apple"
+# harvestDate = 1979-05-27T00:32:00
+# due = 07:32:00
+
+[size]
+length = [-455967.93489327864, 6.626e-34, 696332.8128600451]
+# colors = ["\\U5D71e37f", "\\Ud4dB3c0F", "\\UFCf862b5", "\\U141bdcFA", "\\U8fE68fc6"]
+
+
