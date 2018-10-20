@@ -11,11 +11,10 @@ bool = [false, true, false]
 
 [fruit]
 name = "apple"
+description = "An apple is a sweet, edible fruit produced by an apple tree (Malus pumila). Apple trees are cultivated worldwide, and are the most widely grown species in the genus Malus. The tree originated in Central Asia, where its wild ancestor, Malus sieversii, is still found today."
 # harvestDate = 1979-05-27T00:32:00
 # due = 07:32:00
 
 [size]
-length = [-455967.93489327864, 6.626e-34, 696332.8128600451]
-# colors = ["\\U5D71e37f", "\\Ud4dB3c0F", "\\UFCf862b5", "\\U141bdcFA", "\\U8fE68fc6"]
-
-
+distance = [-455967.93489327864, 6.626e-34, 696332.8128600451]
+# distance = [[-455967.93489327864, 6.626e-34, 696332.8128600451], ["\\U5D71e37f", "\\Ud4dB3c0F", "\\UFCf862b5", "\\U141bdcFA", "\\U8fE68fc6"]]

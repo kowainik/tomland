@@ -118,7 +118,7 @@ test-suite tomland-test
 benchmark tomland-benchmark
   type:               exitcode-stdio-1.0
   hs-source-dirs:     benchmark
-  main-is:            Benchmark.hs
+  main-is:            Main.hs
 
   other-modules:      Benchmark.TomlData
 
@@ -126,7 +126,7 @@ benchmark tomland-benchmark
                       -threaded
                       -rtsopts
                       -with-rtsopts=-N
-                    --   -02
+                      -02
                       -Wincomplete-uni-patterns
                       -Wincomplete-record-updates
                       -Wcompat

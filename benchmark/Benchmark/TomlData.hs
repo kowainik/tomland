@@ -1,28 +1,29 @@
 module Benchmark.TomlData
-       (
-         test
+       ( test
        , codecToml
        , tomlData
        ) where
 
 import Data.Text (Text)
 -- import Data.Time (LocalTime (..), UTCTime (..), fromGregorian, timeToTimeOfDay, utc, utcToZonedTime)
+import Control.Applicative ((<|>))
+import Control.Arrow ((>>>))
 
-import Toml (TomlCodec, pretty, (.=))
+import Toml (TomlCodec, pretty, (.=), (<!>))
 import Toml.Edsl (mkToml, table, (=:))
 import Toml.Type (TOML (..), Value (..))
 
-import qualified Data.Text.IO as IO
+import qualified Data.Text.IO as TIO
 import qualified Toml
 
 
 test :: IO ()
 test = do
-    tomlFile <- IO.readFile "./benchmark/benchmark.toml"
-    IO.putStrLn $ case Toml.decode codecToml tomlFile of
+    tomlFile <- TIO.readFile "./benchmark/benchmark.toml"
+    TIO.putStrLn $ case Toml.decode codecToml tomlFile of
         Left msg   -> Toml.prettyException msg
         Right hask -> Toml.encode codecToml hask
-    IO.putStrLn $ case Toml.runTomlCodec codecToml tomlData of
+    TIO.putStrLn $ case Toml.runTomlCodec codecToml tomlData of
         Left msg   -> Toml.prettyException msg
         Right hask -> pretty $ Toml.execTomlCodec codecToml hask
 
@@ -35,19 +36,24 @@ data Test = Test
     , bool   :: [Bool]
     , fruit  :: FruitInside
     , size   :: SizeInside
+    -- , distance :: [[Either Text Double]]
     }
 
-newtype FruitInside = FruitInside
-    { unFruit :: Text }
+data FruitInside = FruitInside
+    { name :: Text
+    , description :: Text
+    }
 
 insideF :: TomlCodec FruitInside
-insideF = Toml.dimap unFruit FruitInside $ Toml.text "name"
+insideF = FruitInside <$> (Toml.text "name" .= name) <*> (Toml.text "description" .= description)
 
+-- newtype SizeInside = SizeInside
+--     { unSize :: [Either [Text] [Double]] }
 newtype SizeInside = SizeInside
-    { unSize :: [Double] }
+    { unSize :: [Either Text Double]}
 
 insideS :: TomlCodec SizeInside
-insideS = Toml.dimap unSize SizeInside $ Toml.arrayOf Toml._Double "length"
+insideS = Toml.dimap unSize SizeInside $ eitherTD "distance"
 
 codecToml :: TomlCodec Test
 codecToml = Test
@@ -58,7 +64,17 @@ codecToml = Test
     <*> Toml.arrayOf Toml._Double "digits" .= digits
     <*> Toml.arrayOf Toml._Bool "bool" .= bool
     <*> Toml.table insideF "fruit" .= fruit
-    <*> Toml.table insideS  "size" .= size
+    <*> Toml.table insideS "size" .= size
+
+-- eitherTD :: Toml.Key -> TomlCodec [Either [Text] [Double]]
+-- eitherTD = Toml.arrayOf (Toml._Left >>> (Toml._Array Toml._Text))
+--          <!> Toml.arrayOf (Toml._Right >>> (Toml._Array Toml._Double))
+-- eitherTD :: Toml.Key -> TomlCodec [[Either Text Double]]
+-- eitherTD = Toml.arrayOf (Toml._Array (Toml._Left >>> Toml._Text))
+--          <!> Toml.arrayOf (Toml._Array (Toml._Right >>> Toml._Double))
+eitherTD :: Toml.Key -> TomlCodec [Either Text Double]
+eitherTD = Toml.arrayOf (Toml._Left >>> Toml._Text)
+         <!> Toml.arrayOf (Toml._Right >>> Toml._Double)
 
 tomlData :: TOML
 tomlData = mkToml $ do
@@ -72,12 +88,16 @@ tomlData = mkToml $ do
     -- "today" =: (Date $ Zoned $ utcToZonedTime utc $
     --     UTCTime (fromGregorian 1979 05 27) (7 * 3600 + 32 * 60))
 
-    table "fruit" $
+    table "fruit" $ do
         "name" =: "apple"
+        "description" =: "An apple is a sweet, edible fruit produced by an apple tree (Malus pumila). Apple trees are cultivated worldwide, and are the most widely grown species in the genus Malus. The tree originated in Central Asia, where its wild ancestor, Malus sieversii, is still found today."
         -- "harvestDate" =: (Date $ Local $ LocalTime (fromGregorian 1979 05 27) $
         --     timeToTimeOfDay (32 * 60))
         -- "due" =: (Date $ Hours $ timeToTimeOfDay (7 * 3600 + 32 * 60))
 
     table "size" $
-        "length" =: Array [Double (-455967.93489327864), Double 6.626e-34, Double 696332.8128600451]
-        -- "colorsAndWeights" =: Array ["\\U5D71e37f", "\\Ud4dB3c0F", "\\UFCf862b5", "\\U141bdcFA", "\\U8fE68fc6"]
+        -- "distance" =: Array
+            -- [ Array [Double (-455967.93489327864), Double 6.626e-34, Double 696332.8128600451]
+            -- , Array ["\\U5D71e37f", "\\Ud4dB3c0F", "\\UFCf862b5", "\\U141bdcFA", "\\U8fE68fc6"]
+            -- ]
+        "distance" =: Array [Double (-455967.93489327864), Double 6.626e-34, Double 696332.8128600451]
