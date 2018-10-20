@@ -7,6 +7,8 @@ The change log is available [on GitHub][2].
 0.5.0
 =====
 
+* [#22] (https://github.com/kowainik/tomland/issues/22)
+  Report proper type checking error during parsing
 * [#95](https://github.com/kowainik/tomland/issues/95)
   Swap fields in BiMaps for consistency with `lens` package.
 * [#70](https://github.com/kowainik/tomland/issues/70)

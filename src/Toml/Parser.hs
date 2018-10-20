@@ -17,7 +17,8 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany)
+import Control.Applicative.Combinators (between, count, manyTill, option, optional, sepEndBy,
+                                        skipMany)
 import Control.Monad (void)
 import Data.Char (chr, isControl)
 import Data.Either (fromRight)
@@ -262,22 +263,22 @@ arrayP :: Parser [UValue]
 arrayP = lexeme (between (char '[' *> sc) (char ']') elements) <?> "array"
   where
     elements :: Parser [UValue]
-    elements = do v <- valueP -- Parse the first value to determine the type
-                  sep <- optional spComma
-                  vs <- case sep of
-                          Nothing -> return []
+    elements = option [] $ do -- Zero or more elements
+                 v   <- valueP -- Parse the first value to determine the type
+                 sep <- optional spComma
+                 vs  <- case sep of
+                          Nothing -> pure []
                           Just _  -> (element v `sepEndBy` spComma) <* skipMany spComma
-                  return (v:vs)
-               <|> return []
+                 return (v:vs)
 
     element :: UValue -> Parser UValue
     element = \case
-                 UBool    _ -> UBool    <$> boolP
-                 UDate    _ -> UDate    <$> dateTimeP
-                 UDouble  _ -> UDouble  <$> try doubleP
-                 UInteger _ -> UInteger <$> integerP
-                 UText    _ -> UText    <$> textP
-                 UArray   _ -> UArray   <$> arrayP
+        UBool    _ -> UBool    <$> boolP
+        UDate    _ -> UDate    <$> dateTimeP
+        UDouble  _ -> UDouble  <$> try doubleP
+        UInteger _ -> UInteger <$> integerP
+        UText    _ -> UText    <$> textP
+        UArray   _ -> UArray   <$> arrayP
 
     spComma :: Parser ()
     spComma = char ',' *> sc
