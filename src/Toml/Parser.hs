@@ -17,7 +17,8 @@ module Toml.Parser
 
 -- I hate default Prelude... Do I really need to import all this stuff manually?..
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, count, manyTill, optional, sepEndBy, skipMany)
+import Control.Applicative.Combinators (between, count, manyTill, option, optional, sepEndBy,
+                                        skipMany)
 import Control.Monad (void)
 import Data.Char (chr, isControl)
 import Data.Either (fromRight)
@@ -27,7 +28,7 @@ import Data.Text (Text)
 import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
                   minutesToTimeZone)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, match, satisfy, try)
+import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, match, satisfy, try, (<?>))
 import Text.Megaparsec.Char (alphaNumChar, char, digitChar, eol, hexDigitChar, space, space1,
                              string, tab)
 
@@ -72,7 +73,7 @@ text_ = void . text
 -- Strings
 
 textP :: Parser Text
-textP = multilineBasicStringP <|> multilineLiteralStringP <|> literalStringP <|> basicStringP
+textP = multilineBasicStringP <|> multilineLiteralStringP <|> literalStringP <|> basicStringP <?> "text"
 
 nonControlCharP :: Parser Text
 nonControlCharP = Text.singleton <$> satisfy (not . isControl)
@@ -171,7 +172,7 @@ decimalP = mkInteger <$> decimalStringP
     stripUnderscores = Text.filter (/= '_')
 
 integerP :: Parser Integer
-integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
+integerP = lexeme (binary <|> octal <|> hexadecimal <|> decimal) <?> "integer"
   where
     decimal      = L.signed sc decimalP
     binary       = try (char '0' >> char 'b') >> L.binary
@@ -179,7 +180,7 @@ integerP = lexeme $ binary <|> octal <|> hexadecimal <|> decimal
     hexadecimal  = try (char '0' >> char 'x') >> L.hexadecimal
 
 doubleP :: Parser Double
-doubleP = lexeme $ L.signed sc (num <|> inf <|> nan)
+doubleP = lexeme (L.signed sc (num <|> inf <|> nan)) <?> "double"
   where
     num, inf, nan :: Parser Double
     num = L.float
@@ -189,9 +190,10 @@ doubleP = lexeme $ L.signed sc (num <|> inf <|> nan)
 boolP :: Parser Bool
 boolP = False <$ text "false"
     <|> True  <$ text "true"
+    <?> "bool"
 
 dateTimeP :: Parser DateTime
-dateTimeP = lexeme $ try hoursP <|> dayLocalZoned
+dateTimeP = lexeme (try hoursP <|> dayLocalZoned) <?> "datetime"
   where
     -- dayLocalZoned can parse: only a local date, a local date with time, or
     -- a local date with a time and an offset
@@ -258,10 +260,25 @@ dateTimeP = lexeme $ try hoursP <|> dayLocalZoned
         Just frc' -> return (rdPico $ int ++ "." ++ frc')
 
 arrayP :: Parser [UValue]
-arrayP = lexeme $ between (char '[' *> sc) (char ']') elements
+arrayP = lexeme (between (char '[' *> sc) (char ']') elements) <?> "array"
   where
     elements :: Parser [UValue]
-    elements = valueP `sepEndBy` spComma <* skipMany (text ",")
+    elements = option [] $ do -- Zero or more elements
+                 v   <- valueP -- Parse the first value to determine the type
+                 sep <- optional spComma
+                 vs  <- case sep of
+                          Nothing -> pure []
+                          Just _  -> (element v `sepEndBy` spComma) <* skipMany spComma
+                 return (v:vs)
+
+    element :: UValue -> Parser UValue
+    element = \case
+        UBool    _ -> UBool    <$> boolP
+        UDate    _ -> UDate    <$> dateTimeP
+        UDouble  _ -> UDouble  <$> try doubleP
+        UInteger _ -> UInteger <$> integerP
+        UText    _ -> UText    <$> textP
+        UArray   _ -> UArray   <$> arrayP
 
     spComma :: Parser ()
     spComma = char ',' *> sc
