@@ -27,14 +27,15 @@ module Toml.BiMap
        , _String
        , _ShowString
        , _Show
-       , _UnsignedInteger
+       , _NaturalInteger
        , _Natural
+       , _WordInteger
        , _Word
        , _Float
        , _ByteStringText
        , _ByteString
-       , _LazyByteStringText
-       , _LazyByteString
+       , _LByteStringText
+       , _LByteString
 
        , _Left
        , _Right
@@ -160,17 +161,24 @@ _ShowString = BiMap (Just . show) readMaybe
 _Show :: (Show a, Read a) => BiMap a AnyValue
 _Show = _ShowString >>> _String
 
-_UnsignedInteger :: (Integral n) => BiMap n Integer
-_UnsignedInteger = prism fromIntegral maybeInteger
+_NaturalInteger :: BiMap Natural Integer
+_NaturalInteger = BiMap (Just . toInteger) maybeInteger
   where maybeInteger n
           | n < 0     = Nothing
-          | otherwise = Just (toInteger n)
+          | otherwise = Just (fromIntegral n)
 
 _Natural :: BiMap Natural AnyValue
-_Natural = _UnsignedInteger >>> _Integer
+_Natural = _NaturalInteger >>> _Integer
+
+_WordInteger :: BiMap Word Integer
+_WordInteger = BiMap (Just . toInteger) maybeInteger
+  where maybeInteger n
+          | n < toInteger (minBound :: Word) = Nothing
+          | n > toInteger (maxBound :: Word) = Nothing
+          | otherwise                        = Just (fromIntegral n)
 
 _Word :: BiMap Word AnyValue
-_Word = _UnsignedInteger >>> _Integer
+_Word = _WordInteger >>> _Integer
 
 _Float :: BiMap Float AnyValue
 _Float = iso realToFrac realToFrac >>> _Double
@@ -182,12 +190,12 @@ _ByteStringText = prism T.encodeUtf8 maybeText
 _ByteString:: BiMap ByteString AnyValue
 _ByteString = _ByteStringText >>> _Text
 
-_LazyByteStringText :: BiMap BL.ByteString Text
-_LazyByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) maybeText
+_LByteStringText :: BiMap BL.ByteString Text
+_LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) maybeText
   where maybeText = either (const Nothing) (Just . TL.toStrict) . TL.decodeUtf8'
 
-_LazyByteString:: BiMap BL.ByteString AnyValue
-_LazyByteString = _LazyByteStringText >>> _Text
+_LByteString:: BiMap BL.ByteString AnyValue
+_LByteString = _LByteStringText >>> _Text
 
 -- | 'Array' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Array :: BiMap a AnyValue -> BiMap [a] AnyValue
