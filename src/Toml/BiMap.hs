@@ -30,10 +30,11 @@ module Toml.BiMap
        , _UnsignedInteger
        , _Natural
        , _Word
-       , _RealReal
        , _Float
        , _ByteStringText
        , _ByteString
+       , _LazyByteStringText
+       , _LazyByteString
 
        , _Left
        , _Right
@@ -48,7 +49,6 @@ import Control.Monad ((>=>))
 
 import Data.ByteString (ByteString)
 import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Word (Word)
 import Numeric.Natural (Natural)
 import Text.Read (readMaybe)
@@ -58,7 +58,10 @@ import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchAr
 
 import qualified Control.Category as Cat
 import qualified Data.Text as T
-
+import qualified Data.Text.Encoding as T
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as TL
 
 ----------------------------------------------------------------------------
 -- BiMap concepts and ideas
@@ -169,18 +172,22 @@ _Natural = _UnsignedInteger >>> _Integer
 _Word :: BiMap Word AnyValue
 _Word = _UnsignedInteger >>> _Integer
 
-_RealReal ::  (Real a, Real b, Fractional a, Fractional b) => BiMap a b
-_RealReal = iso realToFrac realToFrac
-
 _Float :: BiMap Float AnyValue
-_Float = _RealReal >>> _Double
+_Float = iso realToFrac realToFrac >>> _Double
 
 _ByteStringText :: BiMap ByteString Text
-_ByteStringText = prism encodeUtf8 maybeText
-  where maybeText = either (const Nothing) Just . decodeUtf8'
+_ByteStringText = prism T.encodeUtf8 maybeText
+  where maybeText = either (const Nothing) Just . T.decodeUtf8'
 
 _ByteString:: BiMap ByteString AnyValue
 _ByteString = _ByteStringText >>> _Text
+
+_LazyByteStringText :: BiMap BL.ByteString Text
+_LazyByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) maybeText
+  where maybeText = either (const Nothing) (Just . TL.toStrict) . TL.decodeUtf8'
+
+_LazyByteString:: BiMap BL.ByteString AnyValue
+_LazyByteString = _LazyByteStringText >>> _Text
 
 -- | 'Array' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Array :: BiMap a AnyValue -> BiMap [a] AnyValue
