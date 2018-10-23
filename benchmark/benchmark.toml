@@ -16,5 +16,4 @@ description = "An apple is a sweet, edible fruit produced by an apple tree (Malu
 # due = 07:32:00
 
 [size]
-distance = [-455967.93489327864, 6.626e-34, 696332.8128600451]
-# distance = [[-455967.93489327864, 6.626e-34, 696332.8128600451], ["\\U5D71e37f", "\\Ud4dB3c0F", "\\UFCf862b5", "\\U141bdcFA", "\\U8fE68fc6"]]
+distance = [[-455967.93489327864, 6.626e-34, 696332.8128600451], [-455967.93489327864, 6.626e-34, 696332.8128600451]]

@@ -5,8 +5,6 @@ module Benchmark.TomlData
        ) where
 
 import Data.Text (Text)
--- import Data.Time (LocalTime (..), UTCTime (..), fromGregorian, timeToTimeOfDay, utc, utcToZonedTime)
-import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
 
 import Toml (TomlCodec, pretty, (.=), (<!>))
@@ -36,7 +34,6 @@ data Test = Test
     , bool   :: [Bool]
     , fruit  :: FruitInside
     , size   :: SizeInside
-    -- , distance :: [[Either Text Double]]
     }
 
 data FruitInside = FruitInside
@@ -47,10 +44,8 @@ data FruitInside = FruitInside
 insideF :: TomlCodec FruitInside
 insideF = FruitInside <$> (Toml.text "name" .= name) <*> (Toml.text "description" .= description)
 
--- newtype SizeInside = SizeInside
---     { unSize :: [Either [Text] [Double]] }
 newtype SizeInside = SizeInside
-    { unSize :: [Either Text Double]}
+    { unSize :: [Either [Text] [Double]]}
 
 insideS :: TomlCodec SizeInside
 insideS = Toml.dimap unSize SizeInside $ eitherTD "distance"
@@ -66,15 +61,9 @@ codecToml = Test
     <*> Toml.table insideF "fruit" .= fruit
     <*> Toml.table insideS "size" .= size
 
--- eitherTD :: Toml.Key -> TomlCodec [Either [Text] [Double]]
--- eitherTD = Toml.arrayOf (Toml._Left >>> (Toml._Array Toml._Text))
---          <!> Toml.arrayOf (Toml._Right >>> (Toml._Array Toml._Double))
--- eitherTD :: Toml.Key -> TomlCodec [[Either Text Double]]
--- eitherTD = Toml.arrayOf (Toml._Array (Toml._Left >>> Toml._Text))
---          <!> Toml.arrayOf (Toml._Array (Toml._Right >>> Toml._Double))
-eitherTD :: Toml.Key -> TomlCodec [Either Text Double]
-eitherTD = Toml.arrayOf (Toml._Left >>> Toml._Text)
-         <!> Toml.arrayOf (Toml._Right >>> Toml._Double)
+eitherTD :: Toml.Key -> TomlCodec [Either [Text] [Double]]
+eitherTD = Toml.arrayOf (Toml._Left >>> (Toml._Array Toml._Text))
+         <!> Toml.arrayOf (Toml._Right >>> (Toml._Array Toml._Double))
 
 tomlData :: TOML
 tomlData = mkToml $ do
@@ -96,8 +85,7 @@ tomlData = mkToml $ do
         -- "due" =: (Date $ Hours $ timeToTimeOfDay (7 * 3600 + 32 * 60))
 
     table "size" $
-        -- "distance" =: Array
-            -- [ Array [Double (-455967.93489327864), Double 6.626e-34, Double 696332.8128600451]
-            -- , Array ["\\U5D71e37f", "\\Ud4dB3c0F", "\\UFCf862b5", "\\U141bdcFA", "\\U8fE68fc6"]
-            -- ]
-        "distance" =: Array [Double (-455967.93489327864), Double 6.626e-34, Double 696332.8128600451]
+        "distance" =: Array
+            [ Array [Double (-455967.93489327864), Double 6.626e-34, Double 696332.8128600451]
+            , Array [Double (-455967.93489327864), Double 6.626e-34, Double 696332.8128600451]
+            ]
