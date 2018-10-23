@@ -23,6 +23,7 @@ module Toml.BiMap
        , _Double
        , _Integer
        , _Text
+       , _Date
        , _StringText
        , _String
        , _ShowString
@@ -41,8 +42,9 @@ import Control.Monad ((>=>))
 import Data.Text (Text)
 import Text.Read (readMaybe)
 
-import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchArray, matchBool,
-                  matchDouble, matchInteger, matchText, reifyAnyValues)
+import Toml.Type (AnyValue (..), TValue (TArray), Value (..), DateTime (..) ,
+                  liftMatch, matchArray, matchBool, matchDouble, matchInteger,
+                  matchText, matchDate, reifyAnyValues)
 
 import qualified Control.Category as Cat
 import qualified Data.Text as T
@@ -132,6 +134,9 @@ _Double = mkAnyValueBiMap matchDouble Double
 -- | 'Text' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Text :: BiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
+
+_Date :: BiMap DateTime AnyValue
+_Date = mkAnyValueBiMap matchDate Date
 
 _StringText :: BiMap String Text
 _StringText = iso T.pack T.unpack
