@@ -163,7 +163,8 @@ _Show = _ShowString >>> _String
 
 _NaturalInteger :: BiMap Natural Integer
 _NaturalInteger = BiMap (Just . toInteger) maybeInteger
-  where maybeInteger n
+  where maybeInteger :: Integer -> Maybe Natural
+        maybeInteger n
           | n < 0     = Nothing
           | otherwise = Just (fromIntegral n)
 
@@ -172,7 +173,8 @@ _Natural = _NaturalInteger >>> _Integer
 
 _WordInteger :: BiMap Word Integer
 _WordInteger = BiMap (Just . toInteger) maybeInteger
-  where maybeInteger n
+  where maybeInteger :: Integer -> Maybe Word
+        maybeInteger n
           | n < toInteger (minBound :: Word) = Nothing
           | n > toInteger (maxBound :: Word) = Nothing
           | otherwise                        = Just (fromIntegral n)
