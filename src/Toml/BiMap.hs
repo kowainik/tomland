@@ -146,7 +146,7 @@ _ZonedTime = mkAnyValueBiMap (getTime . matchDate) (Date . Zoned)
 
 _LocalTime :: BiMap LocalTime AnyValue
 _LocalTime = mkAnyValueBiMap (getTime . matchDate) (Date . Local)
-  where getTime (Just (Local z)) = Just z
+  where getTime (Just (Local l)) = Just l
         getTime _                = Nothing
 
 _Day :: BiMap Day AnyValue
@@ -156,7 +156,7 @@ _Day = mkAnyValueBiMap (getTime . matchDate) (Date . Day)
 
 _TimeOfDay :: BiMap TimeOfDay AnyValue
 _TimeOfDay = mkAnyValueBiMap (getTime . matchDate) (Date . Hours)
-  where getTime (Just (Hours z)) = Just z
+  where getTime (Just (Hours h)) = Just h
         getTime _                = Nothing
 
 _StringText :: BiMap String Text
