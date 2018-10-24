@@ -7,6 +7,8 @@ The change log is available [on GitHub][2].
 0.5.0
 =====
 
+* [#99] (https://github.com/kowainik/tomland/issues/99)
+  Split `Toml.Parser` file into smaller files
 * [#22] (https://github.com/kowainik/tomland/issues/22)
   Report proper type checking error during parsing
 * [#95](https://github.com/kowainik/tomland/issues/95)
