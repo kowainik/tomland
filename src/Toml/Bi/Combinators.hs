@@ -13,7 +13,10 @@ module Toml.Bi.Combinators
        , double
        , text
        , string
-       , date
+       , zonedTime
+       , localTime
+       , day
+       , timeOfDay
        , arrayOf
 
          -- * Combinators
@@ -34,13 +37,16 @@ import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable, typeRep)
+import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (BiCodec, Codec (..), dimap)
-import Toml.BiMap (BiMap (..), matchValueBackward, _Array, _Bool, _Double, _Integer, _String, _Text, _Date)
+import Toml.BiMap (BiMap (..), matchValueBackward, _Array, _Bool, _Double,
+                   _Integer, _String, _Text, _ZonedTime, _LocalTime, _Day,
+                   _TimeOfDay)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..), DateTime (..),
+import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..),
                   insertKeyAnyVal, insertTable, valueType)
 
 import qualified Data.HashMap.Strict as HashMap
@@ -145,8 +151,17 @@ text = match _Text
 string :: Key -> TomlCodec String
 string = match _String
 
-date :: Key -> TomlCodec DateTime
-date = match _Date
+zonedTime :: Key -> TomlCodec ZonedTime
+zonedTime = match _ZonedTime
+
+localTime :: Key -> TomlCodec LocalTime
+localTime = match _LocalTime
+
+day :: Key -> TomlCodec Day
+day = match _Day
+
+timeOfDay :: Key -> TomlCodec TimeOfDay
+timeOfDay = match _TimeOfDay
 
 -- TODO: implement using bijectionMaker
 -- | Parser for array of values. Takes converter for single array element and

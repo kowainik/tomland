@@ -23,7 +23,10 @@ module Toml.BiMap
        , _Double
        , _Integer
        , _Text
-       , _Date
+       , _ZonedTime
+       , _LocalTime
+       , _Day
+       , _TimeOfDay
        , _StringText
        , _String
        , _ShowString
@@ -41,6 +44,7 @@ import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 import Data.Text (Text)
 import Text.Read (readMaybe)
+import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 
 import Toml.Type (AnyValue (..), TValue (TArray), Value (..), DateTime (..) ,
                   liftMatch, matchArray, matchBool, matchDouble, matchInteger,
@@ -135,8 +139,25 @@ _Double = mkAnyValueBiMap matchDouble Double
 _Text :: BiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
 
-_Date :: BiMap DateTime AnyValue
-_Date = mkAnyValueBiMap matchDate Date
+_ZonedTime :: BiMap ZonedTime AnyValue
+_ZonedTime = mkAnyValueBiMap (getTime . matchDate) (Date . Zoned)
+  where getTime (Just (Zoned z)) = Just z
+        getTime _                = Nothing
+
+_LocalTime :: BiMap LocalTime AnyValue
+_LocalTime = mkAnyValueBiMap (getTime . matchDate) (Date . Local)
+  where getTime (Just (Local z)) = Just z
+        getTime _                = Nothing
+
+_Day :: BiMap Day AnyValue
+_Day = mkAnyValueBiMap (getTime . matchDate) (Date . Day)
+  where getTime (Just (Day d)) = Just d
+        getTime _              = Nothing
+
+_TimeOfDay :: BiMap TimeOfDay AnyValue
+_TimeOfDay = mkAnyValueBiMap (getTime . matchDate) (Date . Hours)
+  where getTime (Just (Hours z)) = Just z
+        getTime _                = Nothing
 
 _StringText :: BiMap String Text
 _StringText = iso T.pack T.unpack
