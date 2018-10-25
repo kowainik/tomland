@@ -23,6 +23,10 @@ module Toml.BiMap
        , _Double
        , _Integer
        , _Text
+       , _ZonedTime
+       , _LocalTime
+       , _Day
+       , _TimeOfDay
        , _StringText
        , _String
        , _ShowString
@@ -53,9 +57,11 @@ import Data.Text (Text)
 import Data.Word (Word)
 import Numeric.Natural (Natural)
 import Text.Read (readMaybe)
+import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 
-import Toml.Type (AnyValue (..), TValue (TArray), Value (..), liftMatch, matchArray, matchBool,
-                  matchDouble, matchInteger, matchText, reifyAnyValues)
+import Toml.Type (AnyValue (..), TValue (TArray), Value (..), DateTime (..) ,
+                  liftMatch, matchArray, matchBool, matchDouble, matchInteger,
+                  matchText, matchDate, reifyAnyValues)
 
 import qualified Control.Category as Cat
 import qualified Data.Text as T
@@ -148,6 +154,26 @@ _Double = mkAnyValueBiMap matchDouble Double
 -- | 'Text' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
 _Text :: BiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
+
+_ZonedTime :: BiMap ZonedTime AnyValue
+_ZonedTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Zoned)
+  where getTime (Zoned z) = Just z
+        getTime _         = Nothing
+
+_LocalTime :: BiMap LocalTime AnyValue
+_LocalTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Local)
+  where getTime (Local l) = Just l
+        getTime _         = Nothing
+
+_Day :: BiMap Day AnyValue
+_Day = mkAnyValueBiMap (matchDate >=> getTime) (Date . Day)
+  where getTime (Day d) = Just d
+        getTime _       = Nothing
+
+_TimeOfDay :: BiMap TimeOfDay AnyValue
+_TimeOfDay = mkAnyValueBiMap (matchDate >=> getTime) (Date . Hours)
+  where getTime (Hours h) = Just h
+        getTime _         = Nothing
 
 _StringText :: BiMap String Text
 _StringText = iso T.pack T.unpack
