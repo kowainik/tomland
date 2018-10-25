@@ -35,11 +35,17 @@ module Toml.BiMap
        , _Natural
        , _WordInteger
        , _Word
+       , _IntInteger
+       , _Int
        , _Float
        , _ByteStringText
        , _ByteString
        , _LByteStringText
        , _LByteString
+       , _Set
+       , _IntSet
+       , _HashSet
+       , _NonEmpty
 
        , _Left
        , _Right
@@ -56,6 +62,7 @@ import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Data.Word (Word)
 import Numeric.Natural (Natural)
+import Data.Hashable (Hashable)
 import Text.Read (readMaybe)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 
@@ -69,6 +76,10 @@ import qualified Data.Text.Encoding as T
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
+import qualified Data.Set as S
+import qualified Data.HashSet as H
+import qualified Data.IntSet as IS
+import qualified Data.List.NonEmpty as NE
 
 ----------------------------------------------------------------------------
 -- BiMap concepts and ideas
@@ -198,15 +209,26 @@ _Natural :: BiMap Natural AnyValue
 _Natural = _NaturalInteger >>> _Integer
 
 _WordInteger :: BiMap Word Integer
-_WordInteger = BiMap (Just . toInteger) maybeInteger
-  where maybeInteger :: Integer -> Maybe Word
-        maybeInteger n
+_WordInteger = BiMap (Just . toInteger) maybeWord
+  where maybeWord :: Integer -> Maybe Word
+        maybeWord n
           | n < toInteger (minBound :: Word) = Nothing
           | n > toInteger (maxBound :: Word) = Nothing
           | otherwise                        = Just (fromIntegral n)
 
 _Word :: BiMap Word AnyValue
 _Word = _WordInteger >>> _Integer
+
+_IntInteger :: BiMap Int Integer
+_IntInteger = BiMap (Just . toInteger) maybeInt
+  where maybeInt :: Integer -> Maybe Int
+        maybeInt n
+          | n < toInteger (minBound :: Int) = Nothing
+          | n > toInteger (maxBound :: Int) = Nothing
+          | otherwise                       = Just (fromIntegral n)
+
+_Int :: BiMap Int AnyValue
+_Int = _IntInteger >>> _Integer
 
 _Float :: BiMap Float AnyValue
 _Float = iso realToFrac realToFrac >>> _Double
@@ -231,6 +253,20 @@ _Array elementBimap = BiMap
     { forward = mapM (forward elementBimap) >=> fmap AnyValue . toMArray
     , backward = \(AnyValue val) -> matchArray (backward elementBimap) val
     }
+
+_NonEmpty :: BiMap a AnyValue -> BiMap (NE.NonEmpty a) AnyValue
+_NonEmpty bimap = BiMap (Just . NE.toList) toMaybeNonEmpty >>> _Array bimap
+  where toMaybeNonEmpty [] = Nothing
+        toMaybeNonEmpty x = Just (NE.fromList x)
+
+_Set :: (Ord a) => BiMap a AnyValue -> BiMap (S.Set a) AnyValue
+_Set bimap = iso S.toList S.fromList >>> _Array bimap
+
+_HashSet :: (Eq a, Hashable a) => BiMap a AnyValue -> BiMap (H.HashSet a) AnyValue
+_HashSet bimap = iso H.toList H.fromList >>> _Array bimap
+
+_IntSet :: BiMap IS.IntSet AnyValue
+_IntSet = iso IS.toList IS.fromList >>> _Array _Int
 
 -- TODO: move somewhere else?
 {- | Function for creating 'Array' from list of 'AnyValue'.
