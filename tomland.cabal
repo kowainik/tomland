@@ -33,6 +33,9 @@ library
                          Toml.BiMap
                          Toml.Edsl
                          Toml.Parser
+                           Toml.Parser.Core
+                           Toml.Parser.Value
+                           Toml.Parser.TOML
                          Toml.PrefixTree
                          Toml.Printer
                          Toml.Type

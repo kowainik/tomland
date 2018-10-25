@@ -8,8 +8,8 @@ import Test.Hspec.Megaparsec (parseSatisfies, shouldFailOn, shouldParse)
 import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
-import Toml.Parser (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, keyValP, tableHeaderP, textP,
-                    tomlP)
+import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, textP)
+import Toml.Parser.TOML (keyValP, tableHeaderP, tomlP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
 

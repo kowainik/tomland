@@ -7,6 +7,10 @@ The change log is available [on GitHub][2].
 0.5.0
 =====
 
+* [#99] (https://github.com/kowainik/tomland/issues/99)
+  Split `Toml.Parser` file into smaller files
+* [#22] (https://github.com/kowainik/tomland/issues/22)
+  Report proper type checking error during parsing
 * [#95](https://github.com/kowainik/tomland/issues/95)
   Swap fields in BiMaps for consistency with `lens` package.
 * [#70](https://github.com/kowainik/tomland/issues/70)
@@ -33,6 +37,8 @@ The change log is available [on GitHub][2].
   Drop support for GHC 8.0.2.
 * [#82](https://github.com/kowainik/tomland/issues/82):
   Remove `maybeT`. Add `diOptional`.
+* [#109](https://github.com/kowainik/tomland/issues/109):
+  Add function `decodeToml`.
 
 0.4.0
 =====
