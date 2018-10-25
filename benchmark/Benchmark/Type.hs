@@ -47,13 +47,14 @@ data FruitInside = FruitInside
 
 insideF :: TomlCodec FruitInside
 insideF = FruitInside
-    <$> (Toml.text "name" .= fiName)
-    <*> (Toml.text "description" .= fiDescription)
-    <*> (Toml.localTime "harvest" .= fiHarvest)
-    <*> (Toml.timeOfDay "due" .= fiDue)
+    <$> Toml.text "name" .= fiName
+    <*> Toml.text "description" .= fiDescription
+    <*> Toml.localTime "harvest" .= fiHarvest
+    <*> Toml.timeOfDay "due" .= fiDue
 
 newtype SizeInside = SizeInside
-    { unSize :: [[Double]]}
+    { unSize :: [[Double]]
+    }
 
 insideS :: TomlCodec SizeInside
 insideS = Toml.dimap unSize SizeInside $ Toml.arrayOf (Toml._Array Toml._Double) "dimensions"
