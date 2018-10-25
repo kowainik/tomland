@@ -8,7 +8,7 @@ The change log is available [on GitHub][2].
 =====
 
 * [#115](https://github.com/kowainik/tomland/issues/115):
-  Added time combinators to `Toml.BiMap` and `Toml.Bi.Combinators`
+  Added time combinators to `Toml.BiMap` and `Toml.Bi.Combinators`.
 * [#22] (https://github.com/kowainik/tomland/issues/22)
   Report proper type checking error during parsing
 * [#95](https://github.com/kowainik/tomland/issues/95)
