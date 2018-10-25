@@ -126,7 +126,7 @@ benchmark tomland-benchmark
                       -threaded
                       -rtsopts
                       -with-rtsopts=-N
-                      -02
+                      -O2
                       -Wincomplete-uni-patterns
                       -Wincomplete-record-updates
                       -Wcompat
