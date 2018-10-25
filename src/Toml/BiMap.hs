@@ -140,24 +140,24 @@ _Text :: BiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
 
 _ZonedTime :: BiMap ZonedTime AnyValue
-_ZonedTime = mkAnyValueBiMap (getTime . matchDate) (Date . Zoned)
-  where getTime (Just (Zoned z)) = Just z
-        getTime _                = Nothing
+_ZonedTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Zoned)
+  where getTime (Zoned z) = Just z
+        getTime _         = Nothing
 
 _LocalTime :: BiMap LocalTime AnyValue
-_LocalTime = mkAnyValueBiMap (getTime . matchDate) (Date . Local)
-  where getTime (Just (Local l)) = Just l
-        getTime _                = Nothing
+_LocalTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Local)
+  where getTime (Local l) = Just l
+        getTime _         = Nothing
 
 _Day :: BiMap Day AnyValue
-_Day = mkAnyValueBiMap (getTime . matchDate) (Date . Day)
-  where getTime (Just (Day d)) = Just d
-        getTime _              = Nothing
+_Day = mkAnyValueBiMap (matchDate >=> getTime) (Date . Day)
+  where getTime (Day d) = Just d
+        getTime _       = Nothing
 
 _TimeOfDay :: BiMap TimeOfDay AnyValue
-_TimeOfDay = mkAnyValueBiMap (getTime . matchDate) (Date . Hours)
-  where getTime (Just (Hours h)) = Just h
-        getTime _                = Nothing
+_TimeOfDay = mkAnyValueBiMap (matchDate >=> getTime) (Date . Hours)
+  where getTime (Hours h) = Just h
+        getTime _         = Nothing
 
 _StringText :: BiMap String Text
 _StringText = iso T.pack T.unpack
