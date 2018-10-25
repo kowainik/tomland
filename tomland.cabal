@@ -120,7 +120,7 @@ benchmark tomland-benchmark
   hs-source-dirs:     benchmark
   main-is:            Main.hs
 
-  other-modules:      Benchmark.TomlData
+  other-modules:      Benchmark.Type
 
   ghc-options:        -Wall
                       -threaded
