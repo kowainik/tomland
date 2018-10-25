@@ -13,7 +13,7 @@ The change log is available [on GitHub][2].
   Report proper type checking error during parsing.
 * [#95](https://github.com/kowainik/tomland/issues/95):
   Swap fields in BiMaps for consistency with `lens` package.
-* [#70](https://github.com/kowainik/tomland/issues/70)
+* [#70](https://github.com/kowainik/tomland/issues/70):
   Add `_TextBy` and `_Show` combinators
 * [#11](https://github.com/kowainik/tomland/issues/11)
   Add `PrintOptions` (sorting, indentation) for pretty printer.
