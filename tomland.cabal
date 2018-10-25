@@ -45,6 +45,7 @@ library
                            Toml.Type.Value
 
   build-depends:       base >= 4.10 && < 5
+                     , bytestring ^>= 0.10
                      , hashable ^>= 1.2
                      , megaparsec ^>= 7.0.1
                      , mtl ^>= 2.2
