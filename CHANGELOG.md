@@ -9,18 +9,20 @@ The change log is available [on GitHub][2].
 
 * [#115](https://github.com/kowainik/tomland/issues/115):
   Added time combinators to `Toml.BiMap` and `Toml.Bi.Combinators`.
+* [#99](https://github.com/kowainik/tomland/issues/99):
+  Split `Toml.Parser` file into smaller files.
 * [#22](https://github.com/kowainik/tomland/issues/22):
   Report proper type checking error during parsing.
 * [#95](https://github.com/kowainik/tomland/issues/95):
   Swap fields in BiMaps for consistency with `lens` package.
 * [#70](https://github.com/kowainik/tomland/issues/70):
-  Add `_TextBy` and `_Show` combinators
-* [#11](https://github.com/kowainik/tomland/issues/11)
+  Add `_TextBy` and `_Show` combinators.
+* [#11](https://github.com/kowainik/tomland/issues/11):
   Add `PrintOptions` (sorting, indentation) for pretty printer.
-* [#17](https://github.com/kowainik/tomland/issues/17)
+* [#17](https://github.com/kowainik/tomland/issues/17):
   Allow underscores in integers*.
 * [#90](https://github.com/kowainik/tomland/issues/90):
-  Migrate to megaparsec 7.0
+  Migrate to megaparsec 7.0.
 * [#81](https://github.com/kowainik/tomland/issues/81):
   **Important:** Rename data types.
   _Migration guide:_ rename `Bijection` to `Codec`, `Bi` to `BiCodec` and
@@ -54,9 +56,9 @@ The change log is available [on GitHub][2].
 * [#19](https://github.com/kowainik/tomland/issues/19):
   Add proper parsing of floating point numbers.
 * [#15](https://github.com/kowainik/tomland/issues/15):
-  Add parsing of multiline strings
+  Add parsing of multiline strings.
 * [#40](https://github.com/kowainik/tomland/issues/40):
-  Support full-featured string parser
+  Support full-featured string parser.
 * [#18](https://github.com/kowainik/tomland/issues/18):
   Add dates parsing.
 * Add useful combinators for `newtype` wrappers.
