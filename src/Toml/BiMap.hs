@@ -1,6 +1,6 @@
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE Rank2Types     #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE Rank2Types          #-}
 
 {- | Implementation of partial bidirectional mapping as a data type.
 -}
@@ -33,9 +33,8 @@ module Toml.BiMap
        , _Show
        , _NaturalInteger
        , _Natural
-       , _WordInteger
+       , _BoundedInteger
        , _Word
-       , _IntInteger
        , _Int
        , _Float
        , _ByteStringText
@@ -213,29 +212,20 @@ _NaturalInteger = BiMap (Just . toInteger) maybeInteger
 _Natural :: BiMap Natural AnyValue
 _Natural = _NaturalInteger >>> _Integer
 
-_WordInteger :: BiMap Word Integer
-_WordInteger = BiMap (Just . toInteger) maybeWord
+_BoundedInteger :: (Integral a, Bounded a) => BiMap a Integer
+_BoundedInteger = BiMap (Just . toInteger) maybeBounded
   where
-    maybeWord :: Integer -> Maybe Word
-    maybeWord n
-      | n < toInteger (minBound :: Word) = Nothing
-      | n > toInteger (maxBound :: Word) = Nothing
-      | otherwise                        = Just (fromIntegral n)
+    maybeBounded :: forall a. (Integral a, Bounded a) => Integer -> Maybe a
+    maybeBounded n
+      | n < toInteger (minBound :: a) = Nothing
+      | n > toInteger (maxBound :: a) = Nothing
+      | otherwise                     = Just (fromIntegral n)
 
 _Word :: BiMap Word AnyValue
-_Word = _WordInteger >>> _Integer
-
-_IntInteger :: BiMap Int Integer
-_IntInteger = BiMap (Just . toInteger) maybeInt
-  where
-    maybeInt :: Integer -> Maybe Int
-    maybeInt n
-      | n < toInteger (minBound :: Int) = Nothing
-      | n > toInteger (maxBound :: Int) = Nothing
-      | otherwise                       = Just (fromIntegral n)
+_Word = _BoundedInteger >>> _Integer
 
 _Int :: BiMap Int AnyValue
-_Int = _IntInteger >>> _Integer
+_Int = _BoundedInteger >>> _Integer
 
 _Float :: BiMap Float AnyValue
 _Float = iso realToFrac realToFrac >>> _Double

@@ -64,6 +64,7 @@ library
                        LambdaCase
                        OverloadedStrings
                        RecordWildCards
+                       ScopedTypeVariables
                        TypeApplications
 
 executable play-tomland
