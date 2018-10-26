@@ -46,6 +46,7 @@ library
 
   build-depends:       base >= 4.10 && < 5
                      , bytestring ^>= 0.10
+                     , containers >= 0.5.7 && < 0.7
                      , hashable ^>= 1.2
                      , megaparsec ^>= 7.0.1
                      , mtl ^>= 2.2
@@ -63,6 +64,7 @@ library
                        LambdaCase
                        OverloadedStrings
                        RecordWildCards
+                       ScopedTypeVariables
                        TypeApplications
 
 executable play-tomland
