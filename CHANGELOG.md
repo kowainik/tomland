@@ -41,6 +41,8 @@ The change log is available [on GitHub][2].
   Remove `maybeT`. Add `diOptional`.
 * [#109](https://github.com/kowainik/tomland/issues/109):
   Add function `decodeToml`.
+* [#110](https://github.com/kowainik/tomland/issues/110):
+  Example of TOML for the benchmarks.
 
 0.4.0
 =====

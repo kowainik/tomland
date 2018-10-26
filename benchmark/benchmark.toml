@@ -1,0 +1,26 @@
+# TOML document for benchmark tests
+
+title = "TOML Example"
+atom = 6.626e-34
+cash = true
+words = [ "all", 'strings', """are the same""", '''type''']
+digits = [1.0, 2.0, nan, -nan, +inf, -inf, 1.0]
+bool = [false, true, false]
+date = [1895-05-27, 1980-11-23, 2018-10-25]
+today = 1979-05-27T07:32:00Z
+
+[fruit]
+name = "apple"
+description = '''
+An apple is a sweet, edible fruit produced by an apple tree (Malus pumila).
+Apple trees are cultivated worldwide, and are the most widely grown species in the genus Malus.
+The tree originated in Central Asia, where its wild ancestor, Malus sieversii, is still found today.
+'''
+harvest = 1979-05-27T00:32:00
+due = 07:32:00
+
+[size]
+dimensions =
+    [ [-455967.93489327864, 6.626e-34, 696332.8128600451]
+    , [-455967.93489327864, 6.626e-34, 696332.8128600451]
+    ]

@@ -97,8 +97,7 @@ infixl 3 <!>
 f <!> g = \a -> f a <|> g a
 
 {- | This is an instance of 'Profunctor' for 'Codec'. But since there's no
-@Profunctor@ type class in @base@ or package with no dependencies (and we don't
-want to bring extra dependencies) this instance is implemented as a single
+@Profunctor@ type class in @base@ or package with no dependencies (and we don't want to bring extra dependencies) this instance is implemented as a single
 top-level function.
 
 Useful when you want to parse @newtype@s. For example, if you had data type like this:
