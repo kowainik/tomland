@@ -288,7 +288,6 @@ valueP = UBool    <$> boolP
 
 
 anyValueP :: Parser AnyValue
-anyValueP = valueP >>= \uval ->
-  case typeCheck uval of
+anyValueP = typeCheck <$> valueP >>= \case
     Left err -> fail $ show err
     Right v  -> return v
