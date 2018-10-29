@@ -28,6 +28,7 @@ tableHeaderP = (,) <$> tableNameP <*> (makeToml <$> many hasKeyP)
 distributeEithers :: [(c, Either a b)] -> ([(c, a)], [(c, b)])
 distributeEithers = foldr distribute ([], [])
   where
+    distribute :: (c, Either a b) -> ([(c, a)], [(c, b)]) -> ([(c, a)], [(c, b)])
     distribute (k, Left a) (ls, rs) = ((k, a) : ls, rs)
     distribute (k, Right b) (ls, rs) = (ls, (k, b) : rs)
 
