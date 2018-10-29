@@ -3,6 +3,7 @@ module Toml.Parser.TOML
        , tableP
        , tableArrayP
        , inlineTableP
+       , inlineArrayP
        , tomlP
        ) where
 
@@ -10,12 +11,14 @@ import Control.Applicative (Alternative (many, (<|>)))
 import Control.Monad.Combinators (between, eitherP, optional, sepEndBy)
 
 import Data.List.NonEmpty (NonEmpty ((:|)), (<|))
+import Data.List.NonEmpty (NonEmpty ((:|)), (<|))
 import Toml.Parser.Core (Parser, sc, text, try)
 import Toml.Parser.Value (anyValueP, keyP, tableArrayNameP, tableNameP)
 import Toml.PrefixTree (Key (..), KeysDiff (..), fromList, keysDiff)
 import Toml.Type (AnyValue, TOML (..))
 
 import qualified Data.HashMap.Lazy as HashMap
+import qualified Data.List.NonEmpty as NE
 
 -- Parsers
 
