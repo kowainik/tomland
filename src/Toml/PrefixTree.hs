@@ -24,6 +24,7 @@ module Toml.PrefixTree
        , pattern (:||)
        , Prefix
        , KeysDiff (..)
+       , keysDiff
        ) where
 
 import Prelude hiding (lookup)

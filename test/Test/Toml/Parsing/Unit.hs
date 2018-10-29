@@ -2,13 +2,14 @@
 
 module Test.Toml.Parsing.Unit where
 
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Semigroup ((<>))
 import Data.Time (LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian, minutesToTimeZone)
 import Test.Hspec.Megaparsec (parseSatisfies, shouldFailOn, shouldParse)
 import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
-import Toml.Parser.TOML (hasKeyP, tableHeaderP, tomlP)
+import Toml.Parser.TOML (hasKeyP, inlineArrayP, tableArrayP, tableP, tomlP)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, textP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
@@ -30,7 +31,9 @@ spec_Parser = do
         parseKey        = parseX keyP
         parseHasKey     = parseX hasKeyP
         parseText       = parseX textP
-        parseTable      = parseX tableHeaderP
+        parseTable      = parseX tableP
+        parseTableArray = parseX tableArrayP
+        parseInlineArr  = parseX inlineArrayP
         parseToml       = parseX tomlP
 
         arrayFailOn     = failOn arrayP
@@ -40,6 +43,7 @@ spec_Parser = do
         hasKeyFailOn    = failOn hasKeyP
         integerFailOn   = failOn integerP
         textFailOn      = failOn textP
+        inlineArrFailOn = failOn inlineArrayP
 
         doubleSatisfies = parseXSatisfies doubleP
 
@@ -56,9 +60,13 @@ spec_Parser = do
         makeOffset hours minutes =
             minutesToTimeZone (hours * 60 + minutes * signum hours)
 
-        makeKey k = (Key . NE.fromList) (map Piece k)
+        makeKey = Key . NE.fromList . map Piece
 
-        tomlFromList kv = TOML (HashMap.fromList kv) mempty mempty
+        tomlFromKeyVal kv = TOML (HashMap.fromList kv) mempty mempty
+
+        tomlFromTable t = TOML mempty (fromList t) mempty
+
+        tomlFromArray = TOML mempty mempty . HashMap.fromList
 
 
     describe "arrayP" $ do
@@ -289,18 +297,18 @@ spec_Parser = do
         it "can parse a TOML inline table" $ do
             let key1KV = (makeKey ["key1"], AnyValue (Text "some string"))
                 key2KV = (makeKey ["key2"], AnyValue (Integer 123))
-                table  = (makeKey ["table-1"], Right $ tomlFromList [key1KV, key2KV])
+                table  = (makeKey ["table-1"], Right $ tomlFromKeyVal [key1KV, key2KV])
 
             parseHasKey "table-1={key1 = \"some string\", key2 = 123}" table
         it "can parse an empty TOML table"
-            $ parseHasKey "table = {}" (makeKey ["table"], Right $ tomlFromList [])
+            $ parseHasKey "table = {}" (makeKey ["table"], Right $ tomlFromKeyVal [])
         it "allows the name of the table to be any valid TOML key" $ do
             parseHasKey
                 "dog.\"tater.man\"={}"
-                (makeKey ["dog", dquote "tater.man"], Right $ tomlFromList [])
+                (makeKey ["dog", dquote "tater.man"], Right $ tomlFromKeyVal [])
             parseHasKey
                 "j.\"ʞ\".'l'={}"
-                (makeKey ["j", dquote "ʞ", squote "l"], Right $ tomlFromList [])
+                (makeKey ["j", dquote "ʞ", squote "l"], Right $ tomlFromKeyVal [])
 
 
 
@@ -489,36 +497,116 @@ spec_Parser = do
                       "1979-05-27T00:32:0007:00"
                       (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
 
-    describe "tableHeaderP" $ do
+    describe "tableP" $ do
         it "can parse a TOML table" $ do
             let key1KV = (makeKey ["key1"], AnyValue (Text "some string"))
                 key2KV = (makeKey ["key2"], AnyValue (Integer 123))
-                table  = (makeKey ["table-1"], tomlFromList [key1KV, key2KV])
+                table  = (makeKey ["table-1"], tomlFromKeyVal [key1KV, key2KV])
 
             parseTable "[table-1]\nkey1 = \"some string\"\nkey2 = 123" table
         it "can parse an empty TOML table"
-            $ parseTable "[table]" (makeKey ["table"], tomlFromList [])
+            $ parseTable "[table]" (makeKey ["table"], tomlFromKeyVal [])
         it "allows the name of the table to be any valid TOML key" $ do
             parseTable
                 "[dog.\"tater.man\"]"
-                (makeKey ["dog", dquote "tater.man"], tomlFromList [])
+                (makeKey ["dog", dquote "tater.man"], tomlFromKeyVal [])
             parseTable
                 "[j.\"ʞ\".'l']"
-                (makeKey ["j", dquote "ʞ", squote "l"], tomlFromList [])
+                (makeKey ["j", dquote "ʞ", squote "l"], tomlFromKeyVal [])
+        it "can parse a table with subarrays" $ do
+          let toml1 = tomlFromKeyVal [(makeKey ["key1"], AnyValue (Text "some string"))]
+              toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
+              arr1 = tomlFromArray [(makeKey ["array"], toml1 :| [toml2])]
+              table = (makeKey ["table"], arr1)
+          parseTable ("[table]\n[[table.array]] \nkey1 = \"some string\"\n \
+                              \ [[table.array]] \nkey2 = 123") table
 
-    describe "tomlP" $ it "can parse TOML files" $ do
-        let tomlString
+    describe "tableArrayP" $ do
+        it "can parse an empty array"
+            $ parseTableArray "[[tArray]]" (makeKey ["tArray"], mempty :| [])
+        it "allows the name of the table array to be any valid TOML key" $ do
+            parseTableArray
+                "[[dog.\"tater.man\"]]"
+                (makeKey ["dog", dquote "tater.man"], mempty :| [])
+            parseTableArray
+                "[[j.\"ʞ\".'l']]"
+                (makeKey ["j", dquote "ʞ", squote "l"], mempty :| [])
+        it "can parse an array of key/values" $ do
+            let toml1 = tomlFromKeyVal [(makeKey ["key1"], AnyValue (Text "some string"))]
+                toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
+                array  = (makeKey ["tArray"], NE.fromList [toml1, toml2])
+            parseTableArray "[[tArray]]\nkey1 = \"some string\"\n \
+                           \ [[tArray]]\nkey2 = 123" array
+        it "can parse an array of tables" $ do
+            let toml1 = tomlFromKeyVal [(makeKey ["key1"], AnyValue (Text "some string"))]
+                toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
+                table1 = tomlFromTable [(makeKey ["table1"], toml1)]
+                table2 = tomlFromTable [(makeKey ["table2"], toml2)]
+                array  = (makeKey ["tArray"], NE.fromList [table1, table2])
+            parseTableArray "[[tArray]]\n[tArray.table1] \n key1 = \"some string\"\n \
+                           \ [[tArray]]\n[tArray.table2] \n key2 = 123" array
+        it "can parse an array of array" $ do
+            let toml1 = tomlFromKeyVal [(makeKey ["key1"], AnyValue (Text "some string"))]
+                toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
+                arr = tomlFromArray [(makeKey ["table-1-1"], NE.fromList [toml1, toml2])]
+                array = (makeKey ["table-1"], arr :| [])
+            parseTableArray ("[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
+                                         \ [[table-1.table-1-1]] \nkey2 = 123") array
+        it "can parse an array of arrays" $ do
+            let toml1 = tomlFromKeyVal [(makeKey ["key1"], AnyValue (Text "some string"))]
+                toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
+                arr1 = (makeKey ["table-1-1"], toml1 :| [])
+                arr2 = (makeKey ["table-1-2"], toml2 :| [])
+                array = (makeKey ["table-1"], tomlFromArray [arr1, arr2] :| [])
+            parseTableArray ("[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
+                                         \ [[table-1.table-1-2]] \nkey2 = 123") array
+
+
+    describe "inlineArrayP" $ do
+        it "can parse a TOML table array" $ do
+            let toml1 = tomlFromKeyVal [(makeKey ["key1"], AnyValue (Text "some string"))]
+                toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
+                table  = (makeKey ["table-1"], NE.fromList [toml1, toml2])
+            parseInlineArr "table-1 = [{key1 = \"some string\"}, {key2 = 123}]" table
+        it "will not parse an empty table array"
+            $ inlineArrFailOn "table = []"
+        it "allows the name of the table array to be any valid TOML key" $ do
+            parseInlineArr
+                "dog.\"tater.man\" = [{}]"
+                (makeKey ["dog", dquote "tater.man"], mempty :| [])
+            parseInlineArr
+                "j.\"ʞ\".'l' = [{}]"
+                (makeKey ["j", dquote "ʞ", squote "l"], mempty :| [])
+
+
+    describe "tomlP" $ do
+       it "can parse TOML files" $ do
+          let tomlString
                 = " # This is a TOML document.\n\n \
                        \ title = \"TOML Example\" # Comment \n\n \
                        \ [owner]\n \
                        \ name = \"Tom Preston-Werner\" \
                        \ enabled = true # First class dates"
 
-            titleKV    = (makeKey ["title"], AnyValue (Text "TOML Example"))
-            nameKV = (makeKey ["name"], AnyValue (Text "Tom Preston-Werner"))
-            enabledKV  = (makeKey ["enabled"], AnyValue (Bool True))
-            tomlPairs  = HashMap.fromList [titleKV]
-            tomlTables = fromList
-                [(makeKey ["owner"], tomlFromList [nameKV, enabledKV])]
+              titleKV = (makeKey ["title"], AnyValue (Text "TOML Example"))
+              nameKV = (makeKey ["name"], AnyValue (Text "Tom Preston-Werner"))
+              enabledKV  = (makeKey ["enabled"], AnyValue (Bool True))
+              tomlPairs  = HashMap.fromList [titleKV]
+              tomlTables = fromList
+                          [(makeKey ["owner"], tomlFromKeyVal [nameKV, enabledKV])]
 
-        parseToml tomlString (TOML tomlPairs tomlTables mempty)
+          parseToml tomlString (TOML tomlPairs tomlTables mempty)
+       it "can parse mix of tables and arrays" $ do
+          let toml1 = tomlFromKeyVal [(makeKey ["key1"], AnyValue (Text "some string"))]
+              toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
+              toml3 = tomlFromKeyVal [(makeKey ["key3"], AnyValue (Double 3.14))]
+              toml4 = tomlFromKeyVal [(makeKey ["key4"], AnyValue (Bool True))]
+              array1 = (makeKey ["array1"], toml1 :| [])
+              table1 = (makeKey ["table1"], toml2)
+              array2 = (makeKey ["array2"], toml3 :| [])
+              table2 = (makeKey ["table2"], toml4)
+              toml = tomlFromTable [table1, table2] <> tomlFromArray [array1, array2]
+          parseToml ("[[array1]]\n key1 = \"some string\" \n \
+                     \[table1]  \n key2 = 123 \n \
+                     \[[array2]]\n key3 = 3.14 \n \
+                     \[table2]  \n key4 = true") toml
