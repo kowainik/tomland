@@ -13,7 +13,7 @@ import Text.Megaparsec (Parsec, ShowErrorComponent, Stream, parse)
 
 import Toml.Edsl (mkToml, table, tableArray, (=:))
 import Toml.Parser.String (textP)
-import Toml.Parser.TOML (hasKeyP, tableArrayP, tableP, tomlP, keyP)
+import Toml.Parser.TOML (hasKeyP, keyP, tableArrayP, tableP, tomlP)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
@@ -31,6 +31,7 @@ spec_Parser = do
     keySpecs
     textSpecs
     dateSpecs
+    tableSpecs
     tomlSpecs
 
 arraySpecs :: Spec
@@ -440,6 +441,19 @@ tableSpecs = do
             parseTableArray "[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
                                          \ [[table-1.table-1-2]] \nkey2 = 123" array
 
+    describe "inlineArrayP" $ do
+        it "allows the name of the table array to be any valid TOML key" $ do
+            parseInlineArr
+                "dog.\"tater.man\" = [{}]"
+                (makeKey ["dog", dquote "tater.man"], mempty :| [])
+            parseInlineArr
+                "j.\"ʞ\".'l' = [{}]"
+                (makeKey ["j", dquote "ʞ", squote "l"], mempty :| [])
+        it "can parse a TOML table array" $ do
+            let array  = (makeKey ["table"], NE.fromList [strT, intT])
+            parseInlineArr "table = [{key1 = \"some string\"}, {key2 = 123}]" array
+        it "will not parse an empty table array" $ inlineArrFailOn "table = []"
+
 tomlSpecs :: Spec
 tomlSpecs = describe "tomlP" $ do
     it "can parse TOML files" $
@@ -509,17 +523,22 @@ parseTable :: Text -> (Key, TOML) -> Expectation
 parseTable = parseX tableP
 parseTableArray :: Text -> (Key, NonEmpty TOML) -> Expectation
 parseTableArray = parseX tableArrayP
+parseInlineArr :: Text -> (Key, NonEmpty TOML) -> Expectation
+parseInlineArr = parseX inlineArrayP
 parseToml :: Text -> TOML -> Expectation
 parseToml = parseX tomlP
 
-arrayFailOn, boolFailOn, dateTimeFailOn, doubleFailOn, hasKeyFailOn, integerFailOn, textFailOn :: Text -> Expectation
+arrayFailOn, boolFailOn, dateTimeFailOn, doubleFailOn, integerFailOn, textFailOn :: Text -> Expectation
 arrayFailOn     = failOn arrayP
 boolFailOn      = failOn boolP
 dateTimeFailOn  = failOn dateTimeP
 doubleFailOn    = failOn doubleP
-hasKeyFailOn    = failOn hasKeyP
 integerFailOn   = failOn integerP
 textFailOn      = failOn textP
+
+hasKeyFailOn, inlineArrFailOn :: Text -> Expectation
+hasKeyFailOn    = failOn hasKeyP
+inlineArrFailOn = failOn inlineArrayP
 
 -- UValue Util
 

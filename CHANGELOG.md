@@ -34,6 +34,8 @@ The change log is available [on GitHub][2].
   Parser for arrays of tables.
 * [#144](https://github.com/kowainik/tomland/issues/144):
   Added tests for arrays of tables.
+* [#145](https://github.com/kowainik/tomland/issues/145):
+  Parser and tests for inline arrays of tables.
 
 ## 0.5.0 — Nov 12, 2018
 

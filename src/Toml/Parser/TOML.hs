@@ -8,11 +8,12 @@ module Toml.Parser.TOML
        , tableP
        , tableArrayP
        , inlineTableP
+       , inlineArrayP
        , tomlP
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Monad.Combinators (between, eitherP, optional, sepEndBy)
+import Control.Monad.Combinators (between, eitherP, optional, sepEndBy, sepEndBy1)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -25,8 +26,8 @@ import Toml.Type (AnyValue, TOML (..))
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.HashMap.Lazy as HashMap
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as Text
-
 
 -- | Parser for bare key piece, like @foo@.
 bareKeyPieceP :: Parser Text
@@ -85,6 +86,14 @@ tableArrayP = do
         Nothing         -> pure (key, localToml :| [])
         Just (_, tomls) -> pure (key, localToml <| tomls)
 
+-- | Parser for inline arrays of tables
+inlineArrayP :: Parser (Key, NonEmpty TOML)
+inlineArrayP = (,)
+  <$> keyP <* text "="
+  <*> between
+        (text "[") (text "]")
+        (NE.fromList <$> inlineTableP `sepEndBy1` text ",")
+
 -- | Parser for a '.toml' file
 tomlP :: Parser TOML
 tomlP = do
@@ -92,7 +101,7 @@ tomlP = do
     (val, inline)  <- distributeEithers <$> many hasKeyP
     (table, array) <- fmap distributeEithers
         $ many
-        $ eitherPairP (try tableP) tableArrayP
+        $ eitherPairP (try tableP) (tableArrayP <|> inlineArrayP)
 
     pure TOML
         { tomlPairs       = HashMap.fromList val
@@ -107,7 +116,7 @@ subTableContent key = do
     (table, array) <- fmap distributeEithers
         $ many
         $ childKeyP key
-        $ eitherPairP (try tableP) tableArrayP
+        $ eitherPairP (try tableP) (tableArrayP <|> inlineArrayP)
 
     pure TOML
         { tomlPairs       = HashMap.fromList val
