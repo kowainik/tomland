@@ -123,6 +123,7 @@ benchmark tomland-benchmark
   main-is:            Main.hs
 
   other-modules:      Benchmark.Type
+                      Benchmark.HtomlBench
 
   ghc-options:        -Wall
                       -threaded
@@ -138,6 +139,8 @@ benchmark tomland-benchmark
                       -Wmissing-export-lists
                       -Wpartial-fields
   build-depends:      base
+                    , aeson
+                    , htoml
                     , tomland
                     , text
                     , time

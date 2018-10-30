@@ -1,10 +1,12 @@
 module Benchmark.Type
-       ( test
+       ( Test(..)
+       , test
        , testCodec
        ) where
 
 import Data.Text (Text)
-import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime)
+import Data.Time (ZonedTime)
+import Data.Aeson.Types (FromJSON, withObject, parseJSON, (.:))
 
 import Toml (TomlCodec, pretty, (.=))
 import Toml.Parser (parse)
@@ -30,31 +32,47 @@ data Test = Test
     , testAtom   :: Double
     , testCash   :: Bool
     , testWords  :: [Text]
-    , testDigits :: [Double]
     , testBool   :: [Bool]
-    , testDate   :: [Day]
     , testToday  :: ZonedTime
     , testFruit  :: FruitInside
     , testSize   :: SizeInside
     }
+    deriving Show
+
+instance FromJSON Test where
+    parseJSON = withObject "Test" $ \o -> Test
+        <$> o .: "title"
+        <*> o .: "atom"
+        <*> o .: "cash"
+        <*> o .: "words"
+        <*> o .: "bool"
+        <*> o .: "today"
+        <*> o .: "fruit"
+        <*> o .: "size"
 
 data FruitInside = FruitInside
     { fiName        :: Text
     , fiDescription :: Text
-    , fiHarvest     :: LocalTime
-    , fiDue         :: TimeOfDay
     }
+    deriving Show
+
+instance FromJSON FruitInside where
+    parseJSON = withObject "FruitInside" $ \o -> FruitInside
+        <$> o .: "name"
+        <*> o .: "description"
 
 insideF :: TomlCodec FruitInside
 insideF = FruitInside
     <$> Toml.text "name" .= fiName
     <*> Toml.text "description" .= fiDescription
-    <*> Toml.localTime "harvest" .= fiHarvest
-    <*> Toml.timeOfDay "due" .= fiDue
 
 newtype SizeInside = SizeInside
     { unSize :: [[Double]]
     }
+    deriving Show
+
+instance FromJSON SizeInside where
+    parseJSON = withObject "SizeInside" $ \o -> SizeInside <$> o .: "dimensions"
 
 insideS :: TomlCodec SizeInside
 insideS = Toml.dimap unSize SizeInside $ Toml.arrayOf (Toml._Array Toml._Double) "dimensions"
@@ -65,9 +83,7 @@ testCodec = Test
     <*> Toml.double "atom" .= testAtom
     <*> Toml.bool "cash" .= testCash
     <*> Toml.arrayOf Toml._Text "words" .= testWords
-    <*> Toml.arrayOf Toml._Double "digits" .= testDigits
     <*> Toml.arrayOf Toml._Bool "bool" .= testBool
-    <*> Toml.arrayOf Toml._Day "date" .= testDate
     <*> Toml.zonedTime "today" .= testToday
     <*> Toml.table insideF "fruit" .= testFruit
     <*> Toml.table insideS "size" .= testSize
