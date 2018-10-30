@@ -294,7 +294,7 @@ spec_Parser = do
 
             parseHasKey "table-1={key1 = \"some string\", key2 = 123}" table
         it "can parse an empty TOML table"
-            $ parseHasKey "[table]" (makeKey ["table"], Right $ tomlFromList [])
+            $ parseHasKey "table = {}" (makeKey ["table"], Right $ tomlFromList [])
         it "allows the name of the table to be any valid TOML key" $ do
             parseHasKey
                 "dog.\"tater.man\"={}"
