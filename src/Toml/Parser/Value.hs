@@ -142,7 +142,7 @@ keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
 
 
 tableNameP :: Parser Key
-tableNameP = lexeme $ between (char '[') (char ']') keyP
+tableNameP = between (text "[") (text "]") keyP
 
 
 -- Values
