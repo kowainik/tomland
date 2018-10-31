@@ -1,46 +1,32 @@
 module Benchmark.Type
-       ( Test(..)
-       , test
-       , testCodec
+       ( HaskellType(..)
+       , codec
        ) where
 
 import Data.Text (Text)
 import Data.Time (ZonedTime)
 import Data.Aeson.Types (FromJSON, withObject, parseJSON, (.:))
 
-import Toml (TomlCodec, pretty, (.=))
-import Toml.Parser (parse)
+import Toml (TomlCodec, (.=))
 
-import qualified Data.Text.IO as TIO
 import qualified Toml
 
 
-test :: IO ()
-test = do
-    tomlFile <- TIO.readFile "./benchmark/benchmark.toml"
-    TIO.putStrLn $ case Toml.decode testCodec tomlFile of
-        Left msg    -> Toml.prettyException msg
-        Right value -> Toml.encode testCodec value
-    case parse tomlFile of
-        Left (Toml.ParseException msg) -> TIO.putStrLn msg
-        Right toml -> TIO.putStrLn $ case Toml.runTomlCodec testCodec toml of
-            Left msg    -> Toml.prettyException msg
-            Right value -> pretty $ Toml.execTomlCodec testCodec value
-
-data Test = Test
-    { testTitle  :: Text
-    , testAtom   :: Double
-    , testCash   :: Bool
-    , testWords  :: [Text]
-    , testBool   :: [Bool]
-    , testToday  :: ZonedTime
-    , testFruit  :: FruitInside
-    , testSize   :: SizeInside
+-- | Haskell type to convert to.
+data HaskellType = HaskellType
+    { htTitle  :: Text
+    , htAtom   :: Double
+    , htCash   :: Bool
+    , htWords  :: [Text]
+    , htBool   :: [Bool]
+    , htToday  :: ZonedTime
+    , htFruit  :: FruitInside
+    , htSize   :: SizeInside
     }
     deriving Show
 
-instance FromJSON Test where
-    parseJSON = withObject "Test" $ \o -> Test
+instance FromJSON HaskellType where
+    parseJSON = withObject "HaskellType" $ \o -> HaskellType
         <$> o .: "title"
         <*> o .: "atom"
         <*> o .: "cash"
@@ -77,13 +63,14 @@ instance FromJSON SizeInside where
 insideS :: TomlCodec SizeInside
 insideS = Toml.dimap unSize SizeInside $ Toml.arrayOf (Toml._Array Toml._Double) "dimensions"
 
-testCodec :: TomlCodec Test
-testCodec = Test
-    <$> Toml.text "title" .= testTitle
-    <*> Toml.double "atom" .= testAtom
-    <*> Toml.bool "cash" .= testCash
-    <*> Toml.arrayOf Toml._Text "words" .= testWords
-    <*> Toml.arrayOf Toml._Bool "bool" .= testBool
-    <*> Toml.zonedTime "today" .= testToday
-    <*> Toml.table insideF "fruit" .= testFruit
-    <*> Toml.table insideS "size" .= testSize
+-- | Codec to use in tomland decode and convert functions.
+codec :: TomlCodec HaskellType
+codec = HaskellType
+    <$> Toml.text "title" .= htTitle
+    <*> Toml.double "atom" .= htAtom
+    <*> Toml.bool "cash" .= htCash
+    <*> Toml.arrayOf Toml._Text "words" .= htWords
+    <*> Toml.arrayOf Toml._Bool "bool" .= htBool
+    <*> Toml.zonedTime "today" .= htToday
+    <*> Toml.table insideF "fruit" .= htFruit
+    <*> Toml.table insideS "size" .= htSize

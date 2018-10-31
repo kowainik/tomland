@@ -123,7 +123,7 @@ benchmark tomland-benchmark
   main-is:            Main.hs
 
   other-modules:      Benchmark.Type
-                      Benchmark.HtomlBench
+                      Benchmark.Htoml
 
   ghc-options:        -Wall
                       -threaded
