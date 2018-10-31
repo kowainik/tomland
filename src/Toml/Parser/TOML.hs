@@ -1,44 +1,47 @@
 module Toml.Parser.TOML
-       ( keyValP
+       ( hasKeyP
        , tableHeaderP
+       , inlineTableP
        , tomlP
        ) where
 
 import Control.Applicative (Alternative (many))
+import Control.Applicative.Combinators (sepEndBy, between, eitherP)
 
 import Toml.Parser.Core (Parser, sc, text)
-import Toml.Parser.Value (keyP, tableNameP, valueP)
+import Toml.Parser.Value (keyP, tableNameP, anyValueP)
 import Toml.PrefixTree (Key (..), fromList)
-import Toml.Type (AnyValue, TOML (..), typeCheck)
+import Toml.Type (AnyValue, TOML (..))
 
 import qualified Data.HashMap.Lazy as HashMap
 
+hasKeyP :: Parser (Key, Either AnyValue TOML)
+hasKeyP = (,) <$> keyP <* text "=" <*> eitherP anyValueP inlineTableP
 
-keyValP :: Parser (Key, AnyValue)
-keyValP = do
-    k    <- keyP
-    _    <- text "="
-    uval <- valueP
-    case typeCheck uval of
-        Left err -> fail $ show err
-        Right v  -> pure (k, v)
-
+inlineTableP :: Parser TOML
+inlineTableP = between (text "{") (text "}")
+                       (makeToml <$> hasKeyP `sepEndBy` text ",")
 
 tableHeaderP :: Parser (Key, TOML)
-tableHeaderP = do
-    k    <- tableNameP
-    toml <- makeToml <$> many keyValP
-    pure (k, toml)
-  where
-    makeToml :: [(Key, AnyValue)] -> TOML
-    makeToml kv = TOML (HashMap.fromList kv) mempty
+tableHeaderP = (,) <$> tableNameP <*> (makeToml <$> many hasKeyP)
 
+distributeEithers :: [(c, Either a b)] -> ([(c, a)], [(c, b)])
+distributeEithers = foldr distribute ([], [])
+  where
+    distribute :: (c, Either a b) -> ([(c, a)], [(c, b)]) -> ([(c, a)], [(c, b)])
+    distribute (k, Left a) (ls, rs) = ((k, a) : ls, rs)
+    distribute (k, Right b) (ls, rs) = (ls, (k, b) : rs)
+
+makeToml :: [(Key, Either AnyValue TOML)] -> TOML
+makeToml kvs = TOML (HashMap.fromList lefts) (fromList rights)
+  where
+    (lefts, rights) = distributeEithers kvs
 
 tomlP :: Parser TOML
 tomlP = do
     sc
-    kvs    <- many keyValP
+    (val, inline) <- distributeEithers <$> many hasKeyP
     tables <- many tableHeaderP
-    pure TOML { tomlPairs  = HashMap.fromList kvs
-              , tomlTables = fromList tables
-              }
+    return TOML { tomlPairs  = HashMap.fromList val
+                , tomlTables = fromList $ tables ++ inline
+                }

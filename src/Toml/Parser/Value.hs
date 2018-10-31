@@ -8,6 +8,7 @@ module Toml.Parser.Value
        , tableNameP
        , textP
        , valueP
+       , anyValueP
        ) where
 
 import Control.Applicative (Alternative (many, some, (<|>)))
@@ -26,7 +27,7 @@ import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitCha
                          hexDigitChar, hexadecimal, lexeme, match, octal, satisfy, sc, signed,
                          space, string, tab, text, try, (<?>))
 import Toml.PrefixTree (Key (..), Piece (..))
-import Toml.Type (DateTime (..), UValue (..))
+import Toml.Type (DateTime (..), UValue (..), AnyValue, typeCheck)
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.Text as Text
@@ -141,7 +142,7 @@ keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
 
 
 tableNameP :: Parser Key
-tableNameP = lexeme $ between (char '[') (char ']') keyP
+tableNameP = between (text "[") (text "]") keyP
 
 
 -- Values
@@ -284,3 +285,9 @@ valueP = UBool    <$> boolP
      <|> UInteger <$> integerP
      <|> UText    <$> textP
      <|> UArray   <$> arrayP
+
+
+anyValueP :: Parser AnyValue
+anyValueP = typeCheck <$> valueP >>= \case
+    Left err -> fail $ show err
+    Right v  -> return v

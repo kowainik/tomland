@@ -9,7 +9,7 @@ import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, textP)
-import Toml.Parser.TOML (keyValP, tableHeaderP, tomlP)
+import Toml.Parser.TOML (hasKeyP, tableHeaderP, tomlP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
 
@@ -28,7 +28,7 @@ spec_Parser = do
         parseDouble     = parseX doubleP
         parseInteger    = parseX integerP
         parseKey        = parseX keyP
-        parseKeyVal     = parseX keyValP
+        parseHasKey     = parseX hasKeyP
         parseText       = parseX textP
         parseTable      = parseX tableHeaderP
         parseToml       = parseX tomlP
@@ -37,7 +37,7 @@ spec_Parser = do
         boolFailOn      = failOn boolP
         dateTimeFailOn  = failOn dateTimeP
         doubleFailOn    = failOn doubleP
-        keyValFailOn    = failOn keyValP
+        hasKeyFailOn    = failOn hasKeyP
         integerFailOn   = failOn integerP
         textFailOn      = failOn textP
 
@@ -256,36 +256,54 @@ spec_Parser = do
         --xit "ignores whitespaces around dot-separated parts" $ do
         --  parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
 
-    describe "keyValP" $ do
+    describe "hasKeyP" $ do
         it "can parse key/value pairs" $ do
-            parseKeyVal "x='abcdef'" (makeKey ["x"], AnyValue (Text "abcdef"))
-            parseKeyVal "x=1"        (makeKey ["x"], AnyValue (Integer 1))
-            parseKeyVal "x=5.2"      (makeKey ["x"], AnyValue (Double 5.2))
-            parseKeyVal "x=true"     (makeKey ["x"], AnyValue (Bool True))
-            parseKeyVal
+            parseHasKey "x='abcdef'" (makeKey ["x"], Left $ AnyValue (Text "abcdef"))
+            parseHasKey "x=1"        (makeKey ["x"], Left $ AnyValue (Integer 1))
+            parseHasKey "x=5.2"      (makeKey ["x"], Left $ AnyValue (Double 5.2))
+            parseHasKey "x=true"     (makeKey ["x"], Left $ AnyValue (Bool True))
+            parseHasKey
                 "x=[1, 2, 3]"
                 ( makeKey ["x"]
-                , AnyValue (Array [Integer 1, Integer 2, Integer 3])
+                , Left $ AnyValue (Array [Integer 1, Integer 2, Integer 3])
                 )
-            parseKeyVal
+            parseHasKey
                 "x = 1920-12-10"
-                (makeKey ["x"], AnyValue (Date (makeDay 1920 12 10)))
+                (makeKey ["x"], Left $ AnyValue (Date (makeDay 1920 12 10)))
         --xit "can parse a key/value pair when the value is an inline table" $ do
         --  pending
         it "ignores white spaces around key names and values" $ do
-            parseKeyVal "x=1    "   (makeKey ["x"]       , AnyValue (Integer 1))
-            parseKeyVal "x=    1"   (makeKey ["x"]       , AnyValue (Integer 1))
-            parseKeyVal "x    =1"   (makeKey ["x"]       , AnyValue (Integer 1))
-            parseKeyVal "x\t= 1 "   (makeKey ["x"]       , AnyValue (Integer 1))
-            parseKeyVal "\"x\" = 1" (makeKey [dquote "x"], AnyValue (Integer 1))
+            parseHasKey "x=1    "   (makeKey ["x"]       , Left $ AnyValue (Integer 1))
+            parseHasKey "x=    1"   (makeKey ["x"]       , Left $ AnyValue (Integer 1))
+            parseHasKey "x    =1"   (makeKey ["x"]       , Left $ AnyValue (Integer 1))
+            parseHasKey "x\t= 1 "   (makeKey ["x"]       , Left $ AnyValue (Integer 1))
+            parseHasKey "\"x\" = 1" (makeKey [dquote "x"], Left $ AnyValue (Integer 1))
         --xit "fails if the key, equals sign, and value are not on the same line" $ do
         --  keyValFailOn "x\n=\n1"
         --  keyValFailOn "x=\n1"
         --  keyValFailOn "\"x\"\n=\n1"
-        it "works if the value is broken over multiple lines" $ parseKeyVal
+        it "works if the value is broken over multiple lines" $ parseHasKey
             "x=[1, \n2\n]"
-            (makeKey ["x"], AnyValue (Array [Integer 1, Integer 2]))
-        it "fails if the value is not specified" $ keyValFailOn "x="
+            (makeKey ["x"], Left $ AnyValue (Array [Integer 1, Integer 2]))
+        it "fails if the value is not specified" $ hasKeyFailOn "x="
+
+        it "can parse a TOML inline table" $ do
+            let key1KV = (makeKey ["key1"], AnyValue (Text "some string"))
+                key2KV = (makeKey ["key2"], AnyValue (Integer 123))
+                table  = (makeKey ["table-1"], Right $ tomlFromList [key1KV, key2KV])
+
+            parseHasKey "table-1={key1 = \"some string\", key2 = 123}" table
+        it "can parse an empty TOML table"
+            $ parseHasKey "table = {}" (makeKey ["table"], Right $ tomlFromList [])
+        it "allows the name of the table to be any valid TOML key" $ do
+            parseHasKey
+                "dog.\"tater.man\"={}"
+                (makeKey ["dog", dquote "tater.man"], Right $ tomlFromList [])
+            parseHasKey
+                "j.\"ʞ\".'l'={}"
+                (makeKey ["j", dquote "ʞ", squote "l"], Right $ tomlFromList [])
+
+
 
     describe "textP" $ do
         context "when the string is a basic string" $ do
@@ -471,7 +489,6 @@ spec_Parser = do
                   parseDateTime
                       "1979-05-27T00:32:0007:00"
                       (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
-
 
     describe "tableHeaderP" $ do
         it "can parse a TOML table" $ do
