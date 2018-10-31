@@ -117,13 +117,15 @@ test-suite tomland-test
                        OverloadedStrings
                        RecordWildCards
 
-benchmark tomland-benchmark
+benchmark tomland-bench
   type:               exitcode-stdio-1.0
   hs-source-dirs:     benchmark
   main-is:            Main.hs
 
-  other-modules:      Benchmark.Type
+  other-modules:      Benchmark.Compare
+                      Benchmark.Type
                       Benchmark.Htoml
+                      Benchmark.Tomland
 
   ghc-options:        -Wall
                       -threaded
@@ -140,6 +142,7 @@ benchmark tomland-benchmark
                       -Wpartial-fields
   build-depends:      base
                     , aeson
+                    , gauge
                     , htoml
                     , tomland
                     , text
