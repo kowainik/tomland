@@ -47,6 +47,7 @@ library
   build-depends:       base >= 4.10 && < 5
                      , bytestring ^>= 0.10
                      , containers >= 0.5.7 && < 0.7
+                     , deepseq
                      , hashable ^>= 1.2
                      , megaparsec ^>= 7.0.1
                      , mtl ^>= 2.2
@@ -122,7 +123,7 @@ benchmark tomland-bench
   hs-source-dirs:     benchmark
   main-is:            Main.hs
 
-  other-modules:      Benchmark.Compare
+  other-modules:      Benchmark.Main
                       Benchmark.Type
                       Benchmark.Htoml
                       Benchmark.Tomland
@@ -142,8 +143,10 @@ benchmark tomland-bench
                       -Wpartial-fields
   build-depends:      base
                     , aeson
+                    , deepseq
                     , gauge
-                    , htoml
+                    , htoml == 1.0.0.3
+                    , parsec
                     , tomland
                     , text
                     , time

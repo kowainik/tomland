@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE DeriveAnyClass     #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE KindSignatures     #-}
@@ -21,14 +22,16 @@ module Toml.Type.Value
        , sameValue
        ) where
 
+import Control.DeepSeq (NFData)
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 import Data.Type.Equality ((:~:) (..))
+import GHC.Generics (Generic)
 
 -- | Needed for GADT parameterization
 data TValue = TBool | TInteger | TDouble | TText | TDate | TArray
-    deriving (Eq, Show)
+    deriving (Eq, Show, NFData, Generic)
 
 showType :: TValue -> String
 showType = drop 1 . show

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module Toml.Bi.Code
        ( -- * Types
          TomlCodec
@@ -17,6 +19,7 @@ module Toml.Bi.Code
        , execTomlCodec
        ) where
 
+import Control.DeepSeq (NFData)
 import Control.Exception (Exception, throwIO)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (MonadIO (..))
@@ -27,6 +30,7 @@ import Data.Bifunctor (first)
 import Data.Foldable (toList)
 import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Toml.Bi.Monad (BiCodec, Codec (..))
 import Toml.Parser (ParseException (..), parse)
@@ -44,7 +48,7 @@ data DecodeException
     | TableNotFound Key  -- ^ No such table
     | TypeMismatch Key Text TValue  -- ^ Expected type vs actual type
     | ParseError ParseException  -- ^ Exception during parsing
-    deriving (Eq, Show)  -- TODO: manual pretty show instances
+    deriving (Eq, Generic, NFData, Show)  -- TODO: manual pretty show instances
 
 instance Semigroup DecodeException where
     TrivialError <> e = e

@@ -17,8 +17,10 @@ module Toml.Type.AnyValue
        , matchArray
        ) where
 
+import Control.DeepSeq (NFData, rnf, rwhnf)
 import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
+import GHC.Generics (Generic)
 
 import Toml.Type.Value (DateTime, TValue, TypeMismatchError, Value (..), sameValue)
 
@@ -31,7 +33,12 @@ instance Show AnyValue where
 instance Eq AnyValue where
     (AnyValue val1) == (AnyValue val2) = case sameValue val1 val2 of
         Right Refl -> val1 == val2
-        Left _ -> False
+        Left _     -> False
+
+instance NFData AnyValue where
+    rnf = rwhnf
+
+instance Generic AnyValue
 
 ----------------------------------------------------------------------------
 -- Matching functions for values

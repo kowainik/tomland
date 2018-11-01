@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass  #-}
 {-# LANGUAGE PatternSynonyms #-}
 
 module Toml.PrefixTree
@@ -25,6 +26,7 @@ module Toml.PrefixTree
 
 import Prelude hiding (lookup)
 
+import Control.DeepSeq (NFData)
 import Data.Bifunctor (first)
 import Data.Coerce (coerce)
 import Data.Foldable (foldl')
@@ -42,7 +44,7 @@ import qualified Data.Text as Text
 
 -- | Represents the key piece of some layer.
 newtype Piece = Piece { unPiece :: Text }
-    deriving (Show, Eq, Ord, Hashable, IsString)
+    deriving (Show, Eq, Ord, Hashable, IsString, NFData, Generic)
 
 {- | Key of value in @key = val@ pair. Represents as non-empty list of key
 components -- 'Piece's. Key like
@@ -59,7 +61,7 @@ Key (Piece "site" :| [Piece "\\"google.com\\""])
 
 -}
 newtype Key = Key { unKey :: NonEmpty Piece }
-    deriving (Show, Eq, Ord, Semigroup, Generic)
+    deriving (Show, Eq, Ord, Semigroup, Generic, NFData)
 
 instance Hashable Key
 
@@ -96,7 +98,7 @@ data PrefixTree a
              , bVal        :: !(Maybe a)      -- ^ value by key = prefix
              , bPrefixMap  :: !(PrefixMap a)  -- ^ suffixes of prefix
              }
-    deriving (Show, Eq)
+    deriving (Show, Eq, NFData, Generic)
 
 instance Semigroup (PrefixTree a) where
     a <> b = foldl' (\tree (k, v) -> insertT k v tree) a (toListT b)

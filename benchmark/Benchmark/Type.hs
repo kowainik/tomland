@@ -1,12 +1,17 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
+
 module Benchmark.Type
        ( HaskellType(..)
        , FruitInside(..)
        , SizeInside(..)
        ) where
 
+import Control.DeepSeq (NFData)
 import Data.Aeson.Types (FromJSON, parseJSON, withObject, (.:))
 import Data.Text (Text)
 import Data.Time (ZonedTime)
+import GHC.Generics (Generic)
 
 
 -- | Haskell type to convert to.
@@ -19,8 +24,7 @@ data HaskellType = HaskellType
     , htToday :: ZonedTime
     , htFruit :: FruitInside
     , htSize  :: SizeInside
-    }
-    deriving Show
+    } deriving (Show, NFData, Generic)
 
 instance FromJSON HaskellType where
     parseJSON = withObject "HaskellType" $ \o -> HaskellType
@@ -36,8 +40,7 @@ instance FromJSON HaskellType where
 data FruitInside = FruitInside
     { fiName        :: Text
     , fiDescription :: Text
-    }
-    deriving Show
+    } deriving (Show, NFData, Generic)
 
 instance FromJSON FruitInside where
     parseJSON = withObject "FruitInside" $ \o -> FruitInside
@@ -46,8 +49,7 @@ instance FromJSON FruitInside where
 
 newtype SizeInside = SizeInside
     { unSize :: [[Double]]
-    }
-    deriving Show
+    } deriving (Show, NFData, Generic)
 
 instance FromJSON SizeInside where
     parseJSON = withObject "SizeInside" $ \o -> SizeInside <$> o .: "dimensions"
