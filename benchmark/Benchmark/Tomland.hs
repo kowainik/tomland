@@ -1,9 +1,12 @@
 module Benchmark.Tomland
-       ( codec
+       ( convert
+       , decode
        ) where
 
+import Data.Text (Text)
+
 import Benchmark.Type (FruitInside (..), HaskellType (..), SizeInside (..))
-import Toml (TomlCodec, (.=))
+import Toml (DecodeException, TOML, TomlCodec, (.=))
 
 import qualified Toml
 
@@ -28,3 +31,9 @@ insideF = FruitInside
 insideS :: TomlCodec SizeInside
 insideS = Toml.dimap unSize SizeInside $
     Toml.arrayOf (Toml._Array Toml._Double) "dimensions"
+
+convert :: TOML -> Either DecodeException HaskellType
+convert = Toml.runTomlCodec codec
+
+decode :: Text -> Either DecodeException HaskellType
+decode = Toml.decode codec

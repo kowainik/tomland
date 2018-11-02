@@ -48,7 +48,7 @@ data DecodeException
     | TableNotFound Key  -- ^ No such table
     | TypeMismatch Key Text TValue  -- ^ Expected type vs actual type
     | ParseError ParseException  -- ^ Exception during parsing
-    deriving (Eq, Generic, NFData, Show)  -- TODO: manual pretty show instances
+    deriving (Eq, Show, Generic, NFData)  -- TODO: manual pretty show instances
 
 instance Semigroup DecodeException where
     TrivialError <> e = e

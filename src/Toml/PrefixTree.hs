@@ -26,7 +26,7 @@ module Toml.PrefixTree
 
 import Prelude hiding (lookup)
 
-import Control.DeepSeq (NFData)
+import Control.DeepSeq (NFData, rnf, rwhnf)
 import Data.Bifunctor (first)
 import Data.Coerce (coerce)
 import Data.Foldable (foldl')
@@ -44,7 +44,13 @@ import qualified Data.Text as Text
 
 -- | Represents the key piece of some layer.
 newtype Piece = Piece { unPiece :: Text }
-    deriving (Show, Eq, Ord, Hashable, IsString, NFData, Generic)
+    deriving (Show, Eq, Ord, Hashable, Generic)
+
+instance NFData Piece where
+    rnf (Piece val) = rwhnf val
+
+instance IsString Piece where
+    fromString t = Piece $ Text.pack t
 
 {- | Key of value in @key = val@ pair. Represents as non-empty list of key
 components -- 'Piece's. Key like
@@ -61,9 +67,15 @@ Key (Piece "site" :| [Piece "\\"google.com\\""])
 
 -}
 newtype Key = Key { unKey :: NonEmpty Piece }
-    deriving (Show, Eq, Ord, Semigroup, Generic, NFData)
+    deriving (Show, Eq, Ord, Generic)
 
 instance Hashable Key
+
+instance NFData Key where
+    rnf (Key val) = rwhnf val
+
+instance Semigroup Key where
+    Key val1 <> Key val2 = Key (val1 <> val2)
 
 {- | Split a dot-separated string into 'Key'. Empty string turns into a 'Key'
 with single element - empty 'Piece'. This instance is not safe for now. Use

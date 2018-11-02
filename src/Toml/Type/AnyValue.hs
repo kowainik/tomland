@@ -20,7 +20,6 @@ module Toml.Type.AnyValue
 import Control.DeepSeq (NFData, rnf, rwhnf)
 import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
-import GHC.Generics (Generic)
 
 import Toml.Type.Value (DateTime, TValue, TypeMismatchError, Value (..), sameValue)
 
@@ -36,9 +35,7 @@ instance Eq AnyValue where
         Left _     -> False
 
 instance NFData AnyValue where
-    rnf = rwhnf
-
-instance Generic AnyValue
+    rnf (AnyValue val) = rwhnf val
 
 ----------------------------------------------------------------------------
 -- Matching functions for values
