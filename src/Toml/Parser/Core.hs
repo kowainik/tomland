@@ -13,7 +13,8 @@ import Control.Applicative (Alternative (empty))
 import Data.Text (Text)
 import Data.Void (Void)
 
-import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, match, parse, satisfy, try, (<?>), eof)
+import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, match, parse,
+                        satisfy, try, (<?>), eof, oneOf, lookAhead)
 import Text.Megaparsec.Char (alphaNumChar, char, digitChar, eol, hexDigitChar, space, space1,
                              string, tab)
 import Text.Megaparsec.Char.Lexer (binary, float, hexadecimal, octal, signed, skipLineComment,

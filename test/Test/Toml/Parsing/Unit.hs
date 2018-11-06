@@ -171,45 +171,45 @@ spec_Parser = do
                integerFailOn "_123_"
                integerFailOn "_13"
                integerFailOn "_"
-          --xit "does not parse numbers with leading zeros" $ do
-          --  parseInt "0123" 0
-          --  parseInt "-023" 0
+            it "does not parse numbers with leading zeros" $ do
+               integerFailOn "0123"
+               integerFailOn "-023"
         context "when the integer is in binary representation" $ do
             it "can parse numbers prefixed with `0b`" $ do
                 parseInteger "0b1101" 13
                 parseInteger "0b0"    0
             it "does not parse numbers prefixed with `0B`"
-                $ parseInteger "0B1101" 0
+                $ integerFailOn "0B1101"
             it "can parse numbers with leading zeros after the prefix" $ do
                 parseInteger "0b000"   0
                 parseInteger "0b00011" 3
-            it "does not parse negative numbers" $ parseInteger "-0b101" 0
+            it "does not parse negative numbers" $ integerFailOn "-0b101"
             it "does not parse numbers with non-valid binary digits"
-                $ parseInteger "0b123" 1
+                $ integerFailOn "0b123"
         context "when the integer is in octal representation" $ do
             it "can parse numbers prefixed with `0o`" $ do
                 parseInteger "0o567" 0o567
                 parseInteger "0o0"   0
             it "does not parse numbers prefixed with `0O`"
-                $ parseInteger "0O567" 0
+                $ integerFailOn "0O567"
             it "can parse numbers with leading zeros after the prefix" $ do
                 parseInteger "0o000000" 0
                 parseInteger "0o000567" 0o567
-            it "does not parse negative numbers" $ parseInteger "-0o123" 0
+            it "does not parse negative numbers" $ integerFailOn "-0o123"
             it "does not parse numbers with non-valid octal digits"
-                $ parseInteger "0o789" 0o7
+                $ integerFailOn "0o789"
         context "when the integer is in hexadecimal representation" $ do
             it "can parse numbers prefixed with `0x`" $ do
                 parseInteger "0x12af" 0x12af
                 parseInteger "0x0"    0
             it "does not parse numbers prefixed with `0X`"
-                $ parseInteger "0Xfff" 0
+                $ integerFailOn "0Xfff"
             it "can parse numbers with leading zeros after the prefix" $ do
                 parseInteger "0x00000" 0
                 parseInteger "0x012af" 0x12af
-            it "does not parse negative numbers" $ parseInteger "-0xfff" 0
+            it "does not parse negative numbers" $ integerFailOn "-0xfff"
             it "does not parse numbers with non-valid hexadecimal digits"
-                $ parseInteger "0xfgh" 0xf
+                $ integerFailOn "0xfgh"
             it "can parse numbers when hex digits are lowercase"
                 $ parseInteger "0xabcdef" 0xabcdef
             it "can parse numbers when hex digits are uppercase"
