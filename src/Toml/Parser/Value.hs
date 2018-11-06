@@ -25,7 +25,7 @@ import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOf
 
 import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol, float,
                          hexDigitChar, hexadecimal, lexeme, octal, satisfy, sc, signed,
-                         space, string, tab, text, try, (<?>))
+                         space, string, tab, text, try, (<?>), space1, eof)
 import Toml.PrefixTree (Key (..), Piece (..))
 import Toml.Type (DateTime (..), UValue (..), AnyValue, typeCheck)
 
@@ -146,7 +146,10 @@ tableNameP = between (text "[") (text "]") keyP
 -- Values
 
 decimalP :: Parser Integer
-decimalP = fst . head . readDec . concat <$> sepBy1 (some digitChar) (char '_')
+decimalP = zero <|> more
+  where
+    zero = 0 <$ char '0' <* (space1 <|> eof)
+    more = fst . head . readDec . concat <$> sepBy1 (some digitChar) (char '_')
 
 integerP :: Parser Integer
 integerP = lexeme (bin <|> oct <|> hex <|> dec) <?> "integer"
