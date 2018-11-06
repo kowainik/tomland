@@ -11,12 +11,12 @@ module Toml.Parser.Value
        , anyValueP
        ) where
 
-import Control.Applicative (Alternative (many, some, (<|>)))
+import Control.Applicative (Alternative (some, (<|>)))
 import Control.Applicative.Combinators (between, count, manyTill, option, optional, sepEndBy,
-                                        skipMany)
+                                        skipMany, sepBy1)
 
 import Data.Char (chr, isControl)
-import Data.Either (fromRight)
+import Numeric (readDec)
 import Data.Fixed (Pico)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -24,15 +24,13 @@ import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOf
                   minutesToTimeZone)
 
 import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol, float,
-                         hexDigitChar, hexadecimal, lexeme, match, octal, satisfy, sc, signed,
+                         hexDigitChar, hexadecimal, lexeme, octal, satisfy, sc, signed,
                          space, string, tab, text, try, (<?>))
 import Toml.PrefixTree (Key (..), Piece (..))
 import Toml.Type (DateTime (..), UValue (..), AnyValue, typeCheck)
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.Text as Text
-import qualified Data.Text.Read as TR
-
 
 textP :: Parser Text
 textP = multilineBasicStringP
@@ -148,14 +146,7 @@ tableNameP = between (text "[") (text "]") keyP
 -- Values
 
 decimalP :: Parser Integer
-decimalP = mkInteger <$> decimalStringP
-  where
-    decimalStringP   = fst <$> match (some digitChar >> many _digitsP)
-    _digitsP         = try (char '_') >> some digitChar
-    mkInteger        = textToInt . stripUnderscores
-    textToInt        = fst . fromRight (error "Underscore parser has a bug") . TR.decimal
-    stripUnderscores = Text.filter (/= '_')
-
+decimalP = fst . head . readDec . concat <$> sepBy1 (some digitChar) (char '_')
 
 integerP :: Parser Integer
 integerP = lexeme (bin <|> oct <|> hex <|> dec) <?> "integer"

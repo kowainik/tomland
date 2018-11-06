@@ -17,7 +17,7 @@ import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, match, parse, sati
 import Text.Megaparsec.Char (alphaNumChar, char, digitChar, eol, hexDigitChar, space, space1,
                              string, tab)
 import Text.Megaparsec.Char.Lexer (binary, float, hexadecimal, octal, signed, skipLineComment,
-                                   symbol)
+                                   symbol, decimal)
 import qualified Text.Megaparsec.Char.Lexer as L (lexeme, space)
 
 
