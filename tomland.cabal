@@ -124,6 +124,7 @@ benchmark tomland-benchmark
 
   other-modules:      Benchmark.Type
                       Benchmark.Htoml
+                      Benchmark.HtomlMegaparsec
                       Benchmark.Tomland
 
   ghc-options:        -Wall
@@ -144,7 +145,8 @@ benchmark tomland-benchmark
                     , aeson
                     , deepseq ^>= 1.4
                     , gauge
-                    , htoml <= 1.0.0.3
+                    , htoml ^>= 1.0.0.3
+                    , htoml-megaparsec ^>= 2.1.0.3
                     , parsec
                     , tomland
                     , text
