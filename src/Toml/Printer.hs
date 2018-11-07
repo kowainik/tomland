@@ -11,6 +11,7 @@ module Toml.Printer
        ) where
 
 import Data.HashMap.Strict (HashMap)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid ((<>), mconcat)
 import Data.Text (Text)
 import Data.Time (formatTime, defaultTimeLocale, ZonedTime)
@@ -77,7 +78,7 @@ pretty = prettyOptions defaultOptions
 
 {- | Converts 'TOML' type into 'Text' using provided 'PrintOptions' -}
 prettyOptions :: PrintOptions -> TOML -> Text
-prettyOptions options = Text.drop 1 . prettyTomlInd options 0 ""
+prettyOptions options = flip Text.snoc '\n' . Text.drop 1 . prettyTomlInd options 0 ""
 
 -- | Converts 'TOML' into 'Text' with the given indent.
 prettyTomlInd :: PrintOptions -- ^ Printing options
@@ -86,8 +87,12 @@ prettyTomlInd :: PrintOptions -- ^ Printing options
               -> TOML         -- ^ Given 'TOML'
               -> Text         -- ^ Pretty result
 prettyTomlInd options i prefix TOML{..} =
-    prettyKeyValue options i tomlPairs <> "\n"
-    <> prettyTables options i prefix tomlTables
+  Text.intercalate "\n" $ filter (not . Text.null)
+    [ prettyKeyValue options i tomlPairs
+    , prettyTables options i prefix tomlTables
+    , prettyTableArrays options i prefix tomlTableArrays
+    ]
+
 
 -- | Returns pretty formatted  key-value pairs of the 'TOML'.
 prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> Text
@@ -136,7 +141,7 @@ prettyKeyValue options i =
 -- | Returns pretty formatted tables section of the 'TOML'.
 prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> Text
 prettyTables options i pref =
-    Text.concat . map (prettyTable . snd) . orderWith options . HashMap.toList
+    Text.intercalate "\n" . map (prettyTable . snd) . orderWith options . HashMap.toList
   where
     prettyTable :: PrefixTree TOML -> Text
     prettyTable (Leaf k toml) =
@@ -167,3 +172,26 @@ prettyTables options i pref =
 
 prettyKey :: Key -> Text
 prettyKey (Key k) = Text.intercalate "." $ map unPiece (NonEmpty.toList k)
+
+prettyTableArrays :: PrintOptions -> Int -> Text -> HashMap Key (NonEmpty TOML) -> Text
+prettyTableArrays options i pref =
+    Text.intercalate "\n" . map arrText . orderWith options . HashMap.toList
+  where
+    arrText :: (Key, NonEmpty TOML) -> Text
+    arrText (k, ne) =
+      let name = getPref k
+          render toml = mconcat
+            [ tabWith options i
+            , prettyTableArrayName name
+            , prettyTomlInd options (succ i) name toml
+            ]
+      in Text.intercalate "\n" $ map render $ NonEmpty.toList ne
+
+    -- Adds next part of the table name to the accumulator.
+    getPref :: Key -> Text
+    getPref k = case pref of
+        "" -> prettyKey k
+        _  -> pref <> "." <> prettyKey k
+
+    prettyTableArrayName :: Text -> Text
+    prettyTableArrayName n = "[[" <> n <> "]]"
