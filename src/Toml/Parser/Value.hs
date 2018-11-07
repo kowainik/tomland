@@ -149,7 +149,8 @@ decimalP :: Parser Integer
 decimalP = zero <|> more
   where
     zero = 0 <$ char '0'
-    more = fst . head . readDec . concat <$> sepBy1 (some digitChar) (char '_')
+    more = stringToInt <$> sepBy1 (some digitChar) (char '_')
+    stringToInt = fst . head . readDec . concat
 
 integerP :: Parser Integer
 integerP = lexeme ((bin <|> oct <|> hex <|> dec) <* lookAhead sep) <?> "integer"
