@@ -183,7 +183,7 @@ arrayOf bimap key = Codec input output
     output :: [a] -> St [a]
     output a = do
         anyVal <- MaybeT $ pure $ forward (_Array bimap) a
-        a <$ modify (\(TOML vals tables) -> TOML (HashMap.insert key anyVal vals) tables)
+        a <$ modify (\(TOML vals tables arrays) -> TOML (HashMap.insert key anyVal vals) tables arrays)
 
 -- | Parser for tables. Use it when when you have nested objects.
 table :: forall a . TomlCodec a -> Key -> TomlCodec a

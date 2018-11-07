@@ -33,7 +33,7 @@ distributeEithers = foldr distribute ([], [])
     distribute (k, Right b) (ls, rs) = (ls, (k, b) : rs)
 
 makeToml :: [(Key, Either AnyValue TOML)] -> TOML
-makeToml kvs = TOML (HashMap.fromList lefts) (fromList rights)
+makeToml kvs = TOML (HashMap.fromList lefts) (fromList rights) mempty
   where
     (lefts, rights) = distributeEithers kvs
 
@@ -44,4 +44,5 @@ tomlP = do
     tables <- many tableHeaderP
     return TOML { tomlPairs  = HashMap.fromList val
                 , tomlTables = fromList $ tables ++ inline
+                , tomlTableArrays = mempty
                 }

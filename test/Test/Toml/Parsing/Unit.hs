@@ -58,7 +58,7 @@ spec_Parser = do
 
         makeKey k = (Key . NE.fromList) (map Piece k)
 
-        tomlFromList kv = TOML (HashMap.fromList kv) mempty
+        tomlFromList kv = TOML (HashMap.fromList kv) mempty mempty
 
 
     describe "arrayP" $ do
@@ -522,4 +522,4 @@ spec_Parser = do
             tomlTables = fromList
                 [(makeKey ["owner"], tomlFromList [nameKV, enabledKV])]
 
-        parseToml tomlString (TOML tomlPairs tomlTables)
+        parseToml tomlString (TOML tomlPairs tomlTables mempty)

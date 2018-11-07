@@ -110,13 +110,13 @@ genTableHeader = do
     pure (k, toml)
   where
     makeToml :: [(Key, AnyValue)] -> TOML
-    makeToml kv = TOML (HashMap.fromList kv) mempty
+    makeToml kv = TOML (HashMap.fromList kv) mempty mempty
 
 genToml :: MonadGen m => m TOML
 genToml = do
     kv     <- HashMap.fromList <$> genKeyAnyValueList
     tables <- Gen.list (Range.linear 0 10) genTableHeader
-    pure $ TOML kv (fromList tables)
+    pure $ TOML kv (fromList tables) mempty
 
 genDay :: MonadGen m => m Day
 genDay = do
