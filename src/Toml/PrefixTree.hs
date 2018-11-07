@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE DerivingStrategies  #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE PatternSynonyms #-}
 
 module Toml.PrefixTree
@@ -26,7 +28,7 @@ module Toml.PrefixTree
 
 import Prelude hiding (lookup)
 
-import Control.DeepSeq (NFData, rnf, rwhnf)
+import Control.DeepSeq (NFData)
 import Data.Bifunctor (first)
 import Data.Coerce (coerce)
 import Data.Foldable (foldl')
@@ -44,13 +46,8 @@ import qualified Data.Text as Text
 
 -- | Represents the key piece of some layer.
 newtype Piece = Piece { unPiece :: Text }
-    deriving (Show, Eq, Ord, Hashable, Generic)
-
-instance NFData Piece where
-    rnf (Piece val) = rwhnf val
-
-instance IsString Piece where
-    fromString t = Piece $ Text.pack t
+    deriving stock (Generic)
+    deriving newtype (Show, Eq, Ord, Hashable, IsString, NFData)
 
 {- | Key of value in @key = val@ pair. Represents as non-empty list of key
 components -- 'Piece's. Key like
@@ -67,15 +64,8 @@ Key (Piece "site" :| [Piece "\\"google.com\\""])
 
 -}
 newtype Key = Key { unKey :: NonEmpty Piece }
-    deriving (Show, Eq, Ord, Generic)
-
-instance Hashable Key
-
-instance NFData Key where
-    rnf (Key val) = rwhnf val
-
-instance Semigroup Key where
-    Key val1 <> Key val2 = Key (val1 <> val2)
+    deriving stock (Generic)
+    deriving newtype (Show, Eq, Ord, Hashable, NFData, Semigroup)
 
 {- | Split a dot-separated string into 'Key'. Empty string turns into a 'Key'
 with single element - empty 'Piece'. This instance is not safe for now. Use

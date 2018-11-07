@@ -142,7 +142,7 @@ benchmark tomland-benchmark
 
   build-depends:      base
                     , aeson
-                    , deepseq <= 1.4.3.0
+                    , deepseq ^>= 1.4
                     , gauge
                     , htoml <= 1.0.0.3
                     , parsec

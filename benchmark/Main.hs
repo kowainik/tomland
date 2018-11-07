@@ -1,5 +1,5 @@
 module Main
-       (main
+       ( main
        ) where
 
 import Gauge.Main (bench, bgroup, defaultMain, nf)
@@ -7,7 +7,6 @@ import Gauge.Main (bench, bgroup, defaultMain, nf)
 import qualified Benchmark.Htoml as Htoml
 import qualified Benchmark.Tomland as Tomland
 import qualified Data.Text.IO as TIO
-import qualified Toml.Parser as Tomland
 
 
 -- | Benchmark.

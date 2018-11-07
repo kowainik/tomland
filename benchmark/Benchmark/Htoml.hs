@@ -1,7 +1,8 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 {-# LANGUAGE DeriveAnyClass     #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Benchmark.Htoml
        ( decode
@@ -37,7 +38,6 @@ parse :: Text -> Either ParseError Table
 parse = parseTomlDoc ""
 
 deriving instance NFData Node
-
 deriving instance Generic Node
 
 instance NFData ParseError where

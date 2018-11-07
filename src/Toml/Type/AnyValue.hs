@@ -17,7 +17,7 @@ module Toml.Type.AnyValue
        , matchArray
        ) where
 
-import Control.DeepSeq (NFData, rnf, rwhnf)
+import Control.DeepSeq (NFData, rnf)
 import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
 
@@ -35,7 +35,7 @@ instance Eq AnyValue where
         Left _     -> False
 
 instance NFData AnyValue where
-    rnf (AnyValue val) = rwhnf val
+    rnf (AnyValue val) = rnf val
 
 ----------------------------------------------------------------------------
 -- Matching functions for values

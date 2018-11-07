@@ -1,12 +1,13 @@
 module Benchmark.Tomland
        ( convert
        , decode
+       , parse
        ) where
 
 import Data.Text (Text)
 
 import Benchmark.Type (FruitInside (..), HaskellType (..), SizeInside (..))
-import Toml (DecodeException, TOML, TomlCodec, (.=))
+import Toml (DecodeException, TOML, TomlCodec, parse, (.=))
 
 import qualified Toml
 
