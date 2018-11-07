@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE DeriveAnyClass     #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE KindSignatures     #-}
@@ -21,14 +22,16 @@ module Toml.Type.Value
        , sameValue
        ) where
 
+import Control.DeepSeq (NFData(..), rnf)
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 import Data.Type.Equality ((:~:) (..))
+import GHC.Generics (Generic)
 
 -- | Needed for GADT parameterization
 data TValue = TBool | TInteger | TDouble | TText | TDate | TArray
-    deriving (Eq, Show)
+    deriving (Eq, Show, NFData, Generic)
 
 showType :: TValue -> String
 showType = drop 1 . show
@@ -101,6 +104,14 @@ arr6 = [ 1, 2.0 ] # INVALID
     Array  :: [Value t] -> Value 'TArray
 
 deriving instance Show (Value t)
+
+instance NFData (Value t) where
+    rnf (Bool n) = rnf n
+    rnf (Integer n) = rnf n
+    rnf (Double n) = rnf n
+    rnf (Text n) = rnf n
+    rnf (Date n) = rnf n
+    rnf (Array n) = rnf n
 
 instance (t ~ 'TInteger) => Num (Value t) where
     (Integer a) + (Integer b) = Integer $ a + b
@@ -184,6 +195,12 @@ instance Eq DateTime where
     (Day a)   == (Day b)   = a == b
     (Hours a) == (Hours b) = a == b
     _         == _         = False
+
+instance NFData DateTime where
+    rnf (Zoned n) = rnf n
+    rnf (Local n) = rnf n
+    rnf (Day n)   = rnf n
+    rnf (Hours n) = rnf n
 
 ----------------------------------------------------------------------------
 -- Typechecking values

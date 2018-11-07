@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE DerivingStrategies  #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE PatternSynonyms #-}
 
 module Toml.PrefixTree
@@ -25,6 +28,7 @@ module Toml.PrefixTree
 
 import Prelude hiding (lookup)
 
+import Control.DeepSeq (NFData)
 import Data.Bifunctor (first)
 import Data.Coerce (coerce)
 import Data.Foldable (foldl')
@@ -42,7 +46,8 @@ import qualified Data.Text as Text
 
 -- | Represents the key piece of some layer.
 newtype Piece = Piece { unPiece :: Text }
-    deriving (Show, Eq, Ord, Hashable, IsString)
+    deriving stock (Generic)
+    deriving newtype (Show, Eq, Ord, Hashable, IsString, NFData)
 
 {- | Key of value in @key = val@ pair. Represents as non-empty list of key
 components -- 'Piece's. Key like
@@ -59,9 +64,8 @@ Key (Piece "site" :| [Piece "\\"google.com\\""])
 
 -}
 newtype Key = Key { unKey :: NonEmpty Piece }
-    deriving (Show, Eq, Ord, Semigroup, Generic)
-
-instance Hashable Key
+    deriving stock (Generic)
+    deriving newtype (Show, Eq, Ord, Hashable, NFData, Semigroup)
 
 {- | Split a dot-separated string into 'Key'. Empty string turns into a 'Key'
 with single element - empty 'Piece'. This instance is not safe for now. Use
@@ -96,7 +100,7 @@ data PrefixTree a
              , bVal        :: !(Maybe a)      -- ^ value by key = prefix
              , bPrefixMap  :: !(PrefixMap a)  -- ^ suffixes of prefix
              }
-    deriving (Show, Eq)
+    deriving (Show, Eq, NFData, Generic)
 
 instance Semigroup (PrefixTree a) where
     a <> b = foldl' (\tree (k, v) -> insertT k v tree) a (toListT b)

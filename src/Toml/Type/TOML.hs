@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module Toml.Type.TOML
        ( TOML (..)
        , insertKeyVal
@@ -5,8 +7,10 @@ module Toml.Type.TOML
        , insertTable
        ) where
 
+import Control.DeepSeq (NFData)
 import Data.HashMap.Strict (HashMap)
 import Data.Semigroup (Semigroup (..))
+import GHC.Generics (Generic)
 
 import Toml.PrefixTree (Key (..), PrefixMap)
 import Toml.Type.AnyValue (AnyValue (..))
@@ -22,7 +26,7 @@ data TOML = TOML
     { tomlPairs  :: HashMap Key AnyValue
     , tomlTables :: PrefixMap TOML
     -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, NFData, Generic)
 
 instance Semigroup TOML where
     (TOML pairsA tablesA) <> (TOML pairsB tablesB) = TOML

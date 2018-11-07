@@ -1,73 +1,55 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
+
 module Benchmark.Type
-       ( test
-       , testCodec
+       ( HaskellType(..)
+       , FruitInside(..)
+       , SizeInside(..)
        ) where
 
+import Control.DeepSeq (NFData)
+import Data.Aeson.Types (FromJSON, parseJSON, withObject, (.:))
 import Data.Text (Text)
-import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime)
-
-import Toml (TomlCodec, pretty, (.=))
-import Toml.Parser (parse)
-
-import qualified Data.Text.IO as TIO
-import qualified Toml
+import Data.Time (ZonedTime)
+import GHC.Generics (Generic)
 
 
-test :: IO ()
-test = do
-    tomlFile <- TIO.readFile "./benchmark/benchmark.toml"
-    TIO.putStrLn $ case Toml.decode testCodec tomlFile of
-        Left msg    -> Toml.prettyException msg
-        Right value -> Toml.encode testCodec value
-    case parse tomlFile of
-        Left (Toml.ParseException msg) -> TIO.putStrLn msg
-        Right toml -> TIO.putStrLn $ case Toml.runTomlCodec testCodec toml of
-            Left msg    -> Toml.prettyException msg
-            Right value -> pretty $ Toml.execTomlCodec testCodec value
+-- | Haskell type to convert to.
+data HaskellType = HaskellType
+    { htTitle :: Text
+    , htAtom  :: Double
+    , htCash  :: Bool
+    , htWords :: [Text]
+    , htBool  :: [Bool]
+    , htToday :: ZonedTime
+    , htFruit :: FruitInside
+    , htSize  :: SizeInside
+    } deriving (Show, NFData, Generic)
 
-data Test = Test
-    { testTitle  :: Text
-    , testAtom   :: Double
-    , testCash   :: Bool
-    , testWords  :: [Text]
-    , testDigits :: [Double]
-    , testBool   :: [Bool]
-    , testDate   :: [Day]
-    , testToday  :: ZonedTime
-    , testFruit  :: FruitInside
-    , testSize   :: SizeInside
-    }
+instance FromJSON HaskellType where
+    parseJSON = withObject "HaskellType" $ \o -> HaskellType
+        <$> o .: "title"
+        <*> o .: "atom"
+        <*> o .: "cash"
+        <*> o .: "words"
+        <*> o .: "bool"
+        <*> o .: "today"
+        <*> o .: "fruit"
+        <*> o .: "size"
 
 data FruitInside = FruitInside
     { fiName        :: Text
     , fiDescription :: Text
-    , fiHarvest     :: LocalTime
-    , fiDue         :: TimeOfDay
-    }
+    } deriving (Show, NFData, Generic)
 
-insideF :: TomlCodec FruitInside
-insideF = FruitInside
-    <$> Toml.text "name" .= fiName
-    <*> Toml.text "description" .= fiDescription
-    <*> Toml.localTime "harvest" .= fiHarvest
-    <*> Toml.timeOfDay "due" .= fiDue
+instance FromJSON FruitInside where
+    parseJSON = withObject "FruitInside" $ \o -> FruitInside
+        <$> o .: "name"
+        <*> o .: "description"
 
 newtype SizeInside = SizeInside
     { unSize :: [[Double]]
-    }
+    } deriving (Show, NFData, Generic)
 
-insideS :: TomlCodec SizeInside
-insideS = Toml.dimap unSize SizeInside $ Toml.arrayOf (Toml._Array Toml._Double) "dimensions"
-
-testCodec :: TomlCodec Test
-testCodec = Test
-    <$> Toml.text "title" .= testTitle
-    <*> Toml.double "atom" .= testAtom
-    <*> Toml.bool "cash" .= testCash
-    <*> Toml.arrayOf Toml._Text "words" .= testWords
-    <*> Toml.arrayOf Toml._Double "digits" .= testDigits
-    <*> Toml.arrayOf Toml._Bool "bool" .= testBool
-    <*> Toml.arrayOf Toml._Day "date" .= testDate
-    <*> Toml.zonedTime "today" .= testToday
-    <*> Toml.table insideF "fruit" .= testFruit
-    <*> Toml.table insideS "size" .= testSize
+instance FromJSON SizeInside where
+    parseJSON = withObject "SizeInside" $ \o -> SizeInside <$> o .: "dimensions"

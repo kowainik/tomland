@@ -47,6 +47,7 @@ library
   build-depends:       base >= 4.10 && < 5
                      , bytestring ^>= 0.10
                      , containers >= 0.5.7 && < 0.7
+                     , deepseq
                      , hashable ^>= 1.2
                      , megaparsec ^>= 7.0.1
                      , mtl ^>= 2.2
@@ -59,7 +60,6 @@ library
   ghc-options:         -Wall
   default-language:    Haskell2010
   default-extensions:  DeriveGeneric
-                       GeneralizedNewtypeDeriving
                        InstanceSigs
                        LambdaCase
                        OverloadedStrings
@@ -119,10 +119,12 @@ test-suite tomland-test
 
 benchmark tomland-benchmark
   type:               exitcode-stdio-1.0
-  hs-source-dirs:     benchmark
   main-is:            Main.hs
+  hs-source-dirs:     benchmark
 
   other-modules:      Benchmark.Type
+                      Benchmark.Htoml
+                      Benchmark.Tomland
 
   ghc-options:        -Wall
                       -threaded
@@ -137,7 +139,13 @@ benchmark tomland-benchmark
                       -fhide-source-paths
                       -Wmissing-export-lists
                       -Wpartial-fields
+
   build-depends:      base
+                    , aeson
+                    , deepseq ^>= 1.4
+                    , gauge
+                    , htoml <= 1.0.0.3
+                    , parsec
                     , tomland
                     , text
                     , time
