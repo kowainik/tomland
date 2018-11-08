@@ -13,9 +13,14 @@ module Toml.BiMap
        , prism
 
          -- * Helpers for BiMap and AnyValue
-       , matchValueBackward
        , mkAnyValueBiMap
        , _TextBy
+       , _NaturalInteger
+       , _StringText
+       , _ShowString
+       , _BoundedInteger
+       , _ByteStringText
+       , _LByteStringText
 
          -- * Some predefined bi mappings
        , _Array
@@ -27,19 +32,13 @@ module Toml.BiMap
        , _LocalTime
        , _Day
        , _TimeOfDay
-       , _StringText
        , _String
-       , _ShowString
        , _Show
-       , _NaturalInteger
        , _Natural
-       , _BoundedInteger
        , _Word
        , _Int
        , _Float
-       , _ByteStringText
        , _ByteString
-       , _LByteStringText
        , _LByteString
        , _Set
        , _IntSet
@@ -66,7 +65,7 @@ import Text.Read (readMaybe)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 
 import Toml.Type (AnyValue (..), TValue (TArray), Value (..), DateTime (..) ,
-                  liftMatch, matchArray, matchBool, matchDouble, matchInteger,
+                  matchArray, matchBool, matchDouble, matchInteger,
                   matchText, matchDate, reifyAnyValues)
 
 import qualified Control.Category as Cat
@@ -139,10 +138,6 @@ mkAnyValueBiMap :: (forall t . Value t -> Maybe a)
                 -> BiMap a AnyValue
 mkAnyValueBiMap matchValue toValue =
     BiMap (Just . AnyValue . toValue) (\(AnyValue value) -> matchValue value)
-
--- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
-matchValueBackward :: BiMap a AnyValue -> Value t -> Maybe a
-matchValueBackward = liftMatch . backward
 
 -- | Creates prism for 'Text' to 'AnyValue' with custom functions
 _TextBy :: (a -> Text) -> (Text -> Maybe a) -> BiMap a AnyValue
