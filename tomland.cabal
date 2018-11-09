@@ -148,9 +148,9 @@ benchmark tomland-benchmark
                     , htoml ^>= 1.0.0.3
                     , htoml-megaparsec ^>= 2.1.0.3
                     , parsec
-                    , tomland
                     , text
                     , time
+                    , tomland
 
   default-language:   Haskell2010
 
