@@ -32,7 +32,6 @@ module Toml.Bi.Combinators
        , match
        , table
        , wrapper
-       , dimapNum
        , mdimap
        ) where
 
@@ -97,13 +96,6 @@ match BiMap{..} key = Codec input output
     output a = do
         anyVal <- MaybeT $ pure $ forward a
         a <$ modify (insertKeyAnyVal key anyVal)
-
--- | Helper dimapper to turn 'integer' parser into parser for 'Int', 'Natural', 'Word', etc.
-dimapNum
-    :: forall n r w . (Integral n, Functor r, Functor w)
-    => BiCodec r w Integer
-    -> BiCodec r w n
-dimapNum = dimap toInteger fromIntegral
 
 {- | Almost same as 'dimap'. Useful when you want to have fields like this
 inside your configuration:
