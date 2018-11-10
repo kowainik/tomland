@@ -14,19 +14,19 @@ module Toml.Bi.Combinators
        , double
        , float
        , text
-       , codecShow
+       , read
        , string
-       , bytestring
-       , lBytestring
+       , byteString
+       , lbyteString
        , zonedTime
        , localTime
        , day
        , timeOfDay
        , arrayOf
-       , setOf
-       , intSet
-       , hashSetOf
-       , nonEmptyOf
+       , arraySetOf
+       , arrayIntSet
+       , arrayHashSetOf
+       , arrayNonEmptyOf
 
          -- * Combinators
        , match
@@ -56,7 +56,7 @@ import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
-import Toml.Bi.Monad (BiCodec, Codec (..), dimap)
+import Toml.Bi.Monad (Codec (..), dimap)
 import Toml.BiMap (BiMap (..), _Array, _Bool, _Double,
                    _Integer, _String, _Text, _ZonedTime, _LocalTime, _Day,
                    _TimeOfDay, _Int, _Word, _Natural, _Float, _Show,
@@ -65,6 +65,8 @@ import Toml.BiMap (BiMap (..), _Array, _Bool, _Double,
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, valueType)
+
+import Prelude hiding (read)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
@@ -171,14 +173,14 @@ text = match _Text
 string :: Key -> TomlCodec String
 string = match _String
 
-codecShow :: (Show a, Read a, Typeable a) => Key -> TomlCodec a
-codecShow = match _Show
+read :: (Show a, Read a, Typeable a) => Key -> TomlCodec a
+read = match _Show
 
-bytestring :: Key -> TomlCodec ByteString
-bytestring = match _ByteString
+byteString :: Key -> TomlCodec ByteString
+byteString = match _ByteString
 
-lBytestring :: Key -> TomlCodec BL.ByteString
-lBytestring = match _LByteString
+lbyteString :: Key -> TomlCodec BL.ByteString
+lbyteString = match _LByteString
 
 zonedTime :: Key -> TomlCodec ZonedTime
 zonedTime = match _ZonedTime
@@ -195,19 +197,19 @@ timeOfDay = match _TimeOfDay
 -- | Parser for list of values. Takes converter for single array element and
 -- returns list of values.
 arrayOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec [a]
-arrayOf bimap = match (_Array bimap)
+arrayOf = match . _Array
 
-setOf :: (Typeable a, Ord a) => BiMap a AnyValue -> Key -> TomlCodec (Set a)
-setOf bimap = match (_Set bimap)
+arraySetOf :: (Typeable a, Ord a) => BiMap a AnyValue -> Key -> TomlCodec (Set a)
+arraySetOf = match . _Set
 
-intSet :: Key -> TomlCodec IntSet
-intSet = match _IntSet
+arrayIntSet :: Key -> TomlCodec IntSet
+arrayIntSet = match _IntSet
 
-hashSetOf :: (Typeable a, Hashable a, Eq a) => BiMap a AnyValue -> Key -> TomlCodec (HashSet a)
-hashSetOf bimap = match (_HashSet bimap)
+arrayHashSetOf :: (Typeable a, Hashable a, Eq a) => BiMap a AnyValue -> Key -> TomlCodec (HashSet a)
+arrayHashSetOf = match . _HashSet
 
-nonEmptyOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
-nonEmptyOf bimap = match (_NonEmpty bimap)
+arrayNonEmptyOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
+arrayNonEmptyOf = match . _NonEmpty
 
 -- | Parser for tables. Use it when when you have nested objects.
 table :: forall a . TomlCodec a -> Key -> TomlCodec a
