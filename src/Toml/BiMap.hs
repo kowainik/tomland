@@ -13,9 +13,14 @@ module Toml.BiMap
        , prism
 
          -- * Helpers for BiMap and AnyValue
-       , matchValueBackward
        , mkAnyValueBiMap
        , _TextBy
+       , _NaturalInteger
+       , _StringText
+       , _ReadString
+       , _BoundedInteger
+       , _ByteStringText
+       , _LByteStringText
 
          -- * Some predefined bi mappings
        , _Array
@@ -27,19 +32,13 @@ module Toml.BiMap
        , _LocalTime
        , _Day
        , _TimeOfDay
-       , _StringText
        , _String
-       , _ShowString
-       , _Show
-       , _NaturalInteger
+       , _Read
        , _Natural
-       , _BoundedInteger
        , _Word
        , _Int
        , _Float
-       , _ByteStringText
        , _ByteString
-       , _LByteStringText
        , _LByteString
        , _Set
        , _IntSet
@@ -65,9 +64,9 @@ import Data.Hashable (Hashable)
 import Text.Read (readMaybe)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 
-import Toml.Type (AnyValue (..), TValue (TArray), Value (..), DateTime (..) ,
-                  liftMatch, matchArray, matchBool, matchDouble, matchInteger,
-                  matchText, matchDate, reifyAnyValues)
+import Toml.Type (AnyValue (..), Value (..), DateTime (..) ,
+                  matchArray, matchBool, matchDouble, matchInteger,
+                  matchText, matchDate, toMArray)
 
 import qualified Control.Category as Cat
 import qualified Data.Text as T
@@ -120,12 +119,15 @@ prism review preview = BiMap preview (Just . review)
 -- General purpose bimaps
 ----------------------------------------------------------------------------
 
+-- | Bimap for 'Either' and its left type
 _Left :: BiMap (Either l r) l
 _Left = prism Left (either Just (const Nothing))
 
+-- | Bimap for 'Either' and its right type
 _Right :: BiMap (Either l r) r
 _Right = prism Right (either (const Nothing) Just)
 
+-- | Bimap for 'Maybe'
 _Just :: BiMap (Maybe a) a
 _Just = prism Just id
 
@@ -140,67 +142,73 @@ mkAnyValueBiMap :: (forall t . Value t -> Maybe a)
 mkAnyValueBiMap matchValue toValue =
     BiMap (Just . AnyValue . toValue) (\(AnyValue value) -> matchValue value)
 
--- | Allows to match against given 'Value' using provided prism for 'AnyValue'.
-matchValueBackward :: BiMap a AnyValue -> Value t -> Maybe a
-matchValueBackward = liftMatch . backward
-
--- | Creates prism for 'Text' to 'AnyValue' with custom functions
+-- | Creates bimap for 'Text' to 'AnyValue' with custom functions
 _TextBy :: (a -> Text) -> (Text -> Maybe a) -> BiMap a AnyValue
 _TextBy toText parseText =
   mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
 
--- | 'Bool' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
+-- | 'Bool' bimap for 'AnyValue'. Usually used with 'bool' combinator.
 _Bool :: BiMap Bool AnyValue
 _Bool = mkAnyValueBiMap matchBool Bool
 
--- | 'Integer' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
+-- | 'Integer' bimap for 'AnyValue'. Usually used with 'integer' combinator.
 _Integer :: BiMap Integer AnyValue
 _Integer = mkAnyValueBiMap matchInteger Integer
 
--- | 'Double' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
+-- | 'Double' bimap for 'AnyValue'. Usually used with 'double' combinator.
 _Double :: BiMap Double AnyValue
 _Double = mkAnyValueBiMap matchDouble Double
 
--- | 'Text' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
+-- | 'Text' bimap for 'AnyValue'. Usually used with 'text' combinator.
 _Text :: BiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
 
+-- | Zoned time bimap for 'AnyValue'. Usually used with 'zonedTime' combinator.
 _ZonedTime :: BiMap ZonedTime AnyValue
 _ZonedTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Zoned)
   where
     getTime (Zoned z) = Just z
     getTime _         = Nothing
 
+-- | Local time bimap for 'AnyValue'. Usually used with 'localTime' combinator.
 _LocalTime :: BiMap LocalTime AnyValue
 _LocalTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Local)
   where
     getTime (Local l) = Just l
     getTime _         = Nothing
 
+-- | Day bimap for 'AnyValue'. Usually used with 'day' combinator.
 _Day :: BiMap Day AnyValue
 _Day = mkAnyValueBiMap (matchDate >=> getTime) (Date . Day)
   where
     getTime (Day d) = Just d
     getTime _       = Nothing
 
+-- | Time of day bimap for 'AnyValue'. Usually used with 'timeOfDay' combinator.
 _TimeOfDay :: BiMap TimeOfDay AnyValue
 _TimeOfDay = mkAnyValueBiMap (matchDate >=> getTime) (Date . Hours)
   where
     getTime (Hours h) = Just h
     getTime _         = Nothing
 
+-- | Helper bimap for 'String' and 'Text'.
 _StringText :: BiMap String Text
 _StringText = iso T.pack T.unpack
 
+-- | 'String' bimap for 'AnyValue'. Usually used with 'string' combinator.
 _String :: BiMap String AnyValue
 _String = _StringText >>> _Text
 
-_ShowString :: (Show a, Read a) => BiMap a String
-_ShowString = BiMap (Just . show) readMaybe
+-- | Helper bimap for 'String' and types with 'Read' and 'Show' instances.
+_ReadString :: (Show a, Read a) => BiMap a String
+_ReadString = BiMap (Just . show) readMaybe
 
-_Show :: (Show a, Read a) => BiMap a AnyValue
-_Show = _ShowString >>> _String
+-- | Bimap for 'AnyValue' and values with a `Read` and `Show` instance.
+-- Usually used with 'read' combinator.
+_Read :: (Show a, Read a) => BiMap a AnyValue
+_Read = _ReadString >>> _String
 
+-- | Helper bimap for 'Natural' and 'Integer'.
 _NaturalInteger :: BiMap Natural Integer
 _NaturalInteger = BiMap (Just . toInteger) maybeInteger
   where
@@ -209,9 +217,11 @@ _NaturalInteger = BiMap (Just . toInteger) maybeInteger
       | n < 0     = Nothing
       | otherwise = Just (fromIntegral n)
 
+-- | 'Natural' bimap for 'AnyValue'. Usually used with 'natural' combinator.
 _Natural :: BiMap Natural AnyValue
 _Natural = _NaturalInteger >>> _Integer
 
+-- | Helper bimap for 'Integer' and integral, bounded values.
 _BoundedInteger :: (Integral a, Bounded a) => BiMap a Integer
 _BoundedInteger = BiMap (Just . toInteger) maybeBounded
   where
@@ -221,57 +231,65 @@ _BoundedInteger = BiMap (Just . toInteger) maybeBounded
       | n > toInteger (maxBound :: a) = Nothing
       | otherwise                     = Just (fromIntegral n)
 
+-- | 'Word' bimap for 'AnyValue'. Usually used with 'word' combinator.
 _Word :: BiMap Word AnyValue
 _Word = _BoundedInteger >>> _Integer
 
+-- | 'Int' bimap for 'AnyValue'. Usually used with 'int' combinator.
 _Int :: BiMap Int AnyValue
 _Int = _BoundedInteger >>> _Integer
 
+-- | 'Float' bimap for 'AnyValue'. Usually used with 'float' combinator.
 _Float :: BiMap Float AnyValue
 _Float = iso realToFrac realToFrac >>> _Double
 
+-- | Helper bimap for 'Text' and strict 'ByteString'
 _ByteStringText :: BiMap ByteString Text
 _ByteStringText = prism T.encodeUtf8 maybeText
   where
     maybeText :: ByteString -> Maybe Text
     maybeText = either (const Nothing) Just . T.decodeUtf8'
 
+-- | 'ByteString' bimap for 'AnyValue'. Usually used with 'byteString' combinator.
 _ByteString:: BiMap ByteString AnyValue
 _ByteString = _ByteStringText >>> _Text
 
+-- | Helper bimap for 'Text' and lazy 'ByteString'
 _LByteStringText :: BiMap BL.ByteString Text
 _LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) maybeText
   where
     maybeText :: BL.ByteString -> Maybe Text
     maybeText = either (const Nothing) (Just . TL.toStrict) . TL.decodeUtf8'
 
+-- | Lazy 'ByteString' bimap for 'AnyValue'. Usually used with 'lazyByteString'
+-- combinator.
 _LByteString:: BiMap BL.ByteString AnyValue
 _LByteString = _LByteStringText >>> _Text
 
--- | 'Array' bimap for 'AnyValue'. Usually used with 'arrayOf' combinator.
+-- | Takes a bimap of a value and returns a bimap of a list of values and 'Anything'
+-- as an array. Usually used with 'arrayOf' combinator.
 _Array :: BiMap a AnyValue -> BiMap [a] AnyValue
 _Array elementBimap = BiMap
     { forward = mapM (forward elementBimap) >=> fmap AnyValue . toMArray
     , backward = \(AnyValue val) -> matchArray (backward elementBimap) val
     }
 
+-- | Takes a bimap of a value and returns a bimap of a non-empty list of values
+-- and 'Anything' as an array. Usually used with 'nonEmptyOf' combinator.
 _NonEmpty :: BiMap a AnyValue -> BiMap (NE.NonEmpty a) AnyValue
 _NonEmpty bimap = BiMap (Just . NE.toList) NE.nonEmpty >>> _Array bimap
 
+-- | Takes a bimap of a value and returns a bimap of a set of values and 'Anything'
+-- as an array. Usually used with 'setOf' combinator.
 _Set :: (Ord a) => BiMap a AnyValue -> BiMap (S.Set a) AnyValue
 _Set bimap = iso S.toList S.fromList >>> _Array bimap
 
+-- | Takes a bimap of a value and returns a bimap of a has set of values and
+-- 'Anything' as an array. Usually used with 'hashSetOf' combinator.
 _HashSet :: (Eq a, Hashable a) => BiMap a AnyValue -> BiMap (HS.HashSet a) AnyValue
 _HashSet bimap = iso HS.toList HS.fromList >>> _Array bimap
 
+-- | Bimap of 'IntSet' and 'Anything' as an array. Usually used with
+-- 'intSet' combinator.
 _IntSet :: BiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
-
--- TODO: move somewhere else?
-{- | Function for creating 'Array' from list of 'AnyValue'.
--}
-toMArray :: [AnyValue] -> Maybe (Value 'TArray)
-toMArray [] = Just $ Array []
-toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
-    Left _     -> Nothing
-    Right vals -> Just $ Array (x : vals)
