@@ -16,12 +16,12 @@ main = do
     txt <- TIO.readFile "./benchmark/benchmark.toml"
     Right tomlandVal <- pure $ Tomland.parse txt
     Right htomlVal <- pure $ Htoml.parse txt
-    Right htomlMegaVal <- pure $ HtomlM.parse "log" txt
+    Right htomlMegaVal <- pure $ HtomlM.parse txt
     defaultMain
         [ bgroup "Parse"
             [ bench "tomland"          $ nf Tomland.parse txt
             , bench "htoml"            $ nf Htoml.parse txt
-            , bench "htoml-megaparsec" $ nf (HtomlM.parse "log") txt
+            , bench "htoml-megaparsec" $ nf HtomlM.parse txt
             ]
         , bgroup "Convert"
             [ bench "tomland"          $ nf Tomland.convert tomlandVal

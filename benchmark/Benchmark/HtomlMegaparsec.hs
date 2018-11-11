@@ -16,8 +16,8 @@ import Benchmark.Type (HaskellType)
 
 
 -- | Wrapper on htoml-megaparsec's parseTomlDoc
-parse :: FilePath -> Text -> Either TomlError Table
-parse _ = parseTomlDoc ""
+parse :: Text -> Either TomlError Table
+parse = parseTomlDoc "log"
 
 -- | Convert from already parsed toml to Haskell type.
 convert :: Table -> Either String HaskellType
