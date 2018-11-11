@@ -7,6 +7,8 @@ The change log is available [on GitHub][2].
 0.5.0
 =====
 
+* [#131](https://github.com/kowainik/tomland/issues/131):
+  Uncommenting `tomlTableArrays` from 'TOML'.
 * [#115](https://github.com/kowainik/tomland/issues/115):
   Added time combinators to `Toml.BiMap` and `Toml.Bi.Combinators`.
 * [#99](https://github.com/kowainik/tomland/issues/99):
