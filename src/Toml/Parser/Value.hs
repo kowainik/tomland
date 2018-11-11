@@ -23,7 +23,7 @@ import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOf
                   minutesToTimeZone)
 import Text.Read (readMaybe)
 
-import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol, float,
+import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol,
                          hexDigitChar, hexadecimal, lexeme, octal, satisfy, sc, signed, space,
                          string, tab, text, try, (<?>))
 import Toml.PrefixTree (Key (..), Piece (..))
@@ -166,10 +166,25 @@ doubleP :: Parser Double
 doubleP = lexeme (signed sc (num <|> inf <|> nan)) <?> "double"
   where
     num, inf, nan :: Parser Double
-    num = float
+    num = floatP
     inf = 1 / 0 <$ string "inf"
     nan = 0 / 0 <$ string "nan"
 
+floatP :: Parser Double
+floatP = read . concat <$> sequence [ digits, expo <|> dot ]
+  where
+    digits :: Parser String
+    digits = concat <$> sepBy1 (some digitChar) (char '_')
+
+    dot :: Parser String
+    dot = concat <$> sequence [pure <$> char '.', digits, option "" expo]
+
+    expo :: Parser String
+    expo = concat <$> sequence
+             [ pure <$> (char 'e' <|> char 'E')
+             , pure <$> option '+' (char '+' <|> char '-')
+             , digits
+             ]
 
 boolP :: Parser Bool
 boolP = False <$ text "false"
