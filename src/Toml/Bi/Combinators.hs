@@ -59,7 +59,7 @@ import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (Codec (..), dimap)
 import Toml.BiMap (BiMap (..), _Array, _Bool, _Double,
                    _Integer, _String, _Text, _ZonedTime, _LocalTime, _Day,
-                   _TimeOfDay, _Int, _Word, _Natural, _Float, _Show,
+                   _TimeOfDay, _Int, _Word, _Natural, _Float, _Read,
                    _ByteString, _LByteString, _Set, _IntSet, _HashSet,
                    _NonEmpty)
 import Toml.Parser (ParseException (..))
@@ -152,62 +152,80 @@ integer = match _Integer
 int :: Key -> TomlCodec Int
 int = match _Int
 
+-- | Parser for natural values.
 natural :: Key -> TomlCodec Natural
 natural = match _Natural
 
+-- | Parser for word values.
 word :: Key -> TomlCodec Word
 word = match _Word
 
--- | Parser for floating values.
+-- | Parser for floating point values as double.
 double :: Key -> TomlCodec Double
 double = match _Double
 
+-- | Parser for floating point values as float.
 float :: Key -> TomlCodec Float
 float = match _Float
 
--- | Parser for string values.
+-- | Parser for string values as text.
 text :: Key -> TomlCodec Text
 text = match _Text
 
--- | Codec for 'String'.
+-- | Parser for string values as string.
 string :: Key -> TomlCodec String
 string = match _String
 
+-- | Parser for values with a `Read` and `Show` instance.
 read :: (Show a, Read a, Typeable a) => Key -> TomlCodec a
-read = match _Show
+read = match _Read
 
+-- | Parser for byte vectors values as strict bytestring.
 byteString :: Key -> TomlCodec ByteString
 byteString = match _ByteString
 
+-- | Parser for byte vectors values as lazy bytestring.
 lbyteString :: Key -> TomlCodec BL.ByteString
 lbyteString = match _LByteString
 
+-- | Parser for zoned time values.
 zonedTime :: Key -> TomlCodec ZonedTime
 zonedTime = match _ZonedTime
 
+-- | Parser for local time values.
 localTime :: Key -> TomlCodec LocalTime
 localTime = match _LocalTime
 
+-- | Parser for day values.
 day :: Key -> TomlCodec Day
 day = match _Day
 
+-- | Parser for time of day values.
 timeOfDay :: Key -> TomlCodec TimeOfDay
 timeOfDay = match _TimeOfDay
 
--- | Parser for list of values. Takes converter for single array element and
--- returns list of values.
+-- | Parser for list of values. Takes converter for single value and
+-- returns a list of values.
 arrayOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec [a]
 arrayOf = match . _Array
 
+-- | Parser for sets. Takes converter for single value and
+-- returns a set of values.
 arraySetOf :: (Typeable a, Ord a) => BiMap a AnyValue -> Key -> TomlCodec (Set a)
 arraySetOf = match . _Set
 
+-- | Parser for sets of ints. Takes converter for single value and
+-- returns a set of ints.
 arrayIntSet :: Key -> TomlCodec IntSet
 arrayIntSet = match _IntSet
 
+-- | Parser for hash sets. Takes converter for single hashable value and
+-- returns a set of hashable values.
 arrayHashSetOf :: (Typeable a, Hashable a, Eq a) => BiMap a AnyValue -> Key -> TomlCodec (HashSet a)
 arrayHashSetOf = match . _HashSet
 
+-- | Parser for non- empty lists of values. Takes converter for single value and
+-- returns a non-empty list of values.
 arrayNonEmptyOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 

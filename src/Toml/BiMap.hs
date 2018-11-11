@@ -17,7 +17,7 @@ module Toml.BiMap
        , _TextBy
        , _NaturalInteger
        , _StringText
-       , _ShowString
+       , _ReadString
        , _BoundedInteger
        , _ByteStringText
        , _LByteStringText
@@ -33,7 +33,7 @@ module Toml.BiMap
        , _Day
        , _TimeOfDay
        , _String
-       , _Show
+       , _Read
        , _Natural
        , _Word
        , _Int
@@ -190,11 +190,11 @@ _StringText = iso T.pack T.unpack
 _String :: BiMap String AnyValue
 _String = _StringText >>> _Text
 
-_ShowString :: (Show a, Read a) => BiMap a String
-_ShowString = BiMap (Just . show) readMaybe
+_ReadString :: (Show a, Read a) => BiMap a String
+_ReadString = BiMap (Just . show) readMaybe
 
-_Show :: (Show a, Read a) => BiMap a AnyValue
-_Show = _ShowString >>> _String
+_Read :: (Show a, Read a) => BiMap a AnyValue
+_Read = _ReadString >>> _String
 
 _NaturalInteger :: BiMap Natural Integer
 _NaturalInteger = BiMap (Just . toInteger) maybeInteger
