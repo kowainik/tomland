@@ -64,9 +64,9 @@ import Data.Hashable (Hashable)
 import Text.Read (readMaybe)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 
-import Toml.Type (AnyValue (..), TValue (TArray), Value (..), DateTime (..) ,
+import Toml.Type (AnyValue (..), Value (..), DateTime (..) ,
                   matchArray, matchBool, matchDouble, matchInteger,
-                  matchText, matchDate, reifyAnyValues, toMArray)
+                  matchText, matchDate, toMArray)
 
 import qualified Control.Category as Cat
 import qualified Data.Text as T

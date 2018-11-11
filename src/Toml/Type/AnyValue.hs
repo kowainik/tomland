@@ -22,7 +22,7 @@ import Control.DeepSeq (NFData, rnf)
 import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
 
-import Toml.Type.Value (DateTime, TValue, TypeMismatchError, Value (..), sameValue)
+import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue)
 
 -- | Existential wrapper for 'Value'.
 data AnyValue = forall (t :: TValue) . AnyValue (Value t)
