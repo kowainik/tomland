@@ -2,6 +2,7 @@
 
 {-# LANGUAGE DeriveAnyClass     #-}
 {-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE PackageImports     #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
 module Benchmark.Htoml
@@ -17,10 +18,8 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Text.Parsec.Error (ParseError)
 
-import Text.Toml (parseTomlDoc)
-import Text.Toml.Types (Node, Table)
-
-import qualified Text.Toml.Types as TTT
+import "htoml" Text.Toml (parseTomlDoc)
+import "htoml" Text.Toml.Types (Node (..), Table, toJSON)
 
 
 -- | Decode toml file to Haskell type.
@@ -31,7 +30,7 @@ decode txt = case parseTomlDoc "" txt of
 
 -- | Convert from already parsed toml to Haskell type.
 convert :: Table -> Either String HaskellType
-convert = parseEither parseJSON . TTT.toJSON
+convert = parseEither parseJSON . toJSON
 
 -- | Wrapper on htoml's parseTomlDoc
 parse :: Text -> Either ParseError Table
