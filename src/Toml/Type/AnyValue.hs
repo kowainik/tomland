@@ -6,6 +6,7 @@
 module Toml.Type.AnyValue
        ( AnyValue (..)
        , reifyAnyValues
+       , toMArray
 
          -- * Matching
        , liftMatch
@@ -79,3 +80,10 @@ liftMatch fromAnyValue = fromAnyValue . AnyValue
 reifyAnyValues :: Value t -> [AnyValue] -> Either TypeMismatchError [Value t]
 reifyAnyValues _ []                 = Right []
 reifyAnyValues v (AnyValue av : xs) = sameValue v av >>= \Refl -> (av :) <$> reifyAnyValues v xs
+
+-- | Function for creating 'Array' from list of 'AnyValue'.
+toMArray :: [AnyValue] -> Maybe (Value 'TArray)
+toMArray [] = Just $ Array []
+toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
+    Left _     -> Nothing
+    Right vals -> Just $ Array (x : vals)

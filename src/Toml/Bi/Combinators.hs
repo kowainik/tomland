@@ -17,7 +17,7 @@ module Toml.Bi.Combinators
        , read
        , string
        , byteString
-       , lbyteString
+       , lazyByteString
        , zonedTime
        , localTime
        , day
@@ -185,8 +185,8 @@ byteString :: Key -> TomlCodec ByteString
 byteString = match _ByteString
 
 -- | Parser for byte vectors values as lazy bytestring.
-lbyteString :: Key -> TomlCodec BL.ByteString
-lbyteString = match _LByteString
+lazyByteString :: Key -> TomlCodec BL.ByteString
+lazyByteString = match _LByteString
 
 -- | Parser for zoned time values.
 zonedTime :: Key -> TomlCodec ZonedTime
