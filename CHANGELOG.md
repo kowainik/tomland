@@ -3,6 +3,11 @@
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+## 0.6.0
+
+* [#131](https://github.com/kowainik/tomland/issues/131):
+  Uncommenting `tomlTableArrays` from 'TOML'.
+
 ## 0.5.0 — Nov 12, 2018
 
 * [#81](https://github.com/kowainik/tomland/issues/81):

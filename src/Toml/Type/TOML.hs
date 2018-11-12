@@ -5,11 +5,13 @@ module Toml.Type.TOML
        , insertKeyVal
        , insertKeyAnyVal
        , insertTable
+       , insertTableArrays
        ) where
 
 import Control.DeepSeq (NFData)
 import Data.HashMap.Strict (HashMap)
 import Data.Semigroup (Semigroup (..))
+import Data.List.NonEmpty (NonEmpty)
 import GHC.Generics (Generic)
 
 import Toml.PrefixTree (Key (..), PrefixMap)
@@ -19,23 +21,23 @@ import Toml.Type.Value (Value)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Toml.PrefixTree as Prefix
 
-
 -- TODO: describe how some TOML document will look like with this type
 {- | Represents TOML configuration value. -}
 data TOML = TOML
     { tomlPairs  :: HashMap Key AnyValue
     , tomlTables :: PrefixMap TOML
-    -- tomlTableArrays :: HashMap Key (NonEmpty TOML)
+    , tomlTableArrays :: HashMap Key (NonEmpty TOML)
     } deriving (Show, Eq, NFData, Generic)
 
 instance Semigroup TOML where
-    (TOML pairsA tablesA) <> (TOML pairsB tablesB) = TOML
+    (TOML pairsA tablesA arraysA) <> (TOML pairsB tablesB arraysB) = TOML
         (pairsA <> pairsB)
         (HashMap.unionWith (<>) tablesA tablesB)
+        (arraysA <> arraysB)
 
 instance Monoid TOML where
     mappend = (<>)
-    mempty = TOML mempty mempty
+    mempty = TOML mempty mempty mempty
 
 -- | Inserts given key-value into the 'TOML'.
 insertKeyVal :: Key -> Value a -> TOML -> TOML
@@ -49,4 +51,10 @@ insertKeyAnyVal k av toml =toml { tomlPairs = HashMap.insert k av (tomlPairs tom
 insertTable :: Key -> TOML -> TOML -> TOML
 insertTable k inToml toml = toml
     { tomlTables = Prefix.insert k inToml (tomlTables toml)
+    }
+
+-- | Inserts given array of tables into the 'TOML'.
+insertTableArrays :: Key -> NonEmpty TOML -> TOML -> TOML
+insertTableArrays k arr toml = toml
+    { tomlTableArrays = HashMap.insert k arr (tomlTableArrays toml)
     }
