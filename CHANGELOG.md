@@ -1,12 +1,25 @@
-Change log
-==========
+# Change log
 
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
-0.5.0
-=====
+## 0.5.0 — Nov 12, 2018
 
+* [#81](https://github.com/kowainik/tomland/issues/81):
+  **Breaking change:** Rename data types.
+
+  _Migration guide:_ rename `Bijection` to `Codec`, `Bi` to `BiCodec` and
+  `BiToml` to `TomlCodec`.
+* [#82](https://github.com/kowainik/tomland/issues/82):
+  **Breaking change:** Remove `maybeT`. Add `dioptional` instead.
+
+  _Migration guide:_ replace `Toml.maybeT Toml.int "foo"` with `Toml.dioptional (Toml.int "foo")`.
+* [#95](https://github.com/kowainik/tomland/issues/95):
+  **Breaking change:** Swap fields in `BiMap`s for consistency with `lens` package.
+
+  _Migration guide:_ reverse order of composition when using `BiMap`s.
+* [#98](https://github.com/kowainik/tomland/issues/98):
+  Implement bencmarks for `tomland` and compare with `htoml` and `htoml-megaparsec` libraries.
 * [#130](https://github.com/kowainik/tomland/issues/130):
   Added combinators to `Toml.Bi.Combinators`.
 * [#115](https://github.com/kowainik/tomland/issues/115):
@@ -15,8 +28,8 @@ The change log is available [on GitHub][2].
   Split `Toml.Parser` file into smaller files.
 * [#22](https://github.com/kowainik/tomland/issues/22):
   Report proper type checking error during parsing.
-* [#95](https://github.com/kowainik/tomland/issues/95):
-  Swap fields in BiMaps for consistency with `lens` package.
+* [#14](https://github.com/kowainik/tomland/issues/14):
+  Add support for inline tables parsing.
 * [#70](https://github.com/kowainik/tomland/issues/70):
   Add `_TextBy` and `_Read` combinators.
 * [#11](https://github.com/kowainik/tomland/issues/11):
@@ -25,10 +38,6 @@ The change log is available [on GitHub][2].
   Allow underscores in integers*.
 * [#90](https://github.com/kowainik/tomland/issues/90):
   Migrate to megaparsec 7.0.
-* [#81](https://github.com/kowainik/tomland/issues/81):
-  **Important:** Rename data types.
-  _Migration guide:_ rename `Bijection` to `Codec`, `Bi` to `BiCodec` and
-  `BiToml` to `TomlCodec`.
 * [#85](https://github.com/kowainik/tomland/issues/85):
   Add `Date` generator for property-based tests.
 * [#88](https://github.com/kowainik/tomland/issues/88):
@@ -38,16 +47,12 @@ The change log is available [on GitHub][2].
 * [#87](https://github.com/kowainik/tomland/issues/87):
   Improve `Double` generator for property-based tests.
 * Add support for GHC 8.6.1.
+  Add support for GHC 8.4.4.
   Drop support for GHC 8.0.2.
-* [#82](https://github.com/kowainik/tomland/issues/82):
-  Remove `maybeT`. Add `diOptional`.
 * [#109](https://github.com/kowainik/tomland/issues/109):
   Add function `decodeToml`.
-* [#110](https://github.com/kowainik/tomland/issues/110):
-  Example of TOML for the benchmarks.
 
-0.4.0
-=====
+## 0.4.0
 
 * [#54](https://github.com/kowainik/tomland/issues/54):
   Add support for sum types.
@@ -55,8 +60,8 @@ The change log is available [on GitHub][2].
   Rename `bijectionMaker` to `match`.
   Add `string` codec.
 
-0.3.1
-=====
+## 0.3.1
+
 * [#19](https://github.com/kowainik/tomland/issues/19):
   Add proper parsing of floating point numbers.
 * [#15](https://github.com/kowainik/tomland/issues/15):
@@ -69,9 +74,16 @@ The change log is available [on GitHub][2].
 * [#58](https://github.com/kowainik/tomland/issues/58):
   Add `decodeFile` function.
 
-0.3
-=====
+## 0.3
 
+* [#60](https://github.com/kowainik/tomland/issues/60):
+  **Breaking change:** Replace `Valuer` with `Prism`.
+
+  _Migration guide:_ replace any `fooV` with corresponding prism `_Foo`.
+* [#66](https://github.com/kowainik/tomland/issues/66):
+  **Breaking change:** Introduce consistent names according to Haskell types.
+
+  _Migration guide:_ see issue details to know which names to use.
 * [#8](https://github.com/kowainik/tomland/issues/8):
   Create EDSL for easier TOML data type writing.
 * [#10](https://github.com/kowainik/tomland/issues/10):
@@ -84,31 +96,23 @@ The change log is available [on GitHub][2].
   Allow terminating commas inside an array.
   Allow comments before and after any value inside an array.
   Allow keys to be literal strings.
-* **Breaking change:** [#60](https://github.com/kowainik/tomland/issues/60):
-  Replace `Valuer` with `Prism`.
 
-  _Migration guide:_ replace any `fooV` with corresponding prism `_Foo`.
-* **Breaking change:** [#66](https://github.com/kowainik/tomland/issues/66):
-  Introduce consistent names according to Haskell types.
+## 0.2.1
 
-  _Migration guide:_ see issue details to know which names to use.
-
-0.2.1
-=====
 * Make `table` parser work with `maybeP`.
 * [#39](https://github.com/kowainik/tomland/issues/39):
   Implement `prettyException` function for `DecodeException`.
 
-0.2.0
-=====
+## 0.2.0
+
 * Switch names for `decode` and `encode` functions.
 * [#47](https://github.com/kowainik/tomland/issues/47):
   Rename `dimapBijection` to `dimap`. Introduce `mdimap` combinator.
 * [#37](https://github.com/kowainik/tomland/issues/37):
   Add tables support for bidirectional conversion.
 
-0.1.0
-=====
+## 0.1.0
+
 * [#16](https://github.com/kowainik/tomland/issues/16):
   Add parser for literal strings.
 * Add `IsString` instance for `Key` data type.
@@ -119,8 +123,8 @@ The change log is available [on GitHub][2].
 * [#44](https://github.com/kowainik/tomland/issues/44):
   Add bidirectional converter for `Maybe`.
 
-0.0.0
-=====
+## 0.0.0
+
 * [#3](https://github.com/kowainik/tomland/issues/3):
   Implement basic TOML parser with `megaparsec`.
 * [#7](https://github.com/kowainik/tomland/issues/7):
