@@ -10,12 +10,14 @@ The change log is available [on GitHub][2].
 
   _Migration guide:_ change `Toml.wrapper Toml.text "foo"` to `Toml.diwrap (Toml.text "foo")`.
 * [#131](https://github.com/kowainik/tomland/issues/131):
-  Uncommenting `tomlTableArrays` from 'TOML'.
+  Uncommenting `tomlTableArrays` from `TOML`.
+* [#64](https://github.com/kowainik/tomland/issues/64):
+  Integer parser doesn't accept leading zeros.
 * [#142](https://github.com/kowainik/tomland/issues/142):
   Adding EDSL support for arrays of tables
 * [#149](https://github.com/kowainik/tomland/issues/149):
   Removing records syntax from `PrefixTree`.
-  
+
 ## 0.5.0 — Nov 12, 2018
 
 * [#81](https://github.com/kowainik/tomland/issues/81):

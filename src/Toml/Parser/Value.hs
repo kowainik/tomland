@@ -16,7 +16,6 @@ import Control.Applicative.Combinators (between, count, manyTill, option, option
                                         skipMany, sepBy1)
 
 import Data.Char (chr, isControl)
-import Numeric (readDec)
 import Data.Fixed (Pico)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -25,7 +24,7 @@ import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOf
 
 import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol, float,
                          hexDigitChar, hexadecimal, lexeme, octal, satisfy, sc, signed,
-                         space, string, tab, text, try, (<?>), space1, eof, oneOf, lookAhead)
+                         space, string, tab, text, try, (<?>))
 import Toml.PrefixTree (Key (..), Piece (..))
 import Toml.Type (DateTime (..), UValue (..), AnyValue, typeCheck)
 
@@ -148,18 +147,17 @@ tableNameP = between (text "[") (text "]") keyP
 decimalP :: Parser Integer
 decimalP = zero <|> more
   where
-    zero = 0 <$ char '0'
-    more = stringToInt <$> sepBy1 (some digitChar) (char '_')
-    stringToInt = fst . head . readDec . concat
+    zero = signed sc (0 <$ char '0')
+    more = read . concat <$> sepBy1 (some digitChar) (char '_')
+
 
 integerP :: Parser Integer
-integerP = lexeme ((bin <|> oct <|> hex <|> dec) <* lookAhead sep) <?> "integer"
+integerP = lexeme (bin <|> oct <|> hex <|> dec) <?> "integer"
   where
-    dec = signed sc decimalP
     bin = try (char '0' >> char 'b') >> binary
     oct = try (char '0' >> char 'o') >> octal
     hex = try (char '0' >> char 'x') >> hexadecimal
-    sep = space1 <|> eof <|> (() <$ oneOf (",=]}" :: String))
+    dec = signed sc decimalP
 
 
 doubleP :: Parser Double
