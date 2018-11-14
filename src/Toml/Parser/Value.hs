@@ -16,11 +16,13 @@ import Control.Applicative.Combinators (between, count, manyTill, option, option
                                         sepEndBy, skipMany)
 
 import Data.Char (chr, isControl)
+import Data.Either (fromRight)
 import Data.Fixed (Pico)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
                   minutesToTimeZone)
+import Text.Read (readMaybe)
 import Text.Read (readMaybe)
 
 import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol,
@@ -171,15 +173,13 @@ doubleP = lexeme (signed sc (num <|> inf <|> nan)) <?> "double"
     nan = 0 / 0 <$ string "nan"
 
 floatP :: Parser Double
-floatP = read . concat <$> sequence [ digits, expo <|> dot ]
+floatP = check =<< readMaybe . concat <$> sequence [ digits, expo <|> dot ]
   where
-    digits :: Parser String
+    check = maybe (fail "Not a float") return
+
+    digits, dot, expo :: Parser String
     digits = concat <$> sepBy1 (some digitChar) (char '_')
-
-    dot :: Parser String
     dot = concat <$> sequence [pure <$> char '.', digits, option "" expo]
-
-    expo :: Parser String
     expo = concat <$> sequence
              [ pure <$> (char 'e' <|> char 'E')
              , pure <$> option '+' (char '+' <|> char '-')
