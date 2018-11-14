@@ -16,6 +16,7 @@ import Control.Applicative.Combinators (between, count, manyTill, option, option
                                         skipMany, sepBy1)
 
 import Data.Char (chr, isControl)
+import Text.Read (readMaybe)
 import Data.Fixed (Pico)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -147,8 +148,9 @@ tableNameP = between (text "[") (text "]") keyP
 decimalP :: Parser Integer
 decimalP = zero <|> more
   where
-    zero = signed sc (0 <$ char '0')
-    more = read . concat <$> sepBy1 (some digitChar) (char '_')
+    zero = 0 <$ char '0'
+    more = check =<< readMaybe . concat <$> sepBy1 (some digitChar) (char '_')
+    check = maybe (fail "Not an integer") return
 
 
 integerP :: Parser Integer
