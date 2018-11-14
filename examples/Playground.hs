@@ -44,7 +44,7 @@ testT = Test
     <*> Toml.dioptional (Toml.bool "testM") .= testM
     <*> Toml.table insideT "testX" .= testX
     <*> Toml.dioptional ((Toml.table insideT) "testY") .= testY
-    <*> Toml.wrapper Toml.text "testN" .= testN
+    <*> Toml.diwrap (Toml.text "testN") .= testN
     <*> eitherT1 .= testE1
     <*> eitherT2 .= testE2
   where
