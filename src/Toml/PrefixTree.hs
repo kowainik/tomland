@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveAnyClass  #-}
-{-# LANGUAGE DerivingStrategies  #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
-{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PatternSynonyms            #-}
 
 module Toml.PrefixTree
        ( PrefixTree (..)
@@ -96,10 +96,9 @@ type PrefixMap a = HashMap Piece (PrefixTree a)
 -- | Data structure to represent table tree for @toml@.
 data PrefixTree a
     = Leaf !Key !a
-    | Branch { bCommonPref :: !Prefix         -- ^ greatest common prefix
-             , bVal        :: !(Maybe a)      -- ^ value by key = prefix
-             , bPrefixMap  :: !(PrefixMap a)  -- ^ suffixes of prefix
-             }
+    | Branch !Prefix         -- ^ greatest common prefix
+             !(Maybe a)      -- ^ value by key = prefix
+             !(PrefixMap a)  -- ^ suffixes of prefix
     deriving (Show, Eq, NFData, Generic)
 
 instance Semigroup (PrefixTree a) where
@@ -111,14 +110,13 @@ data KeysDiff
       -- | Keys don't have any common part.
     | NoPrefix
       -- | The first key is the prefix for the second one.
-    | FstIsPref { diff :: !Key}
+    | FstIsPref !Key
       -- | The second key is the prefix for the first one.
-    | SndIsPref { diff :: !Key}
+    | SndIsPref !Key
       -- | Key have same prefix.
-    | Diff { pref    :: !Key
-           , diffFst :: !Key
-           , diffSnd :: !Key
-           }
+    | Diff !Key -- ^ common prefix
+           !Key -- ^ rest of first key
+           !Key -- ^ rest of second key
     deriving (Show, Eq)
 
 keysDiff :: Key -> Key -> KeysDiff
