@@ -80,6 +80,7 @@ instance IsString Key where
             []   -> error "Text.splitOn returned empty string"  -- can't happen
             x:xs -> coerce @(NonEmpty Text) @Key (x :| xs)
 
+-- | Pattern synonym for constructing keys
 pattern (:||) :: Piece -> [Piece] -> Key
 pattern x :|| xs <- Key (x :| xs)
   where
@@ -95,10 +96,10 @@ type PrefixMap a = HashMap Piece (PrefixTree a)
 
 -- | Data structure to represent table tree for @toml@.
 data PrefixTree a
+      -- | last piece of a key, and value at that point.
     = Leaf !Key !a
-    | Branch !Prefix         -- ^ greatest common prefix
-             !(Maybe a)      -- ^ value by key = prefix
-             !(PrefixMap a)  -- ^ suffixes of prefix
+      -- | greatest common prefix, optional value at that point and values of suffixes.
+    | Branch !Prefix !(Maybe a) !(PrefixMap a)
     deriving (Show, Eq, NFData, Generic)
 
 instance Semigroup (PrefixTree a) where
@@ -113,12 +114,11 @@ data KeysDiff
     | FstIsPref !Key
       -- | The second key is the prefix for the first one.
     | SndIsPref !Key
-      -- | Key have same prefix.
-    | Diff !Key -- ^ common prefix
-           !Key -- ^ rest of first key
-           !Key -- ^ rest of second key
+      -- | Key have same prefix. Common prefix, rest of first key, rest of scond key.
+    | Diff !Key  !Key  !Key
     deriving (Show, Eq)
 
+-- | Compares two keys
 keysDiff :: Key -> Key -> KeysDiff
 keysDiff (x :|| xs) (y :|| ys)
     | x == y    = listSame xs ys []
