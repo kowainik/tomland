@@ -126,8 +126,7 @@ spec_Parser = do
                   parseDouble "-2E-2" (-2E-2)
         it "can parse a number which consists of an integral, a fractional, and an exponent part"
             $ parseDouble "6.626e-34" 6.626e-34
-        it "can parse a number with underscores"
-            $ do
+        it "can parse a number with underscores" $ do
                   parseDouble "5e+2_2" 5e+22
                   parseDouble "1.1_1e6"   1.11e6
                   parseDouble "-2_2.21_9E-0_2" (-22.219E-2)
