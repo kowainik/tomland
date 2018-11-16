@@ -9,7 +9,7 @@ exampleToml = mkToml $ do
     \"key2\" =: Bool True
     table \"tableName\" $
         \"tableKey\" =: Array [\"Oh\", \"Hi\", \"Mark\"]
-    array \"arrayName\" $
+    tableArray \"arrayName\" $
         \"elem1\" =: \"yes\" :|
         [ table \"elem2\" $ \"deep\" =: Integer 7
         , empty
