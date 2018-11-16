@@ -23,7 +23,7 @@ module Toml.Edsl
        , empty
        , (=:)
        , table
-       , array
+       , tableArray
        ) where
 
 import Control.Monad.State (State, execState, modify, put)
@@ -52,5 +52,5 @@ table :: Key -> TDSL -> TDSL
 table k = modify . insertTable k . mkToml
 
 -- | Adds array of tables to the 'TDSL'.
-array :: Key -> NonEmpty TDSL -> TDSL
-array k = modify . insertTableArrays k . fmap mkToml
+tableArray :: Key -> NonEmpty TDSL -> TDSL
+tableArray k = modify . insertTableArrays k . fmap mkToml
