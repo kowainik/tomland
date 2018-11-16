@@ -31,7 +31,6 @@ module Toml.Bi.Combinators
          -- * Combinators
        , match
        , table
-       , diwrap
        , mdimap
        ) where
 
@@ -40,7 +39,6 @@ import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import Data.ByteString (ByteString)
-import Data.Coerce (Coercible, coerce)
 import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
@@ -56,7 +54,7 @@ import Data.Word (Word)
 import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
-import Toml.Bi.Monad (BiCodec, Codec (..), dimap)
+import Toml.Bi.Monad (Codec (..))
 import Toml.BiMap (BiMap (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
                    _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
                    _String, _Text, _TimeOfDay, _Word, _ZonedTime)
@@ -250,7 +248,3 @@ table codec key = Codec input output
     handleTableName (TableNotFound name)      = throwError $ TableNotFound (key <> name)
     handleTableName (TypeMismatch name t1 t2) = throwError $ TypeMismatch (key <> name) t1 t2
     handleTableName e                         = throwError e
-
--- | Used for @newtype@ wrappers.
-diwrap :: forall b a r w . (Coercible a b, Functor r, Functor w) => BiCodec r w a -> BiCodec r w b
-diwrap = dimap coerce coerce
