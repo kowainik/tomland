@@ -16,15 +16,15 @@ import GHC.Generics (Generic)
 
 -- | Haskell type to convert to.
 data HaskellType = HaskellType
-    { htTitle :: Text
-    , htAtom  :: Double
-    , htCash  :: Bool
-    , htWords :: [Text]
-    , htBool  :: [Bool]
-    , htToday :: ZonedTime
-    , htInt  :: [Int]
-    , htFruit :: FruitInside
-    , htSize  :: SizeInside
+    { htTitle   :: Text
+    , htAtom    :: Double
+    , htCash    :: Bool
+    , htWords   :: [Text]
+    , htBool    :: [Bool]
+    , htToday   :: ZonedTime
+    , htInteger :: [Integer]
+    , htFruit   :: FruitInside
+    , htSize    :: SizeInside
     } deriving (Show, NFData, Generic)
 
 instance FromJSON HaskellType where
