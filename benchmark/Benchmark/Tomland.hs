@@ -21,6 +21,7 @@ codec = HaskellType
     <*> Toml.arrayOf Toml._Text "words" .= htWords
     <*> Toml.arrayOf Toml._Bool "bool" .= htBool
     <*> Toml.zonedTime "today" .= htToday
+    <*> Toml.arrayOf Toml._Integer "ints" .= htInt
     <*> Toml.table insideF "fruit" .= htFruit
     <*> Toml.table insideS "size" .= htSize
 

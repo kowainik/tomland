@@ -22,6 +22,7 @@ data HaskellType = HaskellType
     , htWords :: [Text]
     , htBool  :: [Bool]
     , htToday :: ZonedTime
+    , htInt  :: [Int]
     , htFruit :: FruitInside
     , htSize  :: SizeInside
     } deriving (Show, NFData, Generic)
@@ -34,6 +35,7 @@ instance FromJSON HaskellType where
         <*> o .: "words"
         <*> o .: "bool"
         <*> o .: "today"
+        <*> o .: "ints"
         <*> o .: "fruit"
         <*> o .: "size"
 
