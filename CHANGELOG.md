@@ -5,6 +5,10 @@ The change log is available [on GitHub][2].
 
 ## 0.6.0
 
+* [#140](https://github.com/kowainik/tomland/issues/140):
+  **Breaking change:** Replace `wrapper` by `diwrap`.
+
+  _Migration guide:_ change `Toml.wrapper Toml.text "foo"` to `Toml.diwrap (Toml.text "foo")`.
 * [#131](https://github.com/kowainik/tomland/issues/131):
   Uncommenting `tomlTableArrays` from 'TOML'.
 * [#142](https://github.com/kowainik/tomland/issues/142):

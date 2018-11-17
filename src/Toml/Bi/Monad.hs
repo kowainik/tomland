@@ -7,12 +7,14 @@ module Toml.Bi.Monad
        , BiCodec
        , dimap
        , dioptional
+       , diwrap
        , (<!>)
        , (.=)
        ) where
 
 import Control.Applicative (Alternative (..), optional)
 import Control.Monad (MonadPlus (..))
+import Data.Coerce (Coercible, coerce)
 
 {- | Monad for bidirectional conversion. Contains pair of functions:
 
@@ -114,8 +116,8 @@ toml bidirectional converter for this type will look like this:
 @
 exampleT :: TomlCodec Example
 exampleT = Example
-    <$> bool "foo" .= foo
-    <*> str  "bar" .= bar
+    \<$\> bool "foo" .= foo
+    \<*\> str  "bar" .= bar
 @
 
 Now if you change your time in the following way:
@@ -134,8 +136,8 @@ you need to patch your toml parser like this:
 @
 exampleT :: TomlCodec Example
 exampleT = Example
-    <$> bool "foo" .= foo
-    <*> dimap unEmail Email (str "bar") .= bar
+    \<$\> bool "foo" .= foo
+    \<*\> dimap unEmail Email (str "bar") .= bar
 @
 -}
 dimap :: (Functor r, Functor w)
@@ -148,12 +150,61 @@ dimap f g codec = Codec
   , codecWrite = fmap g . codecWrite codec . f
   }
 
--- | Bidirectional converter for @Maybe smth@ values.
+{- |
+Bidirectional converter for @Maybe a@ values.
+
+For example, given the data type
+
+@
+data Example = Example
+    { foo :: Bool
+    , bar :: Maybe Int
+    }
+@
+
+the toml parser will look like
+
+@
+exampleT :: TomlCodec Example
+exampleT = Example
+    \<$\> bool "foo" .= foo
+    \<*\> dioptional (int "bar") .= bar
+@
+
+-}
 dioptional :: (Alternative r, Applicative w) => Codec r w c a -> Codec r w (Maybe c) (Maybe a)
 dioptional Codec{..} = Codec
     { codecRead = optional codecRead
     , codecWrite = traverse codecWrite
     }
+
+{- |
+Used for @newtype@ wrappers.
+
+For example, given the data types
+
+@
+newtype N = N Int
+
+data Example = Example
+    { foo :: Bool
+    , bar :: N
+    }
+@
+
+the toml parser will look like
+
+@
+exampleT :: TomlCodec Example
+exampleT = Example
+    \<$\> bool "foo" .= foo
+    \<*\> diwrap (int "bar") .= bar
+@
+
+-}
+diwrap :: forall b a r w . (Coercible a b, Functor r, Functor w) => BiCodec r w a -> BiCodec r w b
+diwrap = dimap coerce coerce
+
 
 {- | Operator to connect two operations:
 
@@ -167,8 +218,8 @@ data Foo = Foo { fooBar :: Int, fooBaz :: String }
 
 foo :: TomlCodec Foo
 foo = Foo
- <$> int "bar" .= fooBar
- <*> str "baz" .= fooBaz
+ \<$\> int "bar" .= fooBar
+ \<*\> str "baz" .= fooBaz
 @
 -}
 infixl 5 .=
