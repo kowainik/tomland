@@ -60,7 +60,8 @@ import Toml.BiMap (BiMap (..), _Array, _Bool, _ByteString, _Day, _Double, _Float
                    _String, _Text, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, valueType)
+import Toml.Type (AnyValue (..), BiMapError (..), TOML (..), insertKeyAnyVal, insertTable,
+                  valueType)
 
 import Prelude hiding (read)
 
@@ -78,7 +79,7 @@ typeName = Text.pack $ show $ typeRep $ Proxy @a
 
 {- | General function to create bidirectional converters for values.
 -}
-match :: forall a . Typeable a => BiMap a AnyValue -> Key -> TomlCodec a
+match :: forall a . Typeable a => BiMap BiMapError a AnyValue -> Key -> TomlCodec a
 match BiMap{..} key = Codec input output
   where
     input :: Env a
@@ -87,12 +88,12 @@ match BiMap{..} key = Codec input output
         case mVal of
             Nothing -> throwError $ KeyNotFound key
             Just anyVal@(AnyValue val) -> case backward anyVal of
-                Just v  -> pure v
-                Nothing -> throwError $ TypeMismatch key (typeName @a) (valueType val)
+                Right v -> pure v
+                Left _  -> throwError $ TypeMismatch key (typeName @a) (valueType val)
 
     output :: a -> St a
     output a = do
-        anyVal <- MaybeT $ pure $ forward a
+        anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward a
         a <$ modify (insertKeyAnyVal key anyVal)
 
 {- | Almost same as 'dimap'. Useful when you want to have fields like this
@@ -202,12 +203,12 @@ timeOfDay = match _TimeOfDay
 
 -- | Parser for list of values. Takes converter for single value and
 -- returns a list of values.
-arrayOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec [a]
+arrayOf :: Typeable a => BiMap BiMapError a AnyValue -> Key -> TomlCodec [a]
 arrayOf = match . _Array
 
 -- | Parser for sets. Takes converter for single value and
 -- returns a set of values.
-arraySetOf :: (Typeable a, Ord a) => BiMap a AnyValue -> Key -> TomlCodec (Set a)
+arraySetOf :: (Typeable a, Ord a) => BiMap BiMapError a AnyValue -> Key -> TomlCodec (Set a)
 arraySetOf = match . _Set
 
 -- | Parser for sets of ints. Takes converter for single value and
@@ -217,12 +218,16 @@ arrayIntSet = match _IntSet
 
 -- | Parser for hash sets. Takes converter for single hashable value and
 -- returns a set of hashable values.
-arrayHashSetOf :: (Typeable a, Hashable a, Eq a) => BiMap a AnyValue -> Key -> TomlCodec (HashSet a)
+arrayHashSetOf
+    :: (Typeable a, Hashable a, Eq a)
+    => BiMap BiMapError a AnyValue
+    -> Key
+    -> TomlCodec (HashSet a)
 arrayHashSetOf = match . _HashSet
 
 -- | Parser for non- empty lists of values. Takes converter for single value and
 -- returns a non-empty list of values.
-arrayNonEmptyOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
+arrayNonEmptyOf :: Typeable a => BiMap BiMapError a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 
 -- | Parser for tables. Use it when when you have nested objects.

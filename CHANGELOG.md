@@ -12,7 +12,9 @@ The change log is available [on GitHub][2].
 * [#131](https://github.com/kowainik/tomland/issues/131):
   Uncommenting `tomlTableArrays` from 'TOML'.
 * [#142](https://github.com/kowainik/tomland/issues/142):
-  Adding EDSL support for arrays of tables
+  Adding EDSL support for arrays of tables.
+* [#137](https://github.com/kowainik/tomland/issues/137):
+  Replace `Maybe` with `Either` in `BiMap`.
 
 ## 0.5.0 — Nov 12, 2018
 

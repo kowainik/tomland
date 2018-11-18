@@ -5,6 +5,7 @@
 
 module Toml.Type.AnyValue
        ( AnyValue (..)
+       , BiMapError (..)
        , reifyAnyValues
        , toMArray
 
@@ -43,36 +44,36 @@ instance NFData AnyValue where
 ----------------------------------------------------------------------------
 
 -- | Extract 'Bool' from 'Value'.
-matchBool :: Value t -> Maybe Bool
-matchBool (Bool b) = Just b
-matchBool _        = Nothing
+matchBool :: Value t -> Either BiMapError Bool
+matchBool (Bool b) = Right b
+matchBool _        = Left BiMapError
 
 -- | Extract 'Integer' from 'Value'.
-matchInteger :: Value t -> Maybe Integer
-matchInteger (Integer n) = Just n
-matchInteger _           = Nothing
+matchInteger :: Value t -> Either BiMapError Integer
+matchInteger (Integer n) = Right n
+matchInteger _           = Left BiMapError
 
 -- | Extract 'Double' from 'Value'.
-matchDouble :: Value t -> Maybe Double
-matchDouble (Double f) = Just f
-matchDouble _          = Nothing
+matchDouble :: Value t -> Either BiMapError Double
+matchDouble (Double f) = Right f
+matchDouble _          = Left BiMapError
 
 -- | Extract 'Text' from 'Value'.
-matchText :: Value t -> Maybe Text
-matchText (Text s) = Just s
-matchText _        = Nothing
+matchText :: Value t -> Either BiMapError Text
+matchText (Text s) = Right s
+matchText _        = Left BiMapError
 
 -- | Extract 'DateTime' from 'Value'.
-matchDate :: Value t -> Maybe DateTime
-matchDate (Date d) = Just d
-matchDate _        = Nothing
+matchDate :: Value t -> Either BiMapError DateTime
+matchDate (Date d) = Right d
+matchDate _        = Left BiMapError
 
 -- | Extract list of elements of type @a@ from array.
-matchArray :: (AnyValue -> Maybe a) -> Value t -> Maybe [a]
+matchArray :: (AnyValue -> Either BiMapError a) -> Value t -> Either BiMapError [a]
 matchArray matchValue (Array a) = mapM (liftMatch matchValue) a
-matchArray _            _       = Nothing
+matchArray _            _       = Left BiMapError
 
-liftMatch :: (AnyValue -> Maybe a) -> (Value t -> Maybe a)
+liftMatch :: (AnyValue -> Either BiMapError a) -> (Value t -> Either BiMapError a)
 liftMatch fromAnyValue = fromAnyValue . AnyValue
 
 -- | Checks whether all elements inside given list of 'AnyValue' have the same
@@ -82,8 +83,14 @@ reifyAnyValues _ []                 = Right []
 reifyAnyValues v (AnyValue av : xs) = sameValue v av >>= \Refl -> (av :) <$> reifyAnyValues v xs
 
 -- | Function for creating 'Array' from list of 'AnyValue'.
-toMArray :: [AnyValue] -> Maybe (Value 'TArray)
-toMArray [] = Just $ Array []
+toMArray :: [AnyValue] -> Either BiMapError (Value 'TArray)
+toMArray [] = Right $ Array []
 toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
-    Left _     -> Nothing
-    Right vals -> Just $ Array (x : vals)
+    Left _     -> Left BiMapError
+    Right vals -> Right $ Array (x : vals)
+
+----------------------------------------------------------------------------
+-- BiMap error type
+----------------------------------------------------------------------------
+
+data BiMapError = BiMapError
