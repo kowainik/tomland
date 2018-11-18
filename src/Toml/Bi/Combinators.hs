@@ -55,12 +55,12 @@ import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (Codec (..))
-import Toml.BiMap (BiMap (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
+import Toml.BiMap (BiMap (..), BiMapError (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
                    _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
                    _String, _Text, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), BiMapError (..), TOML (..), insertKeyAnyVal, insertTable,
+import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable,
                   valueType)
 
 import Prelude hiding (read)
