@@ -55,7 +55,7 @@ import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (Codec (..))
-import Toml.BiMap (BiMap (..), BiMapError (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
+import Toml.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
                    _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
                    _String, _Text, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Parser (ParseException (..))
@@ -79,7 +79,7 @@ typeName = Text.pack $ show $ typeRep $ Proxy @a
 
 {- | General function to create bidirectional converters for values.
 -}
-match :: forall a . Typeable a => BiMap BiMapError a AnyValue -> Key -> TomlCodec a
+match :: forall a . Typeable a => TomlBiMap a AnyValue -> Key -> TomlCodec a
 match BiMap{..} key = Codec input output
   where
     input :: Env a
@@ -203,12 +203,12 @@ timeOfDay = match _TimeOfDay
 
 -- | Parser for list of values. Takes converter for single value and
 -- returns a list of values.
-arrayOf :: Typeable a => BiMap BiMapError a AnyValue -> Key -> TomlCodec [a]
+arrayOf :: Typeable a => TomlBiMap a AnyValue -> Key -> TomlCodec [a]
 arrayOf = match . _Array
 
 -- | Parser for sets. Takes converter for single value and
 -- returns a set of values.
-arraySetOf :: (Typeable a, Ord a) => BiMap BiMapError a AnyValue -> Key -> TomlCodec (Set a)
+arraySetOf :: (Typeable a, Ord a) => TomlBiMap a AnyValue -> Key -> TomlCodec (Set a)
 arraySetOf = match . _Set
 
 -- | Parser for sets of ints. Takes converter for single value and
@@ -220,14 +220,14 @@ arrayIntSet = match _IntSet
 -- returns a set of hashable values.
 arrayHashSetOf
     :: (Typeable a, Hashable a, Eq a)
-    => BiMap BiMapError a AnyValue
+    => TomlBiMap a AnyValue
     -> Key
     -> TomlCodec (HashSet a)
 arrayHashSetOf = match . _HashSet
 
 -- | Parser for non- empty lists of values. Takes converter for single value and
 -- returns a non-empty list of values.
-arrayNonEmptyOf :: Typeable a => BiMap BiMapError a AnyValue -> Key -> TomlCodec (NonEmpty a)
+arrayNonEmptyOf :: Typeable a => TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 
 -- | Parser for tables. Use it when when you have nested objects.
