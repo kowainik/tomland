@@ -15,7 +15,9 @@ The change log is available [on GitHub][2].
   Adding EDSL support for arrays of tables
 * [#149](https://github.com/kowainik/tomland/issues/149):
   Removing records syntax from `PrefixTree`.
-  
+* [#152](https://github.com/kowainik/tomland/issues/152):
+  Removing `mdimap`.
+
 ## 0.5.0 — Nov 12, 2018
 
 * [#81](https://github.com/kowainik/tomland/issues/81):

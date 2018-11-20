@@ -31,10 +31,9 @@ module Toml.Bi.Combinators
          -- * Combinators
        , match
        , table
-       , mdimap
        ) where
 
-import Control.Monad.Except (MonadError, catchError, throwError)
+import Control.Monad.Except (catchError, throwError)
 import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
@@ -58,7 +57,6 @@ import Toml.Bi.Monad (Codec (..))
 import Toml.BiMap (BiMap (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
                    _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
                    _String, _Text, _TimeOfDay, _Word, _ZonedTime)
-import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, valueType)
 
@@ -94,43 +92,6 @@ match BiMap{..} key = Codec input output
     output a = do
         anyVal <- MaybeT $ pure $ forward a
         a <$ modify (insertKeyAnyVal key anyVal)
-
-{- | Almost same as 'dimap'. Useful when you want to have fields like this
-inside your configuration:
-
-@
-data GhcVer = Ghc7103 | Ghc802 | Ghc822 | Ghc842
-
-showGhcVer  :: GhcVer -> Text
-parseGhcVer :: Text -> Maybe GhcVer
-@
-
-When you specify couple of functions of the following types:
-
-@
-show  :: a -> Text
-parse :: Text -> Maybe a
-@
-
-they should satisfy property @parse . show == Just@ if you want to use your
-converter for pretty-printing.
--}
-mdimap :: (Monad r, Monad w, MonadError DecodeException r)
-       => (c -> d)  -- ^ Convert from safe to unsafe value
-       -> (a -> Maybe b)  -- ^ Parser for more type safe value
-       -> Codec r w d a  -- ^ Source 'Codec' object
-       -> Codec r w c b
-mdimap toString toMaybe codec = Codec
-  { codecRead  = (toMaybe <$> codecRead codec) >>= \case
-        Nothing -> throwError $ ParseError $ ParseException "Can't parse" -- TODO
-        Just b  -> pure b
-
-  , codecWrite = \s -> do
-        retS <- codecWrite codec $ toString s
-        case toMaybe retS of
-            Nothing -> error "Given pair of functions for 'mdimap' doesn't satisfy roundtrip property"
-            Just b  -> pure b
-  }
 
 ----------------------------------------------------------------------------
 -- Toml parsers
