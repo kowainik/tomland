@@ -1,4 +1,6 @@
-module Main where
+{-# OPTIONS -Wno-unused-top-binds #-}
+
+module Main (main) where
 
 import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
