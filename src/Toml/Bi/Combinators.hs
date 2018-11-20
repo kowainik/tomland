@@ -31,7 +31,6 @@ module Toml.Bi.Combinators
          -- * Combinators
        , match
        , table
-       , wrapper
        , mdimap
        ) where
 
@@ -39,39 +38,36 @@ import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
-import Data.Coerce (Coercible, coerce)
-import Data.Maybe (fromMaybe)
-import Data.Proxy (Proxy (..))
-import Data.Semigroup ((<>))
-import Data.Text (Text)
-import Data.Typeable (Typeable, typeRep)
-import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.ByteString (ByteString)
-import Data.Word (Word)
-import Numeric.Natural (Natural)
 import Data.Hashable (Hashable)
-import Data.Set (Set)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Maybe (fromMaybe)
+import Data.Proxy (Proxy (..))
+import Data.Semigroup ((<>))
+import Data.Set (Set)
+import Data.Text (Text)
+import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
+import Data.Typeable (Typeable, typeRep)
+import Data.Word (Word)
+import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
-import Toml.Bi.Monad (Codec (..), dimap)
-import Toml.BiMap (BiMap (..), _Array, _Bool, _Double,
-                   _Integer, _String, _Text, _ZonedTime, _LocalTime, _Day,
-                   _TimeOfDay, _Int, _Word, _Natural, _Float, _Read,
-                   _ByteString, _LByteString, _Set, _IntSet, _HashSet,
-                   _NonEmpty)
+import Toml.Bi.Monad (Codec (..))
+import Toml.BiMap (BiMap (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
+                   _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
+                   _String, _Text, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, valueType)
 
 import Prelude hiding (read)
 
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
 import qualified Toml.PrefixTree as Prefix
-import qualified Data.ByteString.Lazy as BL
 
 ----------------------------------------------------------------------------
 -- Generalized versions of parsers
@@ -132,7 +128,7 @@ mdimap toString toMaybe codec = Codec
   , codecWrite = \s -> do
         retS <- codecWrite codec $ toString s
         case toMaybe retS of
-            Nothing -> error $ "Given pair of functions for 'mdimap' doesn't satisfy roundtrip property"
+            Nothing -> error "Given pair of functions for 'mdimap' doesn't satisfy roundtrip property"
             Just b  -> pure b
   }
 
@@ -252,7 +248,3 @@ table codec key = Codec input output
     handleTableName (TableNotFound name)      = throwError $ TableNotFound (key <> name)
     handleTableName (TypeMismatch name t1 t2) = throwError $ TypeMismatch (key <> name) t1 t2
     handleTableName e                         = throwError e
-
--- | Used for @newtype@ wrappers.
-wrapper :: forall b a . Coercible a b => (Key -> TomlCodec a) -> Key -> TomlCodec b
-wrapper bi key = dimap coerce coerce (bi key)
