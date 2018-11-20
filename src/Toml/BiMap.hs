@@ -1,6 +1,10 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE Rank2Types          #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE KindSignatures    #-}
+{-# LANGUAGE Rank2Types        #-}
+{-# LANGUAGE TypeOperators     #-}
+
 
 {- | Implementation of partial bidirectional mapping as a data type.
 -}
@@ -51,33 +55,34 @@ module Toml.BiMap
 
          -- * Useful utility functions
        , toMArray
+       , GenBiMap(..)
        ) where
 
 import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 
 import Data.ByteString (ByteString)
-import Data.Text (Text)
-import Data.Word (Word)
-import Numeric.Natural (Natural)
 import Data.Hashable (Hashable)
-import Text.Read (readMaybe)
+import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
+import Data.Word (Word)
+import GHC.Generics
+import Numeric.Natural (Natural)
+import Text.Read (readMaybe)
 
-import Toml.Type (AnyValue (..), Value (..), DateTime (..) ,
-                  matchArray, matchBool, matchDouble, matchInteger,
-                  matchText, matchDate, toMArray)
+import Toml.Type (AnyValue (..), DateTime (..), TValue (..), Value (..), matchArray, matchBool,
+                  matchDate, matchDouble, matchInteger, matchText, toMArray)
 
 import qualified Control.Category as Cat
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Encoding as TL
-import qualified Data.Set as S
 import qualified Data.HashSet as HS
 import qualified Data.IntSet as IS
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Set as S
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as TL
 
 ----------------------------------------------------------------------------
 -- BiMap concepts and ideas
@@ -293,3 +298,65 @@ _HashSet bimap = iso HS.toList HS.fromList >>> _Array bimap
 -- 'intSet' combinator.
 _IntSet :: BiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
+
+
+-- class Encode' f where
+--   encode' :: f p -> [Bool]
+--
+-- instance Encode' V1 where
+--   encode' _ = undefined
+--
+-- instance Encode' U1 where
+--   encode' U1 = []
+--
+-- instance (Encode' f, Encode' g) => Encode' (f :+: g) where
+--   encode' (L1 x) = False : encode' x
+--   encode' (R1 x) = True  : encode' x
+--
+-- instance (Encode' f, Encode' g) => Encode' (f :*: g) where
+--   encode' (x :*: y) = encode' x ++ encode' y
+--
+-- instance (Encode c) => Encode' (K1 i c) where
+--   encode' (K1 x) = encode_ x
+--
+-- instance (Encode' f) => Encode' (M1 i t f) where
+--   encode' (M1 x) = encode' x
+--
+-- class Encode a where
+--   encode_ :: a -> [Bool]
+--   default encode_ :: (Generic a, Encode' (Rep a)) => a -> [Bool]
+--   encode_ x = encode' (from x)
+
+class GenBiMap' f where
+  encode' :: f p -> Value 'TArray
+  -- decode' :: AnyValue -> f p
+
+instance GenBiMap' V1 where
+  encode' _ = undefined
+  -- decode' _ = undefined
+
+instance GenBiMap' U1 where
+  encode' U1 = Array []
+  -- decode' (AnyValue $ Array []) = U1
+
+instance (GenBiMap' f, GenBiMap' g) => GenBiMap' (f :+: g) where
+  encode' (L1 x) = Array [ Array [Bool False], Array [ encode' x ]]
+  encode' (R1 x) = Array [ Array [Bool True], Array [ encode' x ]]
+  -- decode' (AnyValue v)
+
+instance (GenBiMap' f, GenBiMap' g) => GenBiMap' (f :*: g) where
+  encode' (x :*: y) = Array [ Array [encode' x], Array [encode' y]]
+
+instance (GenBiMap c) => GenBiMap' (K1 i c) where
+  encode' (K1 x) = encode_ x
+
+instance (GenBiMap' f) => GenBiMap' (M1 i t f) where
+  encode' (M1 x) = encode' x
+
+class GenBiMap a where
+  encode_ :: a -> Value 'TArray
+  default encode_ :: (Generic a, GenBiMap' (Rep a)) => a -> Value 'TArray
+  encode_ x = encode' (from x)
+
+
+-- instance (Encode a) => Encode (Tree a)
