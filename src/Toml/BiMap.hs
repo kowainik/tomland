@@ -1,62 +1,66 @@
-{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveFoldable    #-}
+{-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE GADTs             #-}
 {-# LANGUAGE KindSignatures    #-}
 {-# LANGUAGE Rank2Types        #-}
 {-# LANGUAGE TypeOperators     #-}
 
 
+
 {- | Implementation of partial bidirectional mapping as a data type.
 -}
 
-module Toml.BiMap
-       ( -- * BiMap idea
-         BiMap (..)
-       , invert
-       , iso
-       , prism
-
-         -- * Helpers for BiMap and AnyValue
-       , mkAnyValueBiMap
-       , _TextBy
-       , _NaturalInteger
-       , _StringText
-       , _ReadString
-       , _BoundedInteger
-       , _ByteStringText
-       , _LByteStringText
-
-         -- * Some predefined bi mappings
-       , _Array
-       , _Bool
-       , _Double
-       , _Integer
-       , _Text
-       , _ZonedTime
-       , _LocalTime
-       , _Day
-       , _TimeOfDay
-       , _String
-       , _Read
-       , _Natural
-       , _Word
-       , _Int
-       , _Float
-       , _ByteString
-       , _LByteString
-       , _Set
-       , _IntSet
-       , _HashSet
-       , _NonEmpty
-
-       , _Left
-       , _Right
-       , _Just
-
-         -- * Useful utility functions
-       , toMArray
-       , GenBiMap(..)
-       ) where
+module Toml.BiMap  where
+       -- ( -- * BiMap idea
+       --   BiMap (..)
+       -- , invert
+       -- , iso
+       -- , prism
+       --
+       --   -- * Helpers for BiMap and AnyValue
+       -- , mkAnyValueBiMap
+       -- , _TextBy
+       -- , _NaturalInteger
+       -- , _StringText
+       -- , _ReadString
+       -- , _BoundedInteger
+       -- , _ByteStringText
+       -- , _LByteStringText
+       --
+       --   -- * Some predefined bi mappings
+       -- , _Array
+       -- , _Bool
+       -- , _Double
+       -- , _Integer
+       -- , _Text
+       -- , _ZonedTime
+       -- , _LocalTime
+       -- , _Day
+       -- , _TimeOfDay
+       -- , _String
+       -- , _Read
+       -- , _Natural
+       -- , _Word
+       -- , _Int
+       -- , _Float
+       -- , _ByteString
+       -- , _LByteString
+       -- , _Set
+       -- , _IntSet
+       -- , _HashSet
+       -- , _NonEmpty
+       --
+       -- , _Left
+       -- , _Right
+       -- , _Just
+       --
+       --   -- * Useful utility functions
+       -- , toMArray
+       -- , GenBiMap(..)
+       -- ) where
 
 import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
@@ -70,8 +74,8 @@ import GHC.Generics
 import Numeric.Natural (Natural)
 import Text.Read (readMaybe)
 
-import Toml.Type (AnyValue (..), DateTime (..), TValue (..), Value (..), matchArray, matchBool,
-                  matchDate, matchDouble, matchInteger, matchText, toMArray)
+import Toml.Type (AnyValue (..), DateTime (..), Value (..), matchArray, matchBool, matchDate,
+                  matchDouble, matchInteger, matchText, toMArray)
 
 import qualified Control.Category as Cat
 import qualified Data.ByteString.Lazy as BL
@@ -300,63 +304,82 @@ _IntSet :: BiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
 
 
--- class Encode' f where
---   encode' :: f p -> [Bool]
---
--- instance Encode' V1 where
---   encode' _ = undefined
---
--- instance Encode' U1 where
---   encode' U1 = []
---
--- instance (Encode' f, Encode' g) => Encode' (f :+: g) where
---   encode' (L1 x) = False : encode' x
---   encode' (R1 x) = True  : encode' x
---
--- instance (Encode' f, Encode' g) => Encode' (f :*: g) where
---   encode' (x :*: y) = encode' x ++ encode' y
---
--- instance (Encode c) => Encode' (K1 i c) where
---   encode' (K1 x) = encode_ x
---
--- instance (Encode' f) => Encode' (M1 i t f) where
---   encode' (M1 x) = encode' x
---
--- class Encode a where
---   encode_ :: a -> [Bool]
---   default encode_ :: (Generic a, Encode' (Rep a)) => a -> [Bool]
---   encode_ x = encode' (from x)
+-- Implementation for Generic data structures
 
 class GenBiMap' f where
-  encode' :: f p -> Value 'TArray
-  -- decode' :: AnyValue -> f p
+  encode' :: f p -> AnyValue
+  decode' :: AnyValue -> Maybe (f p)
 
 instance GenBiMap' V1 where
   encode' _ = undefined
-  -- decode' _ = undefined
+  decode' _ = undefined
 
 instance GenBiMap' U1 where
-  encode' U1 = Array []
-  -- decode' (AnyValue $ Array []) = U1
+  encode' U1 = AnyValue $ Array []
+
+  decode' (AnyValue (Array [])) = Just U1
+  decode' _                     = Nothing
 
 instance (GenBiMap' f, GenBiMap' g) => GenBiMap' (f :+: g) where
-  encode' (L1 x) = Array [ Array [Bool False], Array [ encode' x ]]
-  encode' (R1 x) = Array [ Array [Bool True], Array [ encode' x ]]
-  -- decode' (AnyValue v)
+  encode' = \case
+      (L1 x) -> go False (encode' x)
+      (R1 x) -> go True (encode' x)
+    where
+      go :: Bool -> AnyValue -> AnyValue
+      go b (AnyValue v) = AnyValue $ Array [ Array [Bool b], Array [ v ]]
+
+  decode' (AnyValue (Array [ Array [Bool False], Array [ v ]])) =
+               L1 <$> decode' (AnyValue v)
+  decode' (AnyValue (Array [ Array [Bool True], Array [ v ]])) =
+               R1 <$> decode' (AnyValue v)
+  decode' _ = Nothing
 
 instance (GenBiMap' f, GenBiMap' g) => GenBiMap' (f :*: g) where
-  encode' (x :*: y) = Array [ Array [encode' x], Array [encode' y]]
+  encode' (x :*: y) = go (encode' x) (encode' y)
+    where
+      go :: AnyValue -> AnyValue -> AnyValue
+      go (AnyValue v) (AnyValue w) = AnyValue $ Array [ Array [ v ], Array [ w ]]
+
+  decode' (AnyValue (Array [ Array [ v ], Array [ w ]])) =
+    (:*:) <$> decode' (AnyValue v) <*> decode' (AnyValue w)
+  decode' _ = Nothing
 
 instance (GenBiMap c) => GenBiMap' (K1 i c) where
   encode' (K1 x) = encode_ x
+  decode' v = K1 <$> decode_ v
 
 instance (GenBiMap' f) => GenBiMap' (M1 i t f) where
   encode' (M1 x) = encode' x
+  decode' v = M1 <$> decode' v
 
 class GenBiMap a where
-  encode_ :: a -> Value 'TArray
-  default encode_ :: (Generic a, GenBiMap' (Rep a)) => a -> Value 'TArray
+  encode_ :: a -> AnyValue
+  default encode_ :: (Generic a, GenBiMap' (Rep a)) => a -> AnyValue
   encode_ x = encode' (from x)
+  decode_ :: AnyValue -> Maybe a
+  default decode_ :: (Generic a, GenBiMap' (Rep a)) => AnyValue -> Maybe a
+  decode_ x = to <$> decode' x
 
+instance GenBiMap AnyValue where
+  encode_ = id
+  decode_ = Just
 
--- instance (Encode a) => Encode (Tree a)
+instance GenBiMap ()
+instance (GenBiMap a, GenBiMap b) => GenBiMap (Either a b)
+instance (GenBiMap a, GenBiMap b) => GenBiMap (a, b)
+instance (GenBiMap a, GenBiMap b, GenBiMap c) => GenBiMap (a, b, c)
+instance (GenBiMap a, GenBiMap b, GenBiMap c, GenBiMap d) => GenBiMap (a, b, c, d)
+instance (GenBiMap a) => GenBiMap [a]
+
+newtype AV = AV {unAV :: AnyValue} deriving (Show, Generic)
+instance GenBiMap AV
+
+_Generic :: (GenBiMap (f AV), Traversable f) => BiMap a AnyValue -> BiMap (f a) AnyValue
+_Generic (BiMap av va) = BiMap (fmap encode_ . sequence . fmap (fmap AV . av) )
+                               (decode_ >=> sequence . fmap (va . unAV))
+
+data Tree a = Leaf' a | Node' a (Tree a) (Tree a) deriving (Show, Generic, Functor, Foldable, Traversable)
+instance (GenBiMap a) => GenBiMap (Tree a)
+
+_BoolTree :: BiMap (Tree Bool) AnyValue
+_BoolTree = _Generic _Bool
