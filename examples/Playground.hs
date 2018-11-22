@@ -6,8 +6,9 @@ import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
 import Data.Text (Text)
 import Data.Time (fromGregorian)
+import GHC.Generics
 
-import Toml (ParseException (..), TomlCodec, pretty, (.=), (<!>))
+import Toml (GenBiMap, ParseException (..), TomlCodec, pretty, (.=), (<!>))
 import Toml.Edsl (mkToml, table, (=:))
 import Toml.Type (DateTime (..), TOML (..), Value (..))
 
@@ -18,20 +19,28 @@ import qualified Toml
 newtype N = N Text
 
 data Test = Test
-    { testB  :: Bool
-    , testI  :: Int
-    , testF  :: Double
-    , testS  :: Text
-    , testA  :: [Text]
-    , testM  :: Maybe Bool
-    , testX  :: TestInside
-    , testY  :: Maybe TestInside
-    , testN  :: N
-    , testE1 :: Either Integer String
-    , testE2 :: Either String Double
+    { testB    :: Bool
+    , testI    :: Int
+    , testF    :: Double
+    , testS    :: Text
+    , testA    :: [Text]
+    , testM    :: Maybe Bool
+    , testX    :: TestInside
+    , testY    :: Maybe TestInside
+    , testN    :: N
+    , testE1   :: Either Integer String
+    , testE2   :: Either String Double
+    , testTree :: MyTree Text
     }
 
 newtype TestInside = TestInside { unInside :: Text }
+
+data MyTree a
+  = MyLeaf a
+  | MyNode Int a (MyTree a) (MyTree a)
+  deriving (Show, Generic)
+
+instance (GenBiMap a) => GenBiMap (MyTree a)
 
 insideT :: TomlCodec TestInside
 insideT = Toml.dimap unInside TestInside $ Toml.text "inside"
@@ -45,10 +54,11 @@ testT = Test
     <*> Toml.arrayOf Toml._Text "testA" .= testA
     <*> Toml.dioptional (Toml.bool "testM") .= testM
     <*> Toml.table insideT "testX" .= testX
-    <*> Toml.dioptional ((Toml.table insideT) "testY") .= testY
+    <*> Toml.dioptional (Toml.table insideT "testY") .= testY
     <*> Toml.diwrap (Toml.text "testN") .= testN
     <*> eitherT1 .= testE1
     <*> eitherT2 .= testE2
+    <*> Toml.generic "testTree" .= testTree
   where
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)
@@ -69,7 +79,7 @@ main = do
     TIO.putStrLn $ pretty myToml
 
     TIO.putStrLn "=== Printing parsed TOML ==="
-    content <- TIO.readFile "test.toml"
+    content <- TIO.readFile "examples/test.toml"
     case Toml.parse content of
         Left (ParseException e) -> TIO.putStrLn e
         Right toml              -> TIO.putStrLn $ pretty toml

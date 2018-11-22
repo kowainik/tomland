@@ -27,6 +27,7 @@ module Toml.Bi.Combinators
        , arrayIntSet
        , arrayHashSetOf
        , arrayNonEmptyOf
+       , generic
 
          -- * Combinators
        , match
@@ -55,9 +56,9 @@ import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (Codec (..))
-import Toml.BiMap (BiMap (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
-                   _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
-                   _String, _Text, _TimeOfDay, _Word, _ZonedTime)
+import Toml.BiMap (BiMap (..), GenBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
+                   _Generic, _HashSet, _Int, _IntSet, _Integer, _LByteString, _LocalTime, _Natural,
+                   _NonEmpty, _Read, _Set, _String, _Text, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, valueType)
@@ -224,6 +225,10 @@ arrayHashSetOf = match . _HashSet
 -- returns a non-empty list of values.
 arrayNonEmptyOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
+
+-- | Parser for generic data structures.
+generic :: (GenBiMap a, Typeable a) => Key -> TomlCodec a
+generic = match _Generic
 
 -- | Parser for tables. Use it when when you have nested objects.
 table :: forall a . TomlCodec a -> Key -> TomlCodec a

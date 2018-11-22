@@ -12,6 +12,25 @@ either = 3.5
 # Also works!
 # either = "fo  o"
 
+# testTree :: MyTree Text
+# testTree =  MyNode 12 "Hi"
+#                       (MyNode (-12) "Good evening"
+#                                     (MyLeaf "Hello")
+#                                     (MyLeaf "Good morning"))
+#                       (MyLeaf "Bye")
+testTree = [[true]
+           ,[[[[[12]
+               ,["Hi"]]]
+             ,[[[[[true]
+                 ,[[[[[-12]
+                     ,["Good evening"]]]
+                   ,[[[[[false]
+                       ,["Hello"]]]
+                     ,[[[false]
+                        ,["Good morning"]]]]]]]]]
+               ,[[[false],["Bye"]]]]]]]]
+
+
 [testX]
   inside = "xxx"
 
