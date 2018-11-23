@@ -1,5 +1,5 @@
 {-# OPTIONS -Wno-unused-top-binds #-}
-
+{-# LANGUAGE DeriveGeneric #-}
 module Main (main) where
 
 import Control.Applicative ((<|>))

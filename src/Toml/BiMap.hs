@@ -437,6 +437,7 @@ instance (GenBiMap a, GenBiMap b) => GenBiMap (a, b)
 
 -- | Instance for triples.
 instance (GenBiMap a, GenBiMap b, GenBiMap c) => GenBiMap (a, b, c)
+
 -- | Instance for quadruples.
 instance (GenBiMap a, GenBiMap b, GenBiMap c, GenBiMap d) => GenBiMap (a, b, c, d)
 
