@@ -14,6 +14,7 @@ module Toml.Bi.Combinators
        , double
        , float
        , text
+       , textBy
        , read
        , string
        , byteString
@@ -56,7 +57,7 @@ import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (Codec (..))
 import Toml.BiMap (BiMap (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
                    _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
-                   _String, _Text, _TimeOfDay, _Word, _ZonedTime)
+                   _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, valueType)
 
@@ -128,6 +129,10 @@ float = match _Float
 -- | Parser for string values as text.
 text :: Key -> TomlCodec Text
 text = match _Text
+
+-- | Parser for values as text with custom functions.
+textBy :: Typeable a =>  (a -> Text) -> (Text -> Maybe a) -> Key -> TomlCodec a
+textBy to from = match (_TextBy to from)
 
 -- | Parser for string values as string.
 string :: Key -> TomlCodec String
