@@ -23,7 +23,6 @@ import Data.Text (Text)
 import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
                   minutesToTimeZone)
 import Text.Read (readMaybe)
-import Text.Read (readMaybe)
 
 import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol,
                          hexDigitChar, hexadecimal, lexeme, octal, satisfy, sc, signed, space,
@@ -173,14 +172,14 @@ doubleP = lexeme (signed sc (num <|> inf <|> nan)) <?> "double"
     nan = 0 / 0 <$ string "nan"
 
 floatP :: Parser Double
-floatP = check =<< readMaybe . concat <$> sequence [ digits, expo <|> dot ]
+floatP = check . readMaybe =<< mconcat [ digits, expo <|> dot ]
   where
     check = maybe (fail "Not a float") return
 
     digits, dot, expo :: Parser String
     digits = concat <$> sepBy1 (some digitChar) (char '_')
-    dot = concat <$> sequence [pure <$> char '.', digits, option "" expo]
-    expo = concat <$> sequence
+    dot = mconcat [pure <$> char '.', digits, option "" expo]
+    expo = mconcat
              [ pure <$> (char 'e' <|> char 'E')
              , pure <$> option '+' (char '+' <|> char '-')
              , digits
