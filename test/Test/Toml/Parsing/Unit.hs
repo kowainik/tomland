@@ -157,11 +157,9 @@ spec_Parser = do
             it "can parse sign-prefixed zero as an unprefixed zero" $ do
                 parseInteger "+0" 0
                 parseInteger "-0" 0
-            it
-                    "can parse both the minimum and maximum numbers in the 64 bit range"
-                $ do
-                      parseInteger "-9223372036854775808" (-9223372036854775808)
-                      parseInteger "9223372036854775807"  9223372036854775807
+            it "can parse both the minimum and maximum numbers in the 64 bit range"
+                $ do parseInteger "-9223372036854775808" (-9223372036854775808)
+                     parseInteger "9223372036854775807"  9223372036854775807
             it "can parse numbers with underscores between digits" $ do
                parseInteger "1_000" 1000
                parseInteger "5_349_221" 5349221
@@ -171,9 +169,9 @@ spec_Parser = do
                integerFailOn "_123_"
                integerFailOn "_13"
                integerFailOn "_"
-          --xit "does not parse numbers with leading zeros" $ do
-          --  parseInt "0123" 0
-          --  parseInt "-023" 0
+            it "does not parse numbers with leading zeros" $ do
+               parseInteger "0123" 0
+               parseInteger "-023" 0
         context "when the integer is in binary representation" $ do
             it "can parse numbers prefixed with `0b`" $ do
                 parseInteger "0b1101" 13

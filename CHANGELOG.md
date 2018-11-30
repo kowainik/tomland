@@ -14,7 +14,9 @@ The change log is available [on GitHub][2].
 
   _Migration guide:_ change `Toml.mdimap showX parseX (Toml.text "foo")` to `Toml.textBy showX parseX "foo"`.
 * [#131](https://github.com/kowainik/tomland/issues/131):
-  Uncommenting `tomlTableArrays` from 'TOML'.
+  Uncommenting `tomlTableArrays` from `TOML`.
+* [#64](https://github.com/kowainik/tomland/issues/64):
+  Integer parser doesn't accept leading zeros.
 * [#142](https://github.com/kowainik/tomland/issues/142):
   Adding EDSL support for arrays of tables
 * [#149](https://github.com/kowainik/tomland/issues/149):
