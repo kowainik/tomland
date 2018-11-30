@@ -128,7 +128,9 @@ data TomlBiMapError
     | WrongConstructor  -- ^ Error for cases with wrong constructors. For example, you're trying to convert 'Left' but bidirectional converter expects 'Right'
         Text  -- ^ Expected constructor name
         Text  -- ^ Actual Value; TODO: use Show here?
-    | ValueConstructorFail
+    | WrongValue
+        Text  -- ^ Expected value type
+        AnyValue  -- ^ Actual value
     | ArbitraryError Text
     deriving Show
 
