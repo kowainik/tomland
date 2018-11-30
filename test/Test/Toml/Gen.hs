@@ -15,6 +15,14 @@ module Test.Toml.Gen
        , genKey
        , genPrefixMap
        , genToml
+       , genBool
+       , genInteger
+       , genDay
+       , genHours
+       , genLocal
+       , genZoned
+       , genDouble
+       , genText
        ) where
 
 import Control.Applicative (liftA2)

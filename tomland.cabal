@@ -96,7 +96,8 @@ test-suite tomland-test
   hs-source-dirs:      test
   main-is:             Spec.hs
 
-  other-modules:       Test.Toml.Gen
+  other-modules:       Test.Toml.BiMap.Property
+                       Test.Toml.Gen
                        Test.Toml.Property
                        Test.Toml.Parsing.Property
                        Test.Toml.Parsing.Unit
@@ -107,6 +108,7 @@ test-suite tomland-test
 
   build-tool-depends:  tasty-discover:tasty-discover ^>= 4.2.1
   build-depends:       base
+                     , containers >= 0.5.7 && < 0.7
                      , hedgehog ^>= 0.6
                      , hspec-megaparsec
                      , megaparsec
