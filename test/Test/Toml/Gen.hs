@@ -20,7 +20,6 @@ module Test.Toml.Gen
 import Control.Applicative (liftA2)
 import Control.Monad (forM, replicateM)
 import Data.Fixed (Fixed (..))
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian,
                   minutesToTimeZone)
@@ -29,7 +28,7 @@ import Hedgehog (MonadGen, PropertyT, property)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
 
-import Toml.BiMap (toMArray)
+import Toml.BiMap (toMArray, prettyBiMapError)
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), TValue (..), Value (..))
 
@@ -216,10 +215,11 @@ noneArrayList =
     ]
 
 genArrayFrom :: MonadGen m => m AnyValue -> m (Value 'TArray)
-genArrayFrom noneArray
-    = fromMaybe (error "Error in genArrayFrom")
-    . toMArray
-  <$> Gen.list (Range.constant 0 5) noneArray
+genArrayFrom noneArray = do
+    eVal <- toMArray <$> Gen.list (Range.constant 0 5) noneArray
+    case eVal of
+        Left err -> error $ Text.unpack $ prettyBiMapError err
+        Right val -> pure val
 
 {- | Generate arrays and nested arrays. For example:
 Common array:

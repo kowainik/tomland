@@ -44,38 +44,33 @@ import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe)
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
-import Data.Typeable (Typeable, typeRep)
+import Data.Typeable (Typeable)
 import Data.Word (Word)
 import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (Codec (..))
-import Toml.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
-                   _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
-                   _String, _Text, _TimeOfDay, _Word, _ZonedTime)
+import Toml.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
+                   _HashSet, _Int, _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty,
+                   _Read, _Set, _String, _Text, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable,
+import Toml.Type (AnyValue (..), TOML (..), Value, insertKeyAnyVal, insertTable, typeName,
                   valueType)
 
 import Prelude hiding (read)
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as Text
 import qualified Toml.PrefixTree as Prefix
 
 ----------------------------------------------------------------------------
 -- Generalized versions of parsers
 ----------------------------------------------------------------------------
-
-typeName :: forall a . Typeable a => Text
-typeName = Text.pack $ show $ typeRep $ Proxy @a
 
 {- | General function to create bidirectional converters for values.
 -}
@@ -227,7 +222,7 @@ arrayHashSetOf = match . _HashSet
 
 -- | Parser for non- empty lists of values. Takes converter for single value and
 -- returns a non-empty list of values.
-arrayNonEmptyOf :: Typeable a => TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
+arrayNonEmptyOf :: (a ~ Value t, Typeable a) => TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 
 -- | Parser for tables. Use it when when you have nested objects.
