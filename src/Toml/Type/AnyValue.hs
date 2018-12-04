@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes       #-}
 {-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE DeriveAnyClass            #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
@@ -7,7 +8,6 @@
 module Toml.Type.AnyValue
        ( AnyValue (..)
        , MatchError (..)
-       , TomlBiMapError (..)
        , reifyAnyValues
        , toMArray
 
@@ -21,15 +21,16 @@ module Toml.Type.AnyValue
        , matchArray
 
        -- * Util
-       , leftWrongValue
+       , leftMatchError
        , typeName
-       , toTxt
+       , tShow
        ) where
 
 import Control.DeepSeq (NFData, rnf)
 import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
 import Data.Typeable (Proxy (..), Typeable, typeRep)
+import GHC.Generics (Generic)
 
 import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue)
 
@@ -50,41 +51,47 @@ instance Eq AnyValue where
 instance NFData AnyValue where
     rnf (AnyValue val) = rnf val
 
+-- Value mismatch error
+data MatchError = MatchError
+    { valueExpected :: TValue
+    , valueActual   :: AnyValue
+    } deriving (Eq, Show, Generic, NFData)
+
 ----------------------------------------------------------------------------
 -- Matching functions for values
 ----------------------------------------------------------------------------
 
 -- | Extract 'Bool' from 'Value'.
-matchBool :: Value t -> Either TomlBiMapError Bool
+matchBool :: Value t -> Either MatchError Bool
 matchBool (Bool b) = Right b
-matchBool value    = leftWrongValue value
+matchBool value    = leftMatchError value
 
 -- | Extract 'Integer' from 'Value'.
-matchInteger :: Value t -> Either TomlBiMapError Integer
+matchInteger :: Value t -> Either MatchError Integer
 matchInteger (Integer n) = Right n
-matchInteger value       = leftWrongValue value
+matchInteger value       = leftMatchError value
 
 -- | Extract 'Double' from 'Value'.
-matchDouble :: Value t -> Either TomlBiMapError Double
+matchDouble :: Value t -> Either MatchError Double
 matchDouble (Double f) = Right f
-matchDouble value      = leftWrongValue value
+matchDouble value      = leftMatchError value
 
 -- | Extract 'Text' from 'Value'.
-matchText :: Value t -> Either TomlBiMapError Text
+matchText :: Value t -> Either MatchError Text
 matchText (Text s) = Right s
-matchText value    = leftWrongValue value
+matchText value    = leftMatchError value
 
 -- | Extract 'DateTime' from 'Value'.
-matchDate :: Value t -> Either TomlBiMapError DateTime
+matchDate :: Value t -> Either MatchError DateTime
 matchDate (Date d) = Right d
-matchDate value    = leftWrongValue value
+matchDate value    = leftMatchError value
 
 -- | Extract list of elements of type @a@ from array.
-matchArray :: (AnyValue -> Either TomlBiMapError a) -> Value t -> Either TomlBiMapError [a]
+matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError [a]
 matchArray matchValue (Array a) = mapM (liftMatch matchValue) a
-matchArray _          value     = leftWrongValue value
+matchArray _          value     = leftMatchError value
 
-liftMatch :: (AnyValue -> Either TomlBiMapError a) -> (Value t -> Either TomlBiMapError a)
+liftMatch :: (AnyValue -> Either MatchError a) -> (Value t -> Either MatchError a)
 liftMatch fromAnyValue = fromAnyValue . AnyValue
 
 -- | Checks whether all elements inside given list of 'AnyValue' have the same
@@ -94,42 +101,23 @@ reifyAnyValues _ []                 = Right []
 reifyAnyValues v (AnyValue av : xs) = sameValue v av >>= \Refl -> (av :) <$> reifyAnyValues v xs
 
 -- | Function for creating 'Array' from list of 'AnyValue'.
-toMArray :: [AnyValue] -> Either TomlBiMapError (Value 'TArray)
+toMArray :: [AnyValue] -> Either MatchError (Value 'TArray)
 toMArray [] = Right $ Array []
 toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
-    Left _     -> leftWrongValue x
+    Left _     -> leftMatchError x
     Right vals -> Right $ Array (x : vals)
-
----------------------------------------------------------------------------
--- Value mismatch error and TomlBiMapError
----------------------------------------------------------------------------
-
-data MatchError = MatchError
-    { valueExpected :: Text
-    , valueActual   :: AnyValue
-    } deriving (Eq, Show)
-
-data TomlBiMapError
-    -- Error for cases with wrong constructors.
-    -- For example, you're trying to convert 'Left' but bidirectional converter expects 'Right'
-    = WrongConstructor
-        Text                -- ^ Expected constructor name
-        Text                -- ^ Actual Value; TODO: use Show here?
-    | WrongValue MatchError -- ^ Error for cases with wrong values.
-    | ArbitraryError Text
-    deriving Show
 
 ----------------------------------------------------------------------
 -- Useful functions
 ----------------------------------------------------------------------
 
-toTxt :: Show a => a -> Text
-toTxt = T.pack . show
+tShow :: Show a => a -> Text
+tShow = T.pack . show
 
 -- | Expacted value
-typeName :: forall a . Typeable a => Text
-typeName = toTxt $ typeRep $ Proxy @a
+typeName :: forall a . Typeable a => TValue
+typeName = read . show . typeRep $ Proxy @a
 
--- | Left error part with WrongValue.
-leftWrongValue :: forall (t :: TValue) b . Value t -> Either TomlBiMapError b
-leftWrongValue = Left . WrongValue . MatchError (typeName @TValue) . AnyValue
+-- | Left error part of MatchError.
+leftMatchError :: forall (t :: TValue) b . Value t -> Either MatchError b
+leftMatchError = Left . MatchError (typeName @TValue) . AnyValue

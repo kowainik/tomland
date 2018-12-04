@@ -33,6 +33,7 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Toml.Bi.Monad (BiCodec, Codec (..))
+import Toml.BiMap (TomlBiMapError, prettyBiMapError)
 import Toml.Parser (ParseException (..), parse)
 import Toml.PrefixTree (Key (..), unPiece)
 import Toml.Printer (pretty)
@@ -44,6 +45,7 @@ import qualified Data.Text.IO as TIO
 -- | Type of exception for converting from 'Toml' to user custom data type.
 data DecodeException
     = TrivialError
+    | BiMapError TomlBiMapError
     | KeyNotFound Key  -- ^ No such key
     | TableNotFound Key  -- ^ No such table
     | TypeMismatch Key Text TValue  -- ^ Expected type vs actual type
@@ -62,6 +64,7 @@ instance Monoid DecodeException where
 prettyException :: DecodeException -> Text
 prettyException = \case
     TrivialError -> "Using 'empty' parser"
+    BiMapError biError -> prettyBiMapError biError
     KeyNotFound name -> "Key " <> joinKey name <> " not found"
     TableNotFound name -> "Table [" <> joinKey name <> "] not found"
     TypeMismatch name expected actual -> "Expected type " <> expected <> " for key " <> joinKey name

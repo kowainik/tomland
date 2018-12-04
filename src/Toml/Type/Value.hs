@@ -31,7 +31,7 @@ import GHC.Generics (Generic)
 
 -- | Needed for GADT parameterization
 data TValue = TBool | TInteger | TDouble | TText | TDate | TArray
-    deriving (Eq, Show, NFData, Generic)
+    deriving (Eq, Show, Read, NFData, Generic)
 
 showType :: TValue -> String
 showType = drop 1 . show
