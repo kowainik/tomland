@@ -16,6 +16,7 @@ import Control.Applicative.Combinators (between, count, manyTill, option, option
                                         sepEndBy, skipMany)
 
 import Data.Char (chr, isControl)
+import Data.Either (fromRight)
 import Data.Fixed (Pico)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -23,7 +24,7 @@ import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOf
                   minutesToTimeZone)
 import Text.Read (readMaybe)
 
-import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol, float,
+import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol,
                          hexDigitChar, hexadecimal, lexeme, octal, satisfy, sc, signed, space,
                          string, tab, text, try, (<?>))
 import Toml.PrefixTree (Key (..), Piece (..))
@@ -166,10 +167,23 @@ doubleP :: Parser Double
 doubleP = lexeme (signed sc (num <|> inf <|> nan)) <?> "double"
   where
     num, inf, nan :: Parser Double
-    num = float
+    num = floatP
     inf = 1 / 0 <$ string "inf"
     nan = 0 / 0 <$ string "nan"
 
+floatP :: Parser Double
+floatP = check . readMaybe =<< mconcat [ digits, expo <|> dot ]
+  where
+    check = maybe (fail "Not a float") return
+
+    digits, dot, expo :: Parser String
+    digits = concat <$> sepBy1 (some digitChar) (char '_')
+    dot = mconcat [pure <$> char '.', digits, option "" expo]
+    expo = mconcat
+             [ pure <$> (char 'e' <|> char 'E')
+             , pure <$> option '+' (char '+' <|> char '-')
+             , digits
+             ]
 
 boolP :: Parser Bool
 boolP = False <$ text "false"
