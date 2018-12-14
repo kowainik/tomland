@@ -19,6 +19,7 @@ module Toml.Type.AnyValue
        , matchText
        , matchDate
        , matchArray
+       , matchArrayNE
 
        -- * Util
        , leftMatchError
@@ -35,6 +36,7 @@ import GHC.Generics (Generic)
 import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue)
 
 import qualified Data.Text as T
+import qualified Data.List.NonEmpty as NE
 
 
 -- | Existential wrapper for 'Value'.
@@ -90,6 +92,13 @@ matchDate value    = leftMatchError value
 matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError [a]
 matchArray matchValue (Array a) = mapM (liftMatch matchValue) a
 matchArray _          value     = leftMatchError value
+
+-- | Extract NonEmpty list of elements of type @a@ from array.
+matchArrayNE :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError (NE.NonEmpty a)
+matchArrayNE matchValue (Array a) = case NE.nonEmpty a of
+    Nothing -> leftMatchError (Array a)
+    Just nonempty -> mapM (liftMatch matchValue) nonempty
+matchArrayNE _          value     = leftMatchError value
 
 liftMatch :: (AnyValue -> Either MatchError a) -> (Value t -> Either MatchError a)
 liftMatch fromAnyValue = fromAnyValue . AnyValue

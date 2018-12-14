@@ -74,8 +74,8 @@ import Numeric.Natural (Natural)
 import Text.Read (readEither)
 
 import Toml.Type (AnyValue (..), DateTime (..), MatchError (..), TValue, Value (..), leftMatchError,
-                  matchArray, matchBool, matchDate, matchDouble, matchInteger, matchText, tShow,
-                  toMArray, typeName)
+                  matchArray, matchArrayNE, matchBool, matchDate, matchDouble, matchInteger,
+                  matchText, tShow, toMArray, typeName)
 
 import qualified Control.Category as Cat
 import qualified Data.ByteString.Lazy as BL
@@ -345,9 +345,13 @@ _Array elementBimap = BiMap
 
 -- | Takes a bimap of a value and returns a bimap of a non-empty list of values
 -- and 'Anything' as an array. Usually used with 'nonEmptyOf' combinator.
-_NonEmpty :: a ~ Value t => TomlBiMap a AnyValue -> TomlBiMap (NE.NonEmpty a) AnyValue
-_NonEmpty bimap = BiMap (Right . NE.toList)
-    (\val -> maybe (leftWrongValue $ Array val) Right $ NE.nonEmpty val) >>> _Array bimap
+_NonEmpty :: TomlBiMap a AnyValue -> TomlBiMap (NE.NonEmpty a) AnyValue
+_NonEmpty elementBimap = BiMap
+    { forward = mapM (forward elementBimap) >=>
+        fmap AnyValue . toTomlBiMapError . toMArray . NE.toList
+    , backward = \(AnyValue val) ->
+        toTomlBiMapError $ matchArrayNE (toMatchError . backward elementBimap) val
+    }
 
 -- | Takes a bimap of a value and returns a bimap of a set of values and 'Anything'
 -- as an array. Usually used with 'setOf' combinator.
