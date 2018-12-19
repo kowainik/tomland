@@ -19,12 +19,9 @@ module Toml.Type.AnyValue
        , matchText
        , matchDate
        , matchArray
-       , matchArrayNE
 
        -- * Util
-       , leftMatchError
-       , typeName
-       , tShow
+       , matchError
        ) where
 
 import Control.DeepSeq (NFData, rnf)
@@ -32,11 +29,9 @@ import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
 import Data.Typeable (Proxy (..), Typeable, typeRep)
 import GHC.Generics (Generic)
+import Text.Read (readMaybe)
 
 import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue)
-
-import qualified Data.Text as T
-import qualified Data.List.NonEmpty as NE
 
 
 -- | Existential wrapper for 'Value'.
@@ -66,39 +61,32 @@ data MatchError = MatchError
 -- | Extract 'Bool' from 'Value'.
 matchBool :: Value t -> Either MatchError Bool
 matchBool (Bool b) = Right b
-matchBool value    = leftMatchError value
+matchBool value    = matchError value
 
 -- | Extract 'Integer' from 'Value'.
 matchInteger :: Value t -> Either MatchError Integer
 matchInteger (Integer n) = Right n
-matchInteger value       = leftMatchError value
+matchInteger value       = matchError value
 
 -- | Extract 'Double' from 'Value'.
 matchDouble :: Value t -> Either MatchError Double
 matchDouble (Double f) = Right f
-matchDouble value      = leftMatchError value
+matchDouble value      = matchError value
 
 -- | Extract 'Text' from 'Value'.
 matchText :: Value t -> Either MatchError Text
 matchText (Text s) = Right s
-matchText value    = leftMatchError value
+matchText value    = matchError value
 
 -- | Extract 'DateTime' from 'Value'.
 matchDate :: Value t -> Either MatchError DateTime
 matchDate (Date d) = Right d
-matchDate value    = leftMatchError value
+matchDate value    = matchError value
 
 -- | Extract list of elements of type @a@ from array.
 matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError [a]
 matchArray matchValue (Array a) = mapM (liftMatch matchValue) a
-matchArray _          value     = leftMatchError value
-
--- | Extract NonEmpty list of elements of type @a@ from array.
-matchArrayNE :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError (NE.NonEmpty a)
-matchArrayNE matchValue (Array a) = case NE.nonEmpty a of
-    Nothing -> leftMatchError (Array a)
-    Just nonempty -> mapM (liftMatch matchValue) nonempty
-matchArrayNE _          value     = leftMatchError value
+matchArray _          value     = matchError value
 
 liftMatch :: (AnyValue -> Either MatchError a) -> (Value t -> Either MatchError a)
 liftMatch fromAnyValue = fromAnyValue . AnyValue
@@ -113,20 +101,19 @@ reifyAnyValues v (AnyValue av : xs) = sameValue v av >>= \Refl -> (av :) <$> rei
 toMArray :: [AnyValue] -> Either MatchError (Value 'TArray)
 toMArray [] = Right $ Array []
 toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
-    Left _     -> leftMatchError x
+    Left _     -> Left $ MatchError TArray (AnyValue x)
     Right vals -> Right $ Array (x : vals)
 
 ----------------------------------------------------------------------
 -- Useful functions
 ----------------------------------------------------------------------
 
-tShow :: Show a => a -> Text
-tShow = T.pack . show
-
 -- | Expacted value
 typeName :: forall a . Typeable a => TValue
-typeName = read . show . typeRep $ Proxy @a
+typeName = case readMaybe . show . typeRep $ Proxy @a of
+    Nothing -> error "unknown TValue"
+    Just value -> value
 
 -- | Left error part of MatchError.
-leftMatchError :: forall (t :: TValue) b . Value t -> Either MatchError b
-leftMatchError = Left . MatchError (typeName @TValue) . AnyValue
+matchError :: forall (t :: TValue) b . Value t -> Either MatchError b
+matchError = Left . MatchError (typeName @TValue) . AnyValue

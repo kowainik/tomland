@@ -58,7 +58,7 @@ import Toml.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Dou
                    _Read, _Set, _String, _Text, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Parser (ParseException (..))
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), Value, insertKeyAnyVal, insertTable)
+import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable)
 
 import Prelude hiding (read)
 
@@ -220,7 +220,7 @@ arrayHashSetOf = match . _HashSet
 
 -- | Parser for non- empty lists of values. Takes converter for single value and
 -- returns a non-empty list of values.
-arrayNonEmptyOf :: (a ~ Value t) => TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
+arrayNonEmptyOf :: TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 
 -- | Parser for tables. Use it when when you have nested objects.
