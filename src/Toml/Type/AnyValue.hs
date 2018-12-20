@@ -27,11 +27,9 @@ module Toml.Type.AnyValue
 import Control.DeepSeq (NFData, rnf)
 import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
-import Data.Typeable (Proxy (..), Typeable, typeRep)
 import GHC.Generics (Generic)
-import Text.Read (readMaybe)
 
-import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue)
+import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue, valueType)
 
 
 -- | Existential wrapper for 'Value'.
@@ -53,6 +51,10 @@ data MatchError = MatchError
     { valueExpected :: TValue
     , valueActual   :: AnyValue
     } deriving (Eq, Show, Generic, NFData)
+
+-- | Return MatchError when match Value t.
+matchError :: Value t -> Either MatchError b
+matchError t = Left $ MatchError (valueType t) (AnyValue t)
 
 ----------------------------------------------------------------------------
 -- Matching functions for values
@@ -103,17 +105,3 @@ toMArray [] = Right $ Array []
 toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
     Left _     -> Left $ MatchError TArray (AnyValue x)
     Right vals -> Right $ Array (x : vals)
-
-----------------------------------------------------------------------
--- Useful functions
-----------------------------------------------------------------------
-
--- | Expacted value
-typeName :: forall a . Typeable a => TValue
-typeName = case readMaybe . show . typeRep $ Proxy @a of
-    Nothing -> error "unknown TValue"
-    Just value -> value
-
--- | Left error part of MatchError.
-matchError :: forall (t :: TValue) b . Value t -> Either MatchError b
-matchError = Left . MatchError (typeName @TValue) . AnyValue
