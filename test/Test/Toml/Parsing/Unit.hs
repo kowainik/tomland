@@ -8,8 +8,8 @@ import Test.Hspec.Megaparsec (parseSatisfies, shouldFailOn, shouldParse)
 import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
-import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, textP)
 import Toml.Parser.TOML (hasKeyP, tableHeaderP, tomlP)
+import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, textP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
 
@@ -113,22 +113,23 @@ spec_Parser = do
             boolFailOn "fAlSE"
 
     describe "doubleP" $ do
-        it
-                "can parse a number which consists of an integral part, and a fractional part"
+        it "can parse a number which consists of an integral part, and a fractional part"
             $ do
                   parseDouble "+1.0"   1.0
                   parseDouble "3.1415" 3.1415
                   parseDouble "0.0"    0.0
                   parseDouble "-0.01"  (-0.01)
-        it
-                "can parse a number which consists of an integral part, and an exponent part"
+        it "can parse a number which consists of an integral part, and an exponent part"
             $ do
                   parseDouble "5e+22" 5e+22
                   parseDouble "1e6"   1e6
                   parseDouble "-2E-2" (-2E-2)
-        it
-                "can parse a number which consists of an integral, a fractional, and an exponent part"
+        it "can parse a number which consists of an integral, a fractional, and an exponent part"
             $ parseDouble "6.626e-34" 6.626e-34
+        it "can parse a number with underscores" $ do
+                  parseDouble "5e+2_2" 5e+22
+                  parseDouble "1.1_1e6"   1.11e6
+                  parseDouble "-2_2.21_9E-0_2" (-22.219E-2)
         it "can parse sign-prefixed zero" $ do
             parseDouble "+0.0" 0.0
             parseDouble "-0.0" (-0.0)
@@ -157,11 +158,9 @@ spec_Parser = do
             it "can parse sign-prefixed zero as an unprefixed zero" $ do
                 parseInteger "+0" 0
                 parseInteger "-0" 0
-            it
-                    "can parse both the minimum and maximum numbers in the 64 bit range"
-                $ do
-                      parseInteger "-9223372036854775808" (-9223372036854775808)
-                      parseInteger "9223372036854775807"  9223372036854775807
+            it "can parse both the minimum and maximum numbers in the 64 bit range"
+                $ do parseInteger "-9223372036854775808" (-9223372036854775808)
+                     parseInteger "9223372036854775807"  9223372036854775807
             it "can parse numbers with underscores between digits" $ do
                parseInteger "1_000" 1000
                parseInteger "5_349_221" 5349221
@@ -171,9 +170,9 @@ spec_Parser = do
                integerFailOn "_123_"
                integerFailOn "_13"
                integerFailOn "_"
-          --xit "does not parse numbers with leading zeros" $ do
-          --  parseInt "0123" 0
-          --  parseInt "-023" 0
+            it "does not parse numbers with leading zeros" $ do
+               parseInteger "0123" 0
+               parseInteger "-023" 0
         context "when the integer is in binary representation" $ do
             it "can parse numbers prefixed with `0b`" $ do
                 parseInteger "0b1101" 13

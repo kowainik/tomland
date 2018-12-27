@@ -3,18 +3,29 @@
 tomland uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
-## 0.6.0
+## Unreleased: 1.0.0
 
 * [#140](https://github.com/kowainik/tomland/issues/140):
   **Breaking change:** Replace `wrapper` by `diwrap`.
 
   _Migration guide:_ change `Toml.wrapper Toml.text "foo"` to `Toml.diwrap (Toml.text "foo")`.
+* [#152](https://github.com/kowainik/tomland/issues/152):
+  **Breaking change:** Removing `mdimap`.
+
+  _Migration guide:_ change `Toml.mdimap showX parseX (Toml.text "foo")` to `Toml.textBy showX parseX "foo"`.
 * [#131](https://github.com/kowainik/tomland/issues/131):
-  Uncommenting `tomlTableArrays` from 'TOML'.
+  Uncommenting `tomlTableArrays` from `TOML`.
+* [#64](https://github.com/kowainik/tomland/issues/64):
+  Integer parser doesn't accept leading zeros.
 * [#142](https://github.com/kowainik/tomland/issues/142):
   Adding EDSL support for arrays of tables.
 * [#137](https://github.com/kowainik/tomland/issues/137):
   Replace `Maybe` with `Either` in `BiMap`.
+  Adding EDSL support for arrays of tables
+* [#149](https://github.com/kowainik/tomland/issues/149):
+  Removing records syntax from `PrefixTree`.
+* [#146](https://github.com/kowainik/tomland/issues/146):
+  Allow underscores in floats.
 
 ## 0.5.0 — Nov 12, 2018
 
@@ -32,7 +43,7 @@ The change log is available [on GitHub][2].
 
   _Migration guide:_ reverse order of composition when using `BiMap`s.
 * [#98](https://github.com/kowainik/tomland/issues/98):
-  Implement bencmarks for `tomland` and compare with `htoml` and `htoml-megaparsec` libraries.
+  Implement benchmarks for `tomland` and compare with `htoml` and `htoml-megaparsec` libraries.
 * [#130](https://github.com/kowainik/tomland/issues/130):
   Added combinators to `Toml.Bi.Combinators`.
 * [#115](https://github.com/kowainik/tomland/issues/115):

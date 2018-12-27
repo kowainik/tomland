@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveAnyClass  #-}
-{-# LANGUAGE DerivingStrategies  #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
-{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PatternSynonyms            #-}
 
 module Toml.PrefixTree
        ( PrefixTree (..)
@@ -80,6 +80,7 @@ instance IsString Key where
             []   -> error "Text.splitOn returned empty string"  -- can't happen
             x:xs -> coerce @(NonEmpty Text) @Key (x :| xs)
 
+-- | Pattern synonym for constructing keys
 pattern (:||) :: Piece -> [Piece] -> Key
 pattern x :|| xs <- Key (x :| xs)
   where
@@ -95,32 +96,33 @@ type PrefixMap a = HashMap Piece (PrefixTree a)
 
 -- | Data structure to represent table tree for @toml@.
 data PrefixTree a
-    = Leaf !Key !a
-    | Branch { bCommonPref :: !Prefix         -- ^ greatest common prefix
-             , bVal        :: !(Maybe a)      -- ^ value by key = prefix
-             , bPrefixMap  :: !(PrefixMap a)  -- ^ suffixes of prefix
-             }
+    = Leaf             -- ^ End of a key.
+        !Key           -- ^ End piece of the key.
+        !a             -- ^ Value at the end.
+    | Branch           -- ^ Values along pieces of a key.
+        !Prefix        -- ^ Greatest common key prefix.
+        !(Maybe a)     -- ^ Possible value at that point.
+        !(PrefixMap a) -- ^ Values at suffixes of the prefix.
     deriving (Show, Eq, NFData, Generic)
 
 instance Semigroup (PrefixTree a) where
     a <> b = foldl' (\tree (k, v) -> insertT k v tree) a (toListT b)
 
+-- | Data structure to compare keys.
 data KeysDiff
-      -- | Keys are equal
-    = Equal
-      -- | Keys don't have any common part.
-    | NoPrefix
-      -- | The first key is the prefix for the second one.
-    | FstIsPref { diff :: !Key}
-      -- | The second key is the prefix for the first one.
-    | SndIsPref { diff :: !Key}
-      -- | Key have same prefix.
-    | Diff { pref    :: !Key
-           , diffFst :: !Key
-           , diffSnd :: !Key
-           }
+    = Equal      -- ^ Keys are equal
+    | NoPrefix   -- ^ Keys don't have any common part.
+    | FstIsPref  -- ^ The first key is the prefix of the second one.
+        !Key     -- ^ Rest of the second key.
+    | SndIsPref  -- ^ The second key is the prefix of the first one.
+        !Key     -- ^ Rest of the first key.
+    | Diff       -- ^ Key have a common prefix.
+        !Key     -- ^ Common prefix.
+        !Key     -- ^ Rest of first key.
+        !Key     -- ^ Rest of second key.
     deriving (Show, Eq)
 
+-- | Compares two keys
 keysDiff :: Key -> Key -> KeysDiff
 keysDiff (x :|| xs) (y :|| ys)
     | x == y    = listSame xs ys []

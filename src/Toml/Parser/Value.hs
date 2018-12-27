@@ -11,9 +11,9 @@ module Toml.Parser.Value
        , anyValueP
        ) where
 
-import Control.Applicative (Alternative (many, some, (<|>)))
-import Control.Applicative.Combinators (between, count, manyTill, option, optional, sepEndBy,
-                                        skipMany)
+import Control.Applicative (Alternative (some, (<|>)))
+import Control.Applicative.Combinators (between, count, manyTill, option, optional, sepBy1,
+                                        sepEndBy, skipMany)
 
 import Data.Char (chr, isControl)
 import Data.Either (fromRight)
@@ -22,17 +22,16 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
                   minutesToTimeZone)
+import Text.Read (readMaybe)
 
-import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol, float,
-                         hexDigitChar, hexadecimal, lexeme, match, octal, satisfy, sc, signed,
-                         space, string, tab, text, try, (<?>))
+import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol,
+                         hexDigitChar, hexadecimal, lexeme, octal, satisfy, sc, signed, space,
+                         string, tab, text, try, (<?>))
 import Toml.PrefixTree (Key (..), Piece (..))
-import Toml.Type (DateTime (..), UValue (..), AnyValue, typeCheck)
+import Toml.Type (AnyValue, DateTime (..), UValue (..), typeCheck)
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.Text as Text
-import qualified Data.Text.Read as TR
-
 
 textP :: Parser Text
 textP = multilineBasicStringP
@@ -148,32 +147,43 @@ tableNameP = between (text "[") (text "]") keyP
 -- Values
 
 decimalP :: Parser Integer
-decimalP = mkInteger <$> decimalStringP
+decimalP = zero <|> more
   where
-    decimalStringP   = fst <$> match (some digitChar >> many _digitsP)
-    _digitsP         = try (char '_') >> some digitChar
-    mkInteger        = textToInt . stripUnderscores
-    textToInt        = fst . fromRight (error "Underscore parser has a bug") . TR.decimal
-    stripUnderscores = Text.filter (/= '_')
+    zero = 0 <$ char '0'
+    more = check =<< readMaybe . concat <$> sepBy1 (some digitChar) (char '_')
+    check = maybe (fail "Not an integer") return
 
 
 integerP :: Parser Integer
 integerP = lexeme (bin <|> oct <|> hex <|> dec) <?> "integer"
   where
-    dec = signed sc decimalP
     bin = try (char '0' >> char 'b') >> binary
     oct = try (char '0' >> char 'o') >> octal
     hex = try (char '0' >> char 'x') >> hexadecimal
+    dec = signed sc decimalP
 
 
 doubleP :: Parser Double
 doubleP = lexeme (signed sc (num <|> inf <|> nan)) <?> "double"
   where
     num, inf, nan :: Parser Double
-    num = float
+    num = floatP
     inf = 1 / 0 <$ string "inf"
     nan = 0 / 0 <$ string "nan"
 
+floatP :: Parser Double
+floatP = check . readMaybe =<< mconcat [ digits, expo <|> dot ]
+  where
+    check = maybe (fail "Not a float") return
+
+    digits, dot, expo :: Parser String
+    digits = concat <$> sepBy1 (some digitChar) (char '_')
+    dot = mconcat [pure <$> char '.', digits, option "" expo]
+    expo = mconcat
+             [ pure <$> (char 'e' <|> char 'E')
+             , pure <$> option '+' (char '+' <|> char '-')
+             , digits
+             ]
 
 boolP :: Parser Bool
 boolP = False <$ text "false"
@@ -279,13 +289,12 @@ arrayP = lexeme (between (char '[' *> sc) (char ']') elements) <?> "array"
 
 
 valueP :: Parser UValue
-valueP = UBool    <$> boolP
+valueP = UText    <$> textP
+     <|> UBool    <$> boolP
+     <|> UArray   <$> arrayP
      <|> UDate    <$> dateTimeP
      <|> UDouble  <$> try doubleP
      <|> UInteger <$> integerP
-     <|> UText    <$> textP
-     <|> UArray   <$> arrayP
-
 
 anyValueP :: Parser AnyValue
 anyValueP = typeCheck <$> valueP >>= \case
