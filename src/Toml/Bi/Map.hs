@@ -333,19 +333,20 @@ _ByteStringText = prism T.encodeUtf8 eitherText
     eitherText :: ByteString -> Either TomlBiMapError Text
     eitherText = either (\err -> Left $ ArbitraryError $ tShow err) Right . T.decodeUtf8'
 
--- | 'ByteString' bimap for 'AnyValue'. Usually used with 'byteString' combinator.
+-- | UTF8 encoded 'ByteString' bimap for 'AnyValue'.
+-- Usually used with 'byteString' combinator.
 _ByteString :: TomlBiMap ByteString AnyValue
 _ByteString = _ByteStringText >>> _Text
 
--- | Helper bimap for 'Text' and lazy 'ByteString'
+-- | Helper bimap for 'Text' and lazy 'ByteString'.
 _LByteStringText :: TomlBiMap BL.ByteString Text
 _LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) eitherText
   where
     eitherText :: BL.ByteString -> Either TomlBiMapError Text
     eitherText = bimap (ArbitraryError . tShow) TL.toStrict . TL.decodeUtf8'
 
--- | Lazy 'ByteString' bimap for 'AnyValue'. Usually used with 'lazyByteString'
--- combinator.
+-- | UTF8 encoded lazy 'ByteString' bimap for 'AnyValue'.
+-- Usually used with 'lazyByteString' combinator.
 _LByteString :: TomlBiMap BL.ByteString AnyValue
 _LByteString = _LByteStringText >>> _Text
 
