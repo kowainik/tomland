@@ -7,15 +7,15 @@ module Toml.Printer
        , defaultOptions
        , pretty
        , prettyOptions
-       , prettyTomlInd
+       , prettyKey
        ) where
 
 import Data.HashMap.Strict (HashMap)
+import Data.List (sortOn, splitAt)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Monoid ((<>), mconcat)
+import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Time (formatTime, defaultTimeLocale, ZonedTime)
-import Data.List (splitAt, sortOn)
+import Data.Time (ZonedTime, defaultTimeLocale, formatTime)
 
 import Toml.PrefixTree (Key (..), Piece (..), PrefixMap, PrefixTree (..))
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), Value (..))
@@ -26,24 +26,13 @@ import qualified Data.Text as Text
 
 {- | Configures the pretty printer. -}
 data PrintOptions = PrintOptions
-    { shouldSort :: Bool  -- ^ should table keys be sorted ot shouldn't
+    { shouldSort :: Bool  -- ^ should table keys be sorted or not
     , indent     :: Int   -- ^ indentation size
     } deriving (Show)
 
 {- | Default printing options. -}
 defaultOptions :: PrintOptions
 defaultOptions = PrintOptions True 2
-
--- Returns an indentation prefix
-tabWith :: PrintOptions -> Int -> Text
-tabWith options n =
-    Text.cons '\n' (Text.replicate (n * indent options) " ")
-
--- Returns a proper sorting function
-orderWith :: Ord k => PrintOptions -> [(k, v)] -> [(k, v)]
-orderWith options
-    | shouldSort options = sortOn fst
-    | otherwise          = id
 
 {- | Converts 'TOML' type into 'Text' (using 'defaultOptions').
 
@@ -76,35 +65,33 @@ title = "TOML Example"
 pretty :: TOML -> Text
 pretty = prettyOptions defaultOptions
 
-{- | Converts 'TOML' type into 'Text' using provided 'PrintOptions' -}
+-- | Converts 'TOML' type into 'Text' using provided 'PrintOptions'
 prettyOptions :: PrintOptions -> TOML -> Text
-prettyOptions options = flip Text.snoc '\n' . Text.drop 1 . prettyTomlInd options 0 ""
+prettyOptions options = Text.unlines . prettyTomlInd options 0 ""
 
--- | Converts 'TOML' into 'Text' with the given indent.
+-- | Converts 'TOML' into a list of 'Text' elements with the given indent.
 prettyTomlInd :: PrintOptions -- ^ Printing options
               -> Int          -- ^ Current indentation
               -> Text         -- ^ Accumulator for table names
               -> TOML         -- ^ Given 'TOML'
-              -> Text         -- ^ Pretty result
-prettyTomlInd options i prefix TOML{..} =
-  Text.intercalate "\n" $ filter (not . Text.null)
-    [ prettyKeyValue options i tomlPairs
-    , prettyTables options i prefix tomlTables
+              -> [Text]         -- ^ Pretty result
+prettyTomlInd options i prefix TOML{..} = concat
+    [ prettyKeyValue    options i tomlPairs
+    , prettyTables      options i prefix tomlTables
     , prettyTableArrays options i prefix tomlTableArrays
     ]
 
+-- | Converts a key to text
+prettyKey :: Key -> Text
+prettyKey = Text.intercalate "." . map unPiece . NonEmpty.toList . unKey
 
 -- | Returns pretty formatted  key-value pairs of the 'TOML'.
-prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> Text
-prettyKeyValue options i =
-    Text.concat . map kvText . orderWith options . HashMap.toList
+prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> [Text]
+prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options
   where
     kvText :: (Key, AnyValue) -> Text
-    kvText (k, AnyValue v) = mconcat
-        [ tabWith options i
-        , prettyKey k
-        , " = "
-        , valText v ]
+    kvText (k, AnyValue v) =
+      tabWith options i <> prettyKey k <>  " = " <> valText v
 
     valText :: Value t -> Text
     valText (Bool b)    = Text.toLower $ showText b
@@ -139,59 +126,60 @@ prettyKeyValue options i =
             . formatTime defaultTimeLocale "%z"
 
 -- | Returns pretty formatted tables section of the 'TOML'.
-prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> Text
-prettyTables options i pref =
-    Text.intercalate "\n" . map (prettyTable . snd) . orderWith options . HashMap.toList
+prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> [Text]
+prettyTables options i pref = mapOrdered (prettyTable . snd) options
   where
-    prettyTable :: PrefixTree TOML -> Text
+    prettyTable :: PrefixTree TOML -> [Text]
     prettyTable (Leaf k toml) =
-        let name = getPref k in mconcat
-            [ tabWith options i
-            , prettyTableName name
-            , prettyTomlInd options (succ i) name toml ]
-    prettyTable (Branch k mToml prefMap) =
-        let name  = getPref k
-            nextI = succ i
-            toml  = case mToml of
-                        Nothing -> ""
-                        Just t  -> prettyTomlInd options nextI name t
-        in mconcat
-            [ tabWith options i
-            , prettyTableName name
-            , toml
-            , prettyTables options nextI name prefMap ]
+        let name = addPrefix k pref
+        -- Each "" results in an empty line, inserted above table names
+        in "": tabWith options i <> prettyTableName name :
+        -- We don't want empty lines between a table name and a subtable name
+             dropWhile (== "") (prettyTomlInd options (i + 1) name toml)
 
-    -- Adds next part of the table name to the accumulator.
-    getPref :: Key -> Text
-    getPref k = case pref of
-        "" -> prettyKey k
-        _  -> pref <> "." <> prettyKey k
+    prettyTable (Branch k mToml prefMap) =
+        let name  = addPrefix k pref
+            nextI = i + 1
+            toml  = case mToml of
+                        Nothing -> []
+                        Just t  -> prettyTomlInd options nextI name t
+        -- Each "" results in an empty line, inserted above table names
+        in "": tabWith options i <> prettyTableName name :
+        -- We don't want empty lines between a table name and a subtable name
+             dropWhile (== "") (toml ++ prettyTables options nextI name prefMap)
 
     prettyTableName :: Text -> Text
     prettyTableName n = "[" <> n <> "]"
 
-prettyKey :: Key -> Text
-prettyKey (Key k) = Text.intercalate "." $ map unPiece (NonEmpty.toList k)
-
-prettyTableArrays :: PrintOptions -> Int -> Text -> HashMap Key (NonEmpty TOML) -> Text
-prettyTableArrays options i pref =
-    Text.intercalate "\n" . map arrText . orderWith options . HashMap.toList
+prettyTableArrays :: PrintOptions -> Int -> Text -> HashMap Key (NonEmpty TOML) -> [Text]
+prettyTableArrays options i pref = mapOrdered arrText options
   where
-    arrText :: (Key, NonEmpty TOML) -> Text
+    arrText :: (Key, NonEmpty TOML) -> [Text]
     arrText (k, ne) =
-      let name = getPref k
-          render toml = mconcat
-            [ tabWith options i
-            , prettyTableArrayName name
-            , prettyTomlInd options (succ i) name toml
-            ]
-      in Text.intercalate "\n" $ map render $ NonEmpty.toList ne
+      let name = addPrefix k pref
+          render toml =
+            -- Each "" results in an empty line, inserted above array names
+            "": tabWith options i <> "[[" <> name <> "]]" :
+            -- We don't want empty lines between an array name and a subtable name
+              dropWhile (== "") (prettyTomlInd options (i + 1) name toml)
+      in concatMap render $ NonEmpty.toList ne
 
-    -- Adds next part of the table name to the accumulator.
-    getPref :: Key -> Text
-    getPref k = case pref of
-        "" -> prettyKey k
-        _  -> pref <> "." <> prettyKey k
+-----------------------------------------------------
+-- Helper functions
+-----------------------------------------------------
 
-    prettyTableArrayName :: Text -> Text
-    prettyTableArrayName n = "[[" <> n <> "]]"
+-- Returns an indentation prefix
+tabWith :: PrintOptions -> Int -> Text
+tabWith options n = Text.replicate (n * indent options) " "
+
+-- Returns a proper sorting function
+mapOrdered :: Ord k => ((k, v) -> [t]) -> PrintOptions -> HashMap k v -> [t]
+mapOrdered f options
+    | shouldSort options = concatMap f . sortOn fst . HashMap.toList
+    | otherwise          = concatMap f . HashMap.toList
+
+-- Adds next part of the table name to the accumulator.
+addPrefix :: Key -> Text -> Text
+addPrefix key = \case
+    "" -> prettyKey key
+    prefix -> prefix <> "." <> prettyKey key

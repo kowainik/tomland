@@ -9,7 +9,7 @@ import Test.Tasty.Silver (goldenVsAction)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 
 import Toml (TOML, Value (..))
-import Toml.Edsl ((=:), mkToml, table, array, empty)
+import Toml.Edsl ((=:), mkToml, table, tableArray, empty)
 import Toml.PrefixTree ((<|))
 import Toml.Printer (PrintOptions (..), defaultOptions, prettyOptions)
 
@@ -25,10 +25,10 @@ example = mkToml $ do
     table "foo" empty
     table "doo" empty
     table "baz" empty
-    array "deepest" $
+    tableArray "deepest" $
       "ping" =: "pong"
       :| [empty]
-    array "deeper" $
+    tableArray "deeper" $
       "green" =: Bool True
       :| [table "blue" ("red" =: Integer 255)]
 

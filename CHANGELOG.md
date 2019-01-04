@@ -26,6 +26,8 @@ The change log is available [on GitHub][2].
   Removing records syntax from `PrefixTree`.
 * [#146](https://github.com/kowainik/tomland/issues/146):
   Allow underscores in floats.
+* [#134](https://github.com/kowainik/tomland/issues/134):
+  Pretty printer arrays of tables and golden tests.
 
 ## 0.5.0 — Nov 12, 2018
 
