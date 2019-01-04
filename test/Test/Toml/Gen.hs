@@ -28,7 +28,7 @@ import Hedgehog (MonadGen, PropertyT, property)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
 
-import Toml.BiMap (toMArray)
+import Toml.Bi.Map (toMArray)
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), TValue (..), Value (..))
 
@@ -218,7 +218,7 @@ genArrayFrom :: MonadGen m => m AnyValue -> m (Value 'TArray)
 genArrayFrom noneArray = do
     eVal <- toMArray <$> Gen.list (Range.constant 0 5) noneArray
     case eVal of
-        Left err -> error $ show err
+        Left err  -> error $ show err
         Right val -> pure val
 
 {- | Generate arrays and nested arrays. For example:

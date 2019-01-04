@@ -7,21 +7,19 @@
 
 module Toml.Type.AnyValue
        ( AnyValue (..)
-       , MatchError (..)
        , reifyAnyValues
        , toMArray
 
          -- * Matching
-       , liftMatch
+       , MatchError (..)
+       , mkMatchError
        , matchBool
        , matchInteger
        , matchDouble
        , matchText
        , matchDate
        , matchArray
-
-       -- * Util
-       , matchError
+       , applyAsToAny
        ) where
 
 import Control.DeepSeq (NFData, rnf)
@@ -29,7 +27,7 @@ import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
 import GHC.Generics (Generic)
 
-import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue, valueType)
+import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError (..), Value (..), sameValue)
 
 
 -- | Existential wrapper for 'Value'.
@@ -52,9 +50,9 @@ data MatchError = MatchError
     , valueActual   :: AnyValue
     } deriving (Eq, Show, Generic, NFData)
 
--- | Return MatchError when match Value t.
-matchError :: Value t -> Either MatchError b
-matchError t = Left $ MatchError (valueType t) (AnyValue t)
+-- | Helper function to create 'MatchError'.
+mkMatchError :: TValue -> Value t -> Either MatchError a
+mkMatchError t = Left . MatchError t . AnyValue
 
 ----------------------------------------------------------------------------
 -- Matching functions for values
@@ -63,35 +61,36 @@ matchError t = Left $ MatchError (valueType t) (AnyValue t)
 -- | Extract 'Bool' from 'Value'.
 matchBool :: Value t -> Either MatchError Bool
 matchBool (Bool b) = Right b
-matchBool value    = matchError value
+matchBool value    = mkMatchError TBool value
 
 -- | Extract 'Integer' from 'Value'.
 matchInteger :: Value t -> Either MatchError Integer
 matchInteger (Integer n) = Right n
-matchInteger value       = matchError value
+matchInteger value       = mkMatchError TInteger value
 
 -- | Extract 'Double' from 'Value'.
 matchDouble :: Value t -> Either MatchError Double
 matchDouble (Double f) = Right f
-matchDouble value      = matchError value
+matchDouble value      = mkMatchError TDouble value
 
 -- | Extract 'Text' from 'Value'.
 matchText :: Value t -> Either MatchError Text
 matchText (Text s) = Right s
-matchText value    = matchError value
+matchText value    = mkMatchError TText value
 
 -- | Extract 'DateTime' from 'Value'.
 matchDate :: Value t -> Either MatchError DateTime
 matchDate (Date d) = Right d
-matchDate value    = matchError value
+matchDate value    = mkMatchError TDate value
 
 -- | Extract list of elements of type @a@ from array.
 matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError [a]
-matchArray matchValue (Array a) = mapM (liftMatch matchValue) a
-matchArray _          value     = matchError value
+matchArray matchValue (Array a) = mapM (applyAsToAny matchValue) a
+matchArray _          value     = mkMatchError TArray value
 
-liftMatch :: (AnyValue -> Either MatchError a) -> (Value t -> Either MatchError a)
-liftMatch fromAnyValue = fromAnyValue . AnyValue
+-- | Make function that works with 'AnyValue' also work with specific 'Value'.
+applyAsToAny :: (AnyValue -> r) -> (Value t -> r)
+applyAsToAny f = f . AnyValue
 
 -- | Checks whether all elements inside given list of 'AnyValue' have the same
 -- type as given 'Value'. Returns list of @Value t@ without given 'Value'.
@@ -103,5 +102,5 @@ reifyAnyValues v (AnyValue av : xs) = sameValue v av >>= \Refl -> (av :) <$> rei
 toMArray :: [AnyValue] -> Either MatchError (Value 'TArray)
 toMArray [] = Right $ Array []
 toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
-    Left _     -> Left $ MatchError TArray (AnyValue x)
-    Right vals -> Right $ Array (x : vals)
+    Left TypeMismatchError{..} -> mkMatchError typeExpected x
+    Right vals                 -> Right $ Array (x : vals)

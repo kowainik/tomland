@@ -8,7 +8,6 @@ import qualified Toml
 
 module Toml
     ( module Toml.Bi
-    , module Toml.BiMap
     , module Toml.Parser
     , module Toml.PrefixTree
     , module Toml.Printer
@@ -16,7 +15,6 @@ module Toml
     ) where
 
 import Toml.Bi
-import Toml.BiMap
 import Toml.Parser
 import Toml.PrefixTree
 import Toml.Printer
