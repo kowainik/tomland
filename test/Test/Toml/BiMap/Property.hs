@@ -5,23 +5,23 @@ module Test.Toml.BiMap.Property where
 
 import Hedgehog (Gen, PropertyT, assert, forAll, tripping, (===))
 
-import Control.Monad (join)
+import Data.Semigroup ((<>))
 import Data.Time (ZonedTime (..))
 import Test.Toml.Gen (PropertyTest, prop)
-import Toml.BiMap (BiMap (..))
+import Toml.Bi.Map (BiMap (..), TomlBiMap)
 
 import qualified Data.HashSet as HS
 import qualified Data.IntSet as IS
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import qualified Test.Toml.Gen as G
-import qualified Toml.BiMap as B
+import qualified Toml.Bi.Map as B
 
 instance Eq ZonedTime where
   (ZonedTime a b) == (ZonedTime c d) = a == c && b == d
 
 testBiMap :: (Monad m, Show a, Show b, Eq a)
-            => BiMap a b
+            => TomlBiMap a b
             -> Gen a
             -> PropertyT m ()
 testBiMap bimap gen = do
@@ -34,8 +34,8 @@ test_Double =  prop "Double" $ do
     x   <- forAll G.genDouble
     if isNaN x
       then assert $
-          fmap isNaN (forward B._Double x >>= backward B._Double) == Just True
-      else (forward B._Double x >>= backward B._Double) === Just x
+          fmap isNaN (forward B._Double x >>= backward B._Double) == Right True
+      else (forward B._Double x >>= backward B._Double) === Right x
 
 test_BiMaps :: PropertyTest
 test_BiMaps =
