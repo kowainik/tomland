@@ -52,10 +52,10 @@ import Data.Word (Word)
 import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
+import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
+                    _HashSet, _Int, _IntSet, _Integer, _LByteString, _LocalTime, _Natural,
+                    _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Bi.Monad (Codec (..))
-import Toml.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
-                   _HashSet, _Int, _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty,
-                   _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
 
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable)
@@ -80,7 +80,7 @@ match BiMap{..} key = Codec input output
         mVal <- asks $ HashMap.lookup key . tomlPairs
         case mVal of
             Nothing -> throwError $ KeyNotFound key
-            Just anyVal@(AnyValue _) -> case backward anyVal of
+            Just anyVal -> case backward anyVal of
                 Right v  -> pure v
                 Left err -> throwError $ BiMapError err
 

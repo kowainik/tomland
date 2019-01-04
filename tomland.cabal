@@ -30,7 +30,7 @@ library
                            Toml.Bi.Code
                            Toml.Bi.Combinators
                            Toml.Bi.Monad
-                         Toml.BiMap
+                           Toml.Bi.Map
                          Toml.Edsl
                          Toml.Parser
                            Toml.Parser.Core
