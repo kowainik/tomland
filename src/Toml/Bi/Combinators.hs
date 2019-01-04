@@ -56,7 +56,6 @@ import Toml.Bi.Monad (Codec (..))
 import Toml.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
                    _HashSet, _Int, _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty,
                    _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
-import Toml.Parser (ParseException (..))
 
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable)
@@ -127,7 +126,7 @@ text :: Key -> TomlCodec Text
 text = match _Text
 
 -- | Parser for values as text with custom functions.
-textBy :: Typeable a =>  (a -> Text) -> (Text -> Maybe a) -> Key -> TomlCodec a
+textBy :: (a -> Text) -> (Text -> Either Text a) -> Key -> TomlCodec a
 textBy to from = match (_TextBy to from)
 
 -- | Parser for string values as string.

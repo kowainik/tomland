@@ -1,6 +1,6 @@
-resolver: lts-12.18
+resolver: lts-13.1
 
 extra-deps:
-  - hspec-megaparsec-2.0.0
   - htoml-megaparsec-2.1.0.3
-  - megaparsec-7.0.1
+  - composition-prelude-2.0.2.1  # needed for htoml-megaparsec
+  - tasty-hedgehog-0.2.0.0

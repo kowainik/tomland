@@ -75,7 +75,7 @@ import Numeric.Natural (Natural)
 import Text.Read (readEither)
 
 import Toml.Type (AnyValue (..), DateTime (..), MatchError (..), TValue, Value (..), matchArray,
-                  matchBool, matchDate, matchDouble, matchInteger, matchText, toMArray, matchError)
+                  matchBool, matchDate, matchDouble, matchError, matchInteger, matchText, toMArray)
 
 import qualified Control.Category as Cat
 import qualified Data.ByteString.Lazy as BL
@@ -210,12 +210,24 @@ mkAnyValueBiMap matchValue toValue = BiMap
   where
     toAnyValue :: a -> AnyValue
     toAnyValue = AnyValue . toValue
+
     fromAnyValue :: AnyValue -> Either TomlBiMapError a
     fromAnyValue (AnyValue value) = first WrongValue $ matchValue value
 
 -- | Creates bimap for 'Text' to 'AnyValue' with custom functions
-_TextBy :: (a -> Text) -> (Text -> Either MatchError a) -> TomlBiMap a AnyValue
-_TextBy toText parseText = mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
+_TextBy
+    :: forall a .
+       (a -> Text)              -- ^ @show@ function for @a@
+    -> (Text -> Either Text a)  -- ^ Parser of @a@ from 'Text'
+    -> TomlBiMap a AnyValue
+_TextBy toText parseText = BiMap toAnyValue fromAnyValue
+  where
+    toAnyValue :: a -> Either TomlBiMapError AnyValue
+    toAnyValue = Right . AnyValue . Text . toText
+
+    fromAnyValue :: AnyValue -> Either TomlBiMapError a
+    fromAnyValue (AnyValue v) =
+        first WrongValue (matchText v) >>= first ArbitraryError . parseText
 
 -- | 'Bool' bimap for 'AnyValue'. Usually used with 'bool' combinator.
 _Bool :: TomlBiMap Bool AnyValue
