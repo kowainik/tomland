@@ -12,3 +12,15 @@ b = "bb"
 [qux.doo]
     egg = "?"
     spam = "!"
+
+[[deeper]]
+    green = true
+
+[[deeper]]
+    [deeper.blue]
+        red = 255
+
+[[deepest]]
+    ping = "pong"
+
+[[deepest]]

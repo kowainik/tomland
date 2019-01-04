@@ -1,11 +1,23 @@
 module Test.Toml.PrefixTree.Property where
 
-import Hedgehog (forAll, (===))
+import Hedgehog (forAll, tripping, (===))
 
 import Test.Toml.Gen (PropertyTest, genKey, genPrefixMap, genVal, prop)
 import Test.Toml.Property (assocLaw, identityLaw)
 
+import Data.String (IsString (..))
+
+import qualified Data.Text as Text
 import qualified Toml.PrefixTree as Prefix
+import qualified Toml.Printer as Printer
+
+----------------------------------------------------------------------------
+-- Key printing and parsing
+----------------------------------------------------------------------------
+test_KeyPrinting :: PropertyTest
+test_KeyPrinting = prop "Key printing: fromString . prettyKey == id" $ do
+    key <- forAll genKey
+    tripping key Printer.prettyKey (Just . fromString . Text.unpack)
 
 ----------------------------------------------------------------------------
 -- InsertLookup
