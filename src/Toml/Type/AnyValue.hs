@@ -1,10 +1,13 @@
+{-# LANGUAGE AllowAmbiguousTypes       #-}
 {-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE DeriveAnyClass            #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
 
 module Toml.Type.AnyValue
        ( AnyValue (..)
+       , MatchError (..)
        , reifyAnyValues
        , toMArray
 
@@ -16,13 +19,18 @@ module Toml.Type.AnyValue
        , matchText
        , matchDate
        , matchArray
+
+       -- * Util
+       , matchError
        ) where
 
 import Control.DeepSeq (NFData, rnf)
 import Data.Text (Text)
 import Data.Type.Equality ((:~:) (..))
+import GHC.Generics (Generic)
 
-import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue)
+import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError, Value (..), sameValue, valueType)
+
 
 -- | Existential wrapper for 'Value'.
 data AnyValue = forall (t :: TValue) . AnyValue (Value t)
@@ -38,41 +46,51 @@ instance Eq AnyValue where
 instance NFData AnyValue where
     rnf (AnyValue val) = rnf val
 
+-- Value mismatch error
+data MatchError = MatchError
+    { valueExpected :: TValue
+    , valueActual   :: AnyValue
+    } deriving (Eq, Show, Generic, NFData)
+
+-- | Return MatchError when match Value t.
+matchError :: Value t -> Either MatchError b
+matchError t = Left $ MatchError (valueType t) (AnyValue t)
+
 ----------------------------------------------------------------------------
 -- Matching functions for values
 ----------------------------------------------------------------------------
 
 -- | Extract 'Bool' from 'Value'.
-matchBool :: Value t -> Maybe Bool
-matchBool (Bool b) = Just b
-matchBool _        = Nothing
+matchBool :: Value t -> Either MatchError Bool
+matchBool (Bool b) = Right b
+matchBool value    = matchError value
 
 -- | Extract 'Integer' from 'Value'.
-matchInteger :: Value t -> Maybe Integer
-matchInteger (Integer n) = Just n
-matchInteger _           = Nothing
+matchInteger :: Value t -> Either MatchError Integer
+matchInteger (Integer n) = Right n
+matchInteger value       = matchError value
 
 -- | Extract 'Double' from 'Value'.
-matchDouble :: Value t -> Maybe Double
-matchDouble (Double f) = Just f
-matchDouble _          = Nothing
+matchDouble :: Value t -> Either MatchError Double
+matchDouble (Double f) = Right f
+matchDouble value      = matchError value
 
 -- | Extract 'Text' from 'Value'.
-matchText :: Value t -> Maybe Text
-matchText (Text s) = Just s
-matchText _        = Nothing
+matchText :: Value t -> Either MatchError Text
+matchText (Text s) = Right s
+matchText value    = matchError value
 
 -- | Extract 'DateTime' from 'Value'.
-matchDate :: Value t -> Maybe DateTime
-matchDate (Date d) = Just d
-matchDate _        = Nothing
+matchDate :: Value t -> Either MatchError DateTime
+matchDate (Date d) = Right d
+matchDate value    = matchError value
 
 -- | Extract list of elements of type @a@ from array.
-matchArray :: (AnyValue -> Maybe a) -> Value t -> Maybe [a]
+matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError [a]
 matchArray matchValue (Array a) = mapM (liftMatch matchValue) a
-matchArray _            _       = Nothing
+matchArray _          value     = matchError value
 
-liftMatch :: (AnyValue -> Maybe a) -> (Value t -> Maybe a)
+liftMatch :: (AnyValue -> Either MatchError a) -> (Value t -> Either MatchError a)
 liftMatch fromAnyValue = fromAnyValue . AnyValue
 
 -- | Checks whether all elements inside given list of 'AnyValue' have the same
@@ -82,8 +100,8 @@ reifyAnyValues _ []                 = Right []
 reifyAnyValues v (AnyValue av : xs) = sameValue v av >>= \Refl -> (av :) <$> reifyAnyValues v xs
 
 -- | Function for creating 'Array' from list of 'AnyValue'.
-toMArray :: [AnyValue] -> Maybe (Value 'TArray)
-toMArray [] = Just $ Array []
+toMArray :: [AnyValue] -> Either MatchError (Value 'TArray)
+toMArray [] = Right $ Array []
 toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
-    Left _     -> Nothing
-    Right vals -> Just $ Array (x : vals)
+    Left _     -> Left $ MatchError TArray (AnyValue x)
+    Right vals -> Right $ Array (x : vals)

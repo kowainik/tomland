@@ -44,40 +44,36 @@ import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe)
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
-import Data.Typeable (Typeable, typeRep)
 import Data.Word (Word)
 import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec)
 import Toml.Bi.Monad (Codec (..))
-import Toml.BiMap (BiMap (..), _Array, _Bool, _ByteString, _Day, _Double, _Float, _HashSet, _Int,
-                   _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
-                   _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
+import Toml.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
+                   _HashSet, _Int, _IntSet, _Integer, _LByteString, _LocalTime, _Natural, _NonEmpty,
+                   _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
+import Toml.Parser (ParseException (..))
+
 import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, valueType)
+import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable)
 
 import Prelude hiding (read)
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as Text
 import qualified Toml.PrefixTree as Prefix
 
 ----------------------------------------------------------------------------
 -- Generalized versions of parsers
 ----------------------------------------------------------------------------
 
-typeName :: forall a . Typeable a => Text
-typeName = Text.pack $ show $ typeRep $ Proxy @a
-
 {- | General function to create bidirectional converters for values.
 -}
-match :: forall a . Typeable a => BiMap a AnyValue -> Key -> TomlCodec a
+match :: forall a . TomlBiMap a AnyValue -> Key -> TomlCodec a
 match BiMap{..} key = Codec input output
   where
     input :: Env a
@@ -85,13 +81,13 @@ match BiMap{..} key = Codec input output
         mVal <- asks $ HashMap.lookup key . tomlPairs
         case mVal of
             Nothing -> throwError $ KeyNotFound key
-            Just anyVal@(AnyValue val) -> case backward anyVal of
-                Just v  -> pure v
-                Nothing -> throwError $ TypeMismatch key (typeName @a) (valueType val)
+            Just anyVal@(AnyValue _) -> case backward anyVal of
+                Right v  -> pure v
+                Left err -> throwError $ BiMapError err
 
     output :: a -> St a
     output a = do
-        anyVal <- MaybeT $ pure $ forward a
+        anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward a
         a <$ modify (insertKeyAnyVal key anyVal)
 
 ----------------------------------------------------------------------------
@@ -139,7 +135,7 @@ string :: Key -> TomlCodec String
 string = match _String
 
 -- | Parser for values with a `Read` and `Show` instance.
-read :: (Show a, Read a, Typeable a) => Key -> TomlCodec a
+read :: (Show a, Read a) => Key -> TomlCodec a
 read = match _Read
 
 -- | Parser for byte vectors values as strict bytestring.
@@ -168,12 +164,12 @@ timeOfDay = match _TimeOfDay
 
 -- | Parser for list of values. Takes converter for single value and
 -- returns a list of values.
-arrayOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec [a]
+arrayOf :: TomlBiMap a AnyValue -> Key -> TomlCodec [a]
 arrayOf = match . _Array
 
 -- | Parser for sets. Takes converter for single value and
 -- returns a set of values.
-arraySetOf :: (Typeable a, Ord a) => BiMap a AnyValue -> Key -> TomlCodec (Set a)
+arraySetOf :: Ord a => TomlBiMap a AnyValue -> Key -> TomlCodec (Set a)
 arraySetOf = match . _Set
 
 -- | Parser for sets of ints. Takes converter for single value and
@@ -183,12 +179,16 @@ arrayIntSet = match _IntSet
 
 -- | Parser for hash sets. Takes converter for single hashable value and
 -- returns a set of hashable values.
-arrayHashSetOf :: (Typeable a, Hashable a, Eq a) => BiMap a AnyValue -> Key -> TomlCodec (HashSet a)
+arrayHashSetOf
+    :: (Hashable a, Eq a)
+    => TomlBiMap a AnyValue
+    -> Key
+    -> TomlCodec (HashSet a)
 arrayHashSetOf = match . _HashSet
 
 -- | Parser for non- empty lists of values. Takes converter for single value and
 -- returns a non-empty list of values.
-arrayNonEmptyOf :: Typeable a => BiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
+arrayNonEmptyOf :: TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 
 -- | Parser for tables. Use it when when you have nested objects.

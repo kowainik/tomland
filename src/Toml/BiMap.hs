@@ -1,6 +1,9 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE Rank2Types          #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 {- | Implementation of partial bidirectional mapping as a data type.
 -}
@@ -8,6 +11,8 @@
 module Toml.BiMap
        ( -- * BiMap idea
          BiMap (..)
+       , TomlBiMapError (..)
+       , TomlBiMap
        , invert
        , iso
        , prism
@@ -51,33 +56,38 @@ module Toml.BiMap
 
          -- * Useful utility functions
        , toMArray
+       , prettyBiMapError
        ) where
 
 import Control.Arrow ((>>>))
 import Control.Monad ((>=>))
 
+import Control.DeepSeq (NFData)
+import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
-import Data.Text (Text)
-import Data.Word (Word)
-import Numeric.Natural (Natural)
 import Data.Hashable (Hashable)
-import Text.Read (readMaybe)
+import Data.Semigroup (Semigroup (..))
+import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
+import Data.Word (Word)
+import GHC.Generics (Generic)
+import Numeric.Natural (Natural)
+import Text.Read (readEither)
 
-import Toml.Type (AnyValue (..), Value (..), DateTime (..) ,
-                  matchArray, matchBool, matchDouble, matchInteger,
-                  matchText, matchDate, toMArray)
+import Toml.Type (AnyValue (..), DateTime (..), MatchError (..), TValue, Value (..), matchArray,
+                  matchBool, matchDate, matchDouble, matchInteger, matchText, toMArray, matchError)
 
 import qualified Control.Category as Cat
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Encoding as TL
-import qualified Data.Set as S
 import qualified Data.HashSet as HS
 import qualified Data.IntSet as IS
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Set as S
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as TL
+
 
 ----------------------------------------------------------------------------
 -- BiMap concepts and ideas
@@ -85,211 +95,282 @@ import qualified Data.List.NonEmpty as NE
 
 {- | Partial bidirectional isomorphism. @BiMap a b@ contains two function:
 
-1. @a -> Maybe b@
-2. @b -> Maybe a@
+1. @a -> Either e b@
+2. @b -> Either e a@
 -}
-data BiMap a b = BiMap
-    { forward  :: a -> Maybe b
-    , backward :: b -> Maybe a
+data BiMap e a b = BiMap
+    { forward  :: a -> Either e b
+    , backward :: b -> Either e a
     }
 
-instance Cat.Category BiMap where
-    id :: BiMap a a
-    id = BiMap Just Just
+instance Cat.Category (BiMap e) where
+    id :: BiMap e a a
+    id = BiMap Right Right
 
-    (.) :: BiMap b c -> BiMap a b -> BiMap a c
+    (.) :: BiMap e b c -> BiMap e a b -> BiMap e a c
     bc . ab = BiMap
         { forward  =  forward ab >=>  forward bc
         , backward = backward bc >=> backward ab
         }
 
 -- | Inverts bidirectional mapping.
-invert :: BiMap a b -> BiMap b a
+invert :: BiMap e a b -> BiMap e b a
 invert (BiMap f g) = BiMap g f
 
 -- | Creates 'BiMap' from isomorphism.
-iso :: (a -> b) -> (b -> a) -> BiMap a b
-iso f g = BiMap (Just . f) (Just . g)
+iso :: (a -> b) -> (b -> a) -> BiMap e a b
+iso f g = BiMap (Right . f) (Right . g)
 
 -- | Creates 'BiMap' from prism-like pair of functions.
-prism :: (field -> object) -> (object -> Maybe field) -> BiMap object field
-prism review preview = BiMap preview (Just . review)
+prism :: (field -> object) -> (object -> Either error field) -> BiMap error object field
+prism review preview = BiMap preview (Right . review)
+
+----------------------------------------------------------------------------
+-- BiMap error types
+----------------------------------------------------------------------------
+
+-- | Abstraction on BiMap with error.
+type TomlBiMap = BiMap TomlBiMapError
+
+-- | BiMap error type.
+data TomlBiMapError
+    = WrongConstructor      -- ^ Error for cases with wrong constructors. For example, you're trying to convert 'Left' but bidirectional converter expects 'Right'
+        Text                -- ^ Expected constructor name
+        Text                -- ^ Actual Value; TODO: use Show here?
+    | WrongValue MatchError -- ^ Error for cases with wrong values.
+    | ArbitraryError Text
+    deriving (Eq, Show, Generic, NFData)
+
+-- | Converts 'TomlBiMapError' into pretty human-readable text.
+prettyBiMapError :: TomlBiMapError -> Text
+prettyBiMapError = \case
+    WrongConstructor expected actual -> T.unlines
+        [ "Invalid constructor"
+        , "  * Expected: " <> expected
+        , "  * Actual:   " <> actual
+        ]
+    WrongValue (MatchError expect actual) -> T.unlines
+        [ "Invalid constructor"
+        , "  * Expected: " <> tShow expect
+        , "  * Actual:   " <> tShow actual
+        ]
+    ArbitraryError text  -> text
+
+-- | Helper to construct WrongConstuctor error.
+wrongConstructor
+    :: Show a
+    => Text  -- ^ Name of the expected constructor
+    -> a     -- ^ Actual value
+    -> Either TomlBiMapError b
+wrongConstructor constructor x = Left $ WrongConstructor constructor (tShow x)
+
+-- | Error convertor. Only for WrongValue constructor.
+toMatchError :: Either TomlBiMapError b -> Either MatchError b
+toMatchError = either toMatchError' Right
+  where
+    toMatchError' = \case
+        WrongValue err -> Left err
+        _ -> error "Not WrongValue error!"
 
 ----------------------------------------------------------------------------
 -- General purpose bimaps
 ----------------------------------------------------------------------------
 
 -- | Bimap for 'Either' and its left type
-_Left :: BiMap (Either l r) l
-_Left = prism Left (either Just (const Nothing))
+_Left :: (Show l, Show r) => TomlBiMap (Either l r) l
+_Left = prism Left $ \case
+    Left l -> Right l
+    x -> wrongConstructor "Left" x
 
 -- | Bimap for 'Either' and its right type
-_Right :: BiMap (Either l r) r
-_Right = prism Right (either (const Nothing) Just)
+_Right :: (Show l, Show r) => TomlBiMap (Either l r) r
+_Right = prism Right $ \case
+    Right r -> Right r
+    x -> wrongConstructor "Right" x
 
 -- | Bimap for 'Maybe'
-_Just :: BiMap (Maybe a) a
-_Just = prism Just id
+_Just :: Show r => TomlBiMap (Maybe r) r
+_Just = prism Just $ \case
+    Just r -> Right r
+    x -> wrongConstructor "Just" x
 
 ----------------------------------------------------------------------------
 --  BiMaps for value
 ----------------------------------------------------------------------------
 
 -- | Creates prism for 'AnyValue'.
-mkAnyValueBiMap :: (forall t . Value t -> Maybe a)
-                -> (a -> Value tag)
-                -> BiMap a AnyValue
-mkAnyValueBiMap matchValue toValue =
-    BiMap (Just . AnyValue . toValue) (\(AnyValue value) -> matchValue value)
+mkAnyValueBiMap
+    :: forall a (tag :: TValue) . (forall (t :: TValue) . Value t -> Either MatchError a)
+    -> (a -> Value tag)
+    -> TomlBiMap a AnyValue
+mkAnyValueBiMap matchValue toValue = BiMap
+    { forward = Right . toAnyValue
+    , backward = fromAnyValue
+    }
+  where
+    toAnyValue :: a -> AnyValue
+    toAnyValue = AnyValue . toValue
+    fromAnyValue :: AnyValue -> Either TomlBiMapError a
+    fromAnyValue (AnyValue value) = first WrongValue $ matchValue value
 
 -- | Creates bimap for 'Text' to 'AnyValue' with custom functions
-_TextBy :: (a -> Text) -> (Text -> Maybe a) -> BiMap a AnyValue
-_TextBy toText parseText =
-  mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
+_TextBy :: (a -> Text) -> (Text -> Either MatchError a) -> TomlBiMap a AnyValue
+_TextBy toText parseText = mkAnyValueBiMap (matchText >=> parseText) (Text . toText)
 
 -- | 'Bool' bimap for 'AnyValue'. Usually used with 'bool' combinator.
-_Bool :: BiMap Bool AnyValue
+_Bool :: TomlBiMap Bool AnyValue
 _Bool = mkAnyValueBiMap matchBool Bool
 
 -- | 'Integer' bimap for 'AnyValue'. Usually used with 'integer' combinator.
-_Integer :: BiMap Integer AnyValue
+_Integer :: TomlBiMap Integer AnyValue
 _Integer = mkAnyValueBiMap matchInteger Integer
 
 -- | 'Double' bimap for 'AnyValue'. Usually used with 'double' combinator.
-_Double :: BiMap Double AnyValue
+_Double :: TomlBiMap Double AnyValue
 _Double = mkAnyValueBiMap matchDouble Double
 
 -- | 'Text' bimap for 'AnyValue'. Usually used with 'text' combinator.
-_Text :: BiMap Text AnyValue
+_Text :: TomlBiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
 
 -- | Zoned time bimap for 'AnyValue'. Usually used with 'zonedTime' combinator.
-_ZonedTime :: BiMap ZonedTime AnyValue
+_ZonedTime :: TomlBiMap ZonedTime AnyValue
 _ZonedTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Zoned)
   where
-    getTime (Zoned z) = Just z
-    getTime _         = Nothing
+    getTime (Zoned z) = Right z
+    getTime value     = matchError $ Date value
 
 -- | Local time bimap for 'AnyValue'. Usually used with 'localTime' combinator.
-_LocalTime :: BiMap LocalTime AnyValue
+_LocalTime :: TomlBiMap LocalTime AnyValue
 _LocalTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Local)
   where
-    getTime (Local l) = Just l
-    getTime _         = Nothing
+    getTime (Local l) = Right l
+    getTime value     = matchError $ Date value
 
 -- | Day bimap for 'AnyValue'. Usually used with 'day' combinator.
-_Day :: BiMap Day AnyValue
+_Day :: TomlBiMap Day AnyValue
 _Day = mkAnyValueBiMap (matchDate >=> getTime) (Date . Day)
   where
-    getTime (Day d) = Just d
-    getTime _       = Nothing
+    getTime (Day d) = Right d
+    getTime value   = matchError $ Date value
 
 -- | Time of day bimap for 'AnyValue'. Usually used with 'timeOfDay' combinator.
-_TimeOfDay :: BiMap TimeOfDay AnyValue
+_TimeOfDay :: TomlBiMap TimeOfDay AnyValue
 _TimeOfDay = mkAnyValueBiMap (matchDate >=> getTime) (Date . Hours)
   where
-    getTime (Hours h) = Just h
-    getTime _         = Nothing
+    getTime (Hours h) = Right h
+    getTime value     = matchError $ Date value
 
 -- | Helper bimap for 'String' and 'Text'.
-_StringText :: BiMap String Text
+_StringText :: BiMap e String Text
 _StringText = iso T.pack T.unpack
 
 -- | 'String' bimap for 'AnyValue'. Usually used with 'string' combinator.
-_String :: BiMap String AnyValue
+_String :: TomlBiMap String AnyValue
 _String = _StringText >>> _Text
 
 -- | Helper bimap for 'String' and types with 'Read' and 'Show' instances.
-_ReadString :: (Show a, Read a) => BiMap a String
-_ReadString = BiMap (Just . show) readMaybe
+_ReadString :: (Show a, Read a) => TomlBiMap a String
+_ReadString = BiMap (Right . show) (first (ArbitraryError . T.pack) . readEither)
 
 -- | Bimap for 'AnyValue' and values with a `Read` and `Show` instance.
 -- Usually used with 'read' combinator.
-_Read :: (Show a, Read a) => BiMap a AnyValue
+_Read :: (Show a, Read a) => TomlBiMap a AnyValue
 _Read = _ReadString >>> _String
 
 -- | Helper bimap for 'Natural' and 'Integer'.
-_NaturalInteger :: BiMap Natural Integer
-_NaturalInteger = BiMap (Just . toInteger) maybeInteger
+_NaturalInteger :: TomlBiMap Natural Integer
+_NaturalInteger = BiMap (Right . toInteger) eitherInteger
   where
-    maybeInteger :: Integer -> Maybe Natural
-    maybeInteger n
-      | n < 0     = Nothing
-      | otherwise = Just (fromIntegral n)
+    eitherInteger :: Integer -> Either TomlBiMapError Natural
+    eitherInteger n
+      | n < 0     = Left $ ArbitraryError "Value is below zero."
+      | otherwise = Right (fromIntegral n)
 
 -- | 'Natural' bimap for 'AnyValue'. Usually used with 'natural' combinator.
-_Natural :: BiMap Natural AnyValue
+_Natural :: TomlBiMap Natural AnyValue
 _Natural = _NaturalInteger >>> _Integer
 
 -- | Helper bimap for 'Integer' and integral, bounded values.
-_BoundedInteger :: (Integral a, Bounded a) => BiMap a Integer
-_BoundedInteger = BiMap (Just . toInteger) maybeBounded
+_BoundedInteger :: (Integral a, Bounded a, Show a) => TomlBiMap a Integer
+_BoundedInteger = BiMap (Right . toInteger) eitherBounded
   where
-    maybeBounded :: forall a. (Integral a, Bounded a) => Integer -> Maybe a
-    maybeBounded n
-      | n < toInteger (minBound :: a) = Nothing
-      | n > toInteger (maxBound :: a) = Nothing
-      | otherwise                     = Just (fromIntegral n)
+    eitherBounded :: forall a. (Integral a, Bounded a, Show a) => Integer -> Either TomlBiMapError a
+    eitherBounded n
+      | n < toInteger (minBound :: a) =
+            Left $ ArbitraryError $ "Value " <> tShow n <> " is less minBound" <> tShow (minBound :: a)
+      | n > toInteger (maxBound :: a) =
+            Left $ ArbitraryError $ "Value " <> tShow n <> " is more maxBound" <> tShow (maxBound :: a)
+      | otherwise                     = Right (fromIntegral n)
 
 -- | 'Word' bimap for 'AnyValue'. Usually used with 'word' combinator.
-_Word :: BiMap Word AnyValue
+_Word :: TomlBiMap Word AnyValue
 _Word = _BoundedInteger >>> _Integer
 
 -- | 'Int' bimap for 'AnyValue'. Usually used with 'int' combinator.
-_Int :: BiMap Int AnyValue
+_Int :: TomlBiMap Int AnyValue
 _Int = _BoundedInteger >>> _Integer
 
 -- | 'Float' bimap for 'AnyValue'. Usually used with 'float' combinator.
-_Float :: BiMap Float AnyValue
+_Float :: TomlBiMap Float AnyValue
 _Float = iso realToFrac realToFrac >>> _Double
 
 -- | Helper bimap for 'Text' and strict 'ByteString'
-_ByteStringText :: BiMap ByteString Text
-_ByteStringText = prism T.encodeUtf8 maybeText
+_ByteStringText :: TomlBiMap ByteString Text
+_ByteStringText = prism T.encodeUtf8 eitherText
   where
-    maybeText :: ByteString -> Maybe Text
-    maybeText = either (const Nothing) Just . T.decodeUtf8'
+    eitherText :: ByteString -> Either TomlBiMapError Text
+    eitherText = either (\err -> Left $ ArbitraryError $ tShow err) Right . T.decodeUtf8'
 
 -- | 'ByteString' bimap for 'AnyValue'. Usually used with 'byteString' combinator.
-_ByteString:: BiMap ByteString AnyValue
+_ByteString:: TomlBiMap ByteString AnyValue
 _ByteString = _ByteStringText >>> _Text
 
 -- | Helper bimap for 'Text' and lazy 'ByteString'
-_LByteStringText :: BiMap BL.ByteString Text
-_LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) maybeText
+_LByteStringText :: TomlBiMap BL.ByteString Text
+_LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) eitherText
   where
-    maybeText :: BL.ByteString -> Maybe Text
-    maybeText = either (const Nothing) (Just . TL.toStrict) . TL.decodeUtf8'
+    eitherText :: BL.ByteString -> Either TomlBiMapError Text
+    eitherText = either (\err -> Left $ ArbitraryError $ tShow err) (Right . TL.toStrict) . TL.decodeUtf8'
 
 -- | Lazy 'ByteString' bimap for 'AnyValue'. Usually used with 'lazyByteString'
 -- combinator.
-_LByteString:: BiMap BL.ByteString AnyValue
+_LByteString:: TomlBiMap BL.ByteString AnyValue
 _LByteString = _LByteStringText >>> _Text
 
 -- | Takes a bimap of a value and returns a bimap of a list of values and 'Anything'
 -- as an array. Usually used with 'arrayOf' combinator.
-_Array :: BiMap a AnyValue -> BiMap [a] AnyValue
+_Array :: TomlBiMap a AnyValue -> TomlBiMap [a] AnyValue
 _Array elementBimap = BiMap
-    { forward = mapM (forward elementBimap) >=> fmap AnyValue . toMArray
-    , backward = \(AnyValue val) -> matchArray (backward elementBimap) val
+    { forward = mapM (forward elementBimap) >=> fmap AnyValue . first WrongValue . toMArray
+    , backward = \(AnyValue val) -> first WrongValue $ matchArray (toMatchError . backward elementBimap) val
     }
 
 -- | Takes a bimap of a value and returns a bimap of a non-empty list of values
 -- and 'Anything' as an array. Usually used with 'nonEmptyOf' combinator.
-_NonEmpty :: BiMap a AnyValue -> BiMap (NE.NonEmpty a) AnyValue
-_NonEmpty bimap = BiMap (Just . NE.toList) NE.nonEmpty >>> _Array bimap
+_NonEmpty :: TomlBiMap a AnyValue -> TomlBiMap (NE.NonEmpty a) AnyValue
+_NonEmpty bimap = _NonEmptyArray >>> _Array bimap
+
+_NonEmptyArray :: TomlBiMap (NE.NonEmpty a) [a]
+_NonEmptyArray = BiMap
+    { forward = Right . NE.toList
+    , backward = maybe (Left $ ArbitraryError "Empty array!") Right . NE.nonEmpty
+    }
 
 -- | Takes a bimap of a value and returns a bimap of a set of values and 'Anything'
 -- as an array. Usually used with 'setOf' combinator.
-_Set :: (Ord a) => BiMap a AnyValue -> BiMap (S.Set a) AnyValue
+_Set :: (Ord a) => TomlBiMap a AnyValue -> TomlBiMap (S.Set a) AnyValue
 _Set bimap = iso S.toList S.fromList >>> _Array bimap
 
 -- | Takes a bimap of a value and returns a bimap of a has set of values and
 -- 'Anything' as an array. Usually used with 'hashSetOf' combinator.
-_HashSet :: (Eq a, Hashable a) => BiMap a AnyValue -> BiMap (HS.HashSet a) AnyValue
+_HashSet :: (Eq a, Hashable a) => TomlBiMap a AnyValue -> TomlBiMap (HS.HashSet a) AnyValue
 _HashSet bimap = iso HS.toList HS.fromList >>> _Array bimap
 
 -- | Bimap of 'IntSet' and 'Anything' as an array. Usually used with
 -- 'intSet' combinator.
-_IntSet :: BiMap IS.IntSet AnyValue
+_IntSet :: TomlBiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
+
+tShow :: Show a => a -> Text
+tShow = T.pack . show

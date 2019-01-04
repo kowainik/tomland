@@ -18,6 +18,9 @@ The change log is available [on GitHub][2].
 * [#64](https://github.com/kowainik/tomland/issues/64):
   Integer parser doesn't accept leading zeros.
 * [#142](https://github.com/kowainik/tomland/issues/142):
+  Adding EDSL support for arrays of tables.
+* [#137](https://github.com/kowainik/tomland/issues/137):
+  Replace `Maybe` with `Either` in `BiMap`.
   Adding EDSL support for arrays of tables
 * [#149](https://github.com/kowainik/tomland/issues/149):
   Removing records syntax from `PrefixTree`.
