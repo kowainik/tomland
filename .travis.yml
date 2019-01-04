@@ -35,10 +35,9 @@ install:
       # install stack
       curl -sSL https://get.haskellstack.org/ | sh
 
+      # build project with stack
       stack --version
-      stack setup --no-terminal
-      stack ghc -- --version
-      stack build --only-dependencies --no-terminal
+      stack build --system-ghc --test --no-run-tests
     fi
 
 script:
@@ -46,7 +45,7 @@ script:
     if [ -z "$STACK_YAML" ]; then
        cabal new-test --enable-tests
     else
-      stack build --test --no-terminal
+      stack test --no-terminal
     fi
 
 notifications:
