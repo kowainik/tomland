@@ -16,7 +16,6 @@ import Control.Applicative.Combinators (between, count, manyTill, option, option
                                         sepEndBy, skipMany)
 
 import Data.Char (chr, isControl)
-import Data.Either (fromRight)
 import Data.Fixed (Pico)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
