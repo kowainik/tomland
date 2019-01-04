@@ -16,7 +16,7 @@ extra-doc-files:     README.md
                    , CHANGELOG.md
 tested-with:         GHC == 8.2.2
                    , GHC == 8.4.4
-                   , GHC == 8.6.1
+                   , GHC == 8.6.3
 
 source-repository head
   type:                git
@@ -110,9 +110,9 @@ test-suite tomland-test
                      , hedgehog ^>= 0.6
                      , hspec-megaparsec
                      , megaparsec
-                     , tasty ^>= 1.1.0.3
+                     , tasty ^>= 1.2
                      , tasty-hedgehog ^>= 0.2.0.0
-                     , tasty-hspec ^>= 1.1
+                     , tasty-hspec ^>= 1.1.5.1
                      , tasty-silver ^>= 3.1.11
                      , text
                      , time
@@ -120,6 +120,12 @@ test-suite tomland-test
                      , unordered-containers
 
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -fhide-source-paths
+                       -Wpartial-fields
 
   default-language:    Haskell2010
   default-extensions:  LambdaCase
