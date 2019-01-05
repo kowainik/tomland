@@ -108,6 +108,7 @@ test-suite tomland-test
 
   build-tool-depends:  tasty-discover:tasty-discover ^>= 4.2.1
   build-depends:       base
+                     , bytestring ^>= 0.10
                      , containers >= 0.5.7 && < 0.7
                      , hedgehog ^>= 0.6
                      , hspec-megaparsec
