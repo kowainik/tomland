@@ -1,0 +1,16 @@
+server.port        = 8080
+server.codes       = [ 5, 10, 42 ]
+server.description = """
+This is production server.
+Don't touch it!
+"""
+
+[mail]
+    host = "smtp.gmail.com"
+    send-if-inactive = false
+
+[[user]]
+    id = 42
+
+[[user]]
+    name = "Foo Bar"

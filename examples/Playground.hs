@@ -81,7 +81,7 @@ main = do
     TIO.putStrLn $ pretty myToml
 
     TIO.putStrLn "=== Printing parsed TOML ==="
-    content <- TIO.readFile "test.toml"
+    content <- TIO.readFile "examples/test.toml"
     case Toml.parse content of
         Left (ParseException e) -> TIO.putStrLn e
         Right toml              -> TIO.putStrLn $ pretty toml

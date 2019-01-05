@@ -5,17 +5,21 @@
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE TypeFamilies        #-}
 
-{- | Implementation of partial bidirectional mapping as a data type.
+{- | Implementation of tagged partial bidirectional isomorphism.
 -}
 
 module Toml.Bi.Map
        ( -- * BiMap idea
          BiMap (..)
-       , TomlBiMapError (..)
        , TomlBiMap
        , invert
        , iso
        , prism
+
+         -- * 'BiMap' errors for TOML
+       , TomlBiMapError (..)
+       , wrongConstructor
+       , prettyBiMapError
 
          -- * Helpers for BiMap and AnyValue
        , mkAnyValueBiMap
@@ -56,7 +60,6 @@ module Toml.Bi.Map
 
          -- * Useful utility functions
        , toMArray
-       , prettyBiMapError
        ) where
 
 import Control.Arrow ((>>>))
