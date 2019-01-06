@@ -3,21 +3,19 @@ module Toml.Parser.TOML
        , tableP
        , tableArrayP
        , inlineTableP
-       , inlineArrayP
        , tomlP
        ) where
 
 import Control.Applicative (Alternative (many, (<|>)))
-import Control.Monad.Combinators (sepEndBy, sepEndBy1, between, optional, eitherP)
+import Control.Monad.Combinators (between, eitherP, optional, sepEndBy)
 
-import Toml.Parser.Core (Parser, sc, text, try)
-import Toml.Parser.Value (keyP, tableNameP, anyValueP, tableArrayNameP)
-import Toml.PrefixTree (Key (..), fromList, KeysDiff (..), keysDiff)
-import Toml.Type (AnyValue, TOML (..))
 import Data.List.NonEmpty (NonEmpty ((:|)), (<|))
+import Toml.Parser.Core (Parser, sc, text, try)
+import Toml.Parser.Value (anyValueP, keyP, tableArrayNameP, tableNameP)
+import Toml.PrefixTree (Key (..), KeysDiff (..), fromList, keysDiff)
+import Toml.Type (AnyValue, TOML (..))
 
 import qualified Data.HashMap.Lazy as HashMap
-import qualified Data.List.NonEmpty as NE
 
 hasKeyP :: Parser (Key, Either AnyValue TOML)
 hasKeyP = (,) <$> keyP <* text "=" <*> eitherP anyValueP inlineTableP
@@ -35,33 +33,28 @@ distributeEithers :: [(c, Either a b)] -> ([(c, a)], [(c, b)])
 distributeEithers = foldr distribute ([], [])
   where
     distribute :: (c, Either a b) -> ([(c, a)], [(c, b)]) -> ([(c, a)], [(c, b)])
-    distribute (k, Left a) (ls, rs) = ((k, a) : ls, rs)
+    distribute (k, Left a) (ls, rs)  = ((k, a) : ls, rs)
     distribute (k, Right b) (ls, rs) = (ls, (k, b) : rs)
-
-inlineArrayP :: Parser (Key, NonEmpty TOML)
-inlineArrayP = (,) <$> keyP <* text "="
-                   <*> between (text "[") (text "]")
-                       (NE.fromList <$> inlineTableP `sepEndBy1` text ",")
 
 childKeyP :: Key -> Parser (Key, a) -> Parser (Key, a)
 childKeyP key p = try $ do
   (k, x) <- p
   case keysDiff key k of
     FstIsPref k' -> return (k', x)
-    _ -> fail $ show k <> " is not a child key of " <> show key
+    _            -> fail $ show k <> " is not a child key of " <> show key
 
 sameKeyP :: Key -> Parser (Key, a) -> Parser (Key, a)
 sameKeyP key parser = try $ do
   (k, x) <- parser
   case keysDiff key k of
     Equal -> return (k, x)
-    _ -> fail $ show k <> " is not the same as " <> show key
+    _     -> fail $ show k <> " is not the same as " <> show key
 
 subTableContent :: Key -> Parser TOML
 subTableContent key = do
   (val, inline) <- distributeEithers <$> many hasKeyP
   (table, array) <- fmap distributeEithers $ many $ childKeyP key $
-                    eitherPairP (try tableP) (tableArrayP <|> inlineArrayP)
+                    eitherPairP (try tableP) tableArrayP
   return TOML { tomlPairs  = HashMap.fromList val
               , tomlTables = fromList $ inline ++ table
               , tomlTableArrays = HashMap.fromList array
@@ -82,7 +75,7 @@ tableArrayP = do
   localToml <- subTableContent key
   more <- optional $ sameKeyP key tableArrayP
   case more of
-    Nothing ->  return (key, localToml :| [])
+    Nothing         ->  return (key, localToml :| [])
     Just (_, tomls) -> return (key, localToml <| tomls)
 
 tomlP :: Parser TOML
@@ -90,7 +83,7 @@ tomlP = do
   sc
   (val, inline) <- distributeEithers <$> many hasKeyP
   (table, array) <- fmap distributeEithers $ many $
-                    eitherPairP (try tableP) (tableArrayP <|> inlineArrayP)
+                    eitherPairP (try tableP) tableArrayP
   return TOML { tomlPairs  = HashMap.fromList val
               , tomlTables = fromList $ inline ++ table
               , tomlTableArrays = HashMap.fromList array

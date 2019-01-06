@@ -41,7 +41,6 @@ import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTr
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), TValue (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as Text
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
@@ -111,24 +110,20 @@ genPrefixTree key = Gen.recursive
         prefVal <- Gen.maybe genVal
         pure $ Branch key prefVal prefMap
 
-makeToml :: [(Key, AnyValue)] -> TOML
-makeToml kv = TOML (HashMap.fromList kv) mempty mempty
+genTableHeader :: MonadGen m => m (Key, TOML)
+genTableHeader = do
+    k <- genKey
+    toml <- makeToml <$> genKeyAnyValueList
+    pure (k, toml)
+  where
+    makeToml :: [(Key, AnyValue)] -> TOML
+    makeToml kv = TOML (HashMap.fromList kv) mempty mempty
 
 genToml :: MonadGen m => m TOML
-genToml = Gen.recursive
-            Gen.choice
-            [ makeToml <$> genKeyAnyValueList ]
-            [ TOML <$> keyValues <*> tables <*> arrays ]
-  where
-    keyValues = HashMap.fromList <$> genKeyAnyValueList
-    tables = fmap fromList
-             $ Gen.list (Range.linear 0 5)
-             $ (,) <$> genKey <*> genToml
-    arrays = fmap HashMap.fromList $
-             Gen.list (Range.linear 0 5) $ do
-               key <- genKey
-               arr <- Gen.list (Range.linear 1 5) genToml
-               return (key, NE.fromList arr)
+genToml = do
+    kv     <- HashMap.fromList <$> genKeyAnyValueList
+    tables <- Gen.list (Range.linear 0 10) genTableHeader
+    pure $ TOML kv (fromList tables) mempty
 
 genDay :: MonadGen m => m Day
 genDay = do
