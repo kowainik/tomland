@@ -1,7 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-{-# LANGUAGE TypeApplications #-}
-
 module Test.Toml.BiMap.Property where
 
 import Hedgehog (Gen, PropertyT, Range, assert, forAll, tripping, (===))
