@@ -144,6 +144,7 @@ benchmark tomland-benchmark
                       Benchmark.Htoml
                       Benchmark.HtomlMegaparsec
                       Benchmark.Tomland
+                      Benchmark.TomlParser
 
   ghc-options:        -Wall
                       -threaded
@@ -168,6 +169,7 @@ benchmark tomland-benchmark
                     , parsec
                     , text
                     , time
+                    , toml-parser ^>= 0.1.0.0
                     , tomland
 
   default-language:   Haskell2010
