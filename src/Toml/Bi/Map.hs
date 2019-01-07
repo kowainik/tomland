@@ -74,9 +74,9 @@ import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import Text.Read (readEither)
 
-import Toml.Type (AnyValue (..), DateTime (..), MatchError (..), TValue (..), Value (..),
-                  applyAsToAny, matchBool, matchDate, matchDouble, matchInteger, matchText,
-                  mkMatchError, toMArray)
+import Toml.Type (AnyValue (..), MatchError (..), TValue (..), Value (..), applyAsToAny, matchBool,
+                  matchDay, matchDouble, matchHours, matchInteger, matchLocal, matchText,
+                  matchZoned, mkMatchError, toMArray)
 
 import qualified Control.Category as Cat
 import qualified Data.ByteString.Lazy as BL
@@ -244,31 +244,19 @@ _Text = mkAnyValueBiMap matchText Text
 
 -- | Zoned time bimap for 'AnyValue'. Usually used with 'zonedTime' combinator.
 _ZonedTime :: TomlBiMap ZonedTime AnyValue
-_ZonedTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Zoned)
-  where
-    getTime (Zoned z) = Right z
-    getTime value     = mkMatchError TDate $ Date value
+_ZonedTime = mkAnyValueBiMap matchZoned Zoned
 
 -- | Local time bimap for 'AnyValue'. Usually used with 'localTime' combinator.
 _LocalTime :: TomlBiMap LocalTime AnyValue
-_LocalTime = mkAnyValueBiMap (matchDate >=> getTime) (Date . Local)
-  where
-    getTime (Local l) = Right l
-    getTime value     = mkMatchError TDate $ Date value
+_LocalTime = mkAnyValueBiMap matchLocal Local
 
 -- | Day bimap for 'AnyValue'. Usually used with 'day' combinator.
 _Day :: TomlBiMap Day AnyValue
-_Day = mkAnyValueBiMap (matchDate >=> getTime) (Date . Day)
-  where
-    getTime (Day d) = Right d
-    getTime value   = mkMatchError TDate $ Date value
+_Day = mkAnyValueBiMap matchDay Day
 
 -- | Time of day bimap for 'AnyValue'. Usually used with 'timeOfDay' combinator.
 _TimeOfDay :: TomlBiMap TimeOfDay AnyValue
-_TimeOfDay = mkAnyValueBiMap (matchDate >=> getTime) (Date . Hours)
-  where
-    getTime (Hours h) = Right h
-    getTime value     = mkMatchError TDate $ Date value
+_TimeOfDay = mkAnyValueBiMap matchHours Hours
 
 -- | Helper bimap for 'String' and 'Text'.
 _StringText :: BiMap e String Text

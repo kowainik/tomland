@@ -18,7 +18,7 @@ import Data.Text (Text)
 import Data.Time (ZonedTime, defaultTimeLocale, formatTime)
 
 import Toml.PrefixTree (Key (..), Piece (..), PrefixMap, PrefixTree (..))
-import Toml.Type (AnyValue (..), DateTime (..), TOML (..), Value (..))
+import Toml.Type (AnyValue (..), TOML (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
@@ -98,14 +98,11 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options
     valText (Integer n) = showText n
     valText (Double d)  = showDouble d
     valText (Text s)    = showText s
-    valText (Date d)    = timeText d
+    valText (Zoned z)   = showZonedTime z
+    valText (Local l)   = showText l
+    valText (Day d)     = showText d
+    valText (Hours h)   = showText h
     valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
-
-    timeText :: DateTime -> Text
-    timeText (Zoned z) = showZonedTime z
-    timeText (Local l) = showText l
-    timeText (Day d)   = showText d
-    timeText (Hours h) = showText h
 
     showText :: Show a => a -> Text
     showText = Text.pack . show

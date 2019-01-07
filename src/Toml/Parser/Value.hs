@@ -20,52 +20,51 @@ import Data.Char (chr, isControl)
 import Data.Fixed (Pico)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
-import Data.Time (LocalTime (..), ZonedTime (..), fromGregorianValid, makeTimeOfDayValid,
-                  minutesToTimeZone)
+import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime (..), fromGregorianValid,
+                  makeTimeOfDayValid, minutesToTimeZone)
 import Text.Read (readMaybe)
 
 import Toml.Parser.Core (Parser, alphaNumChar, anySingle, binary, char, digitChar, eol,
                          hexDigitChar, hexadecimal, lexeme, octal, satisfy, sc, signed, space,
                          string, tab, text, try, (<?>))
 import Toml.PrefixTree (Key (..), Piece (..))
-import Toml.Type (AnyValue, DateTime (..), UValue (..), typeCheck)
+import Toml.Type (AnyValue, UValue (..), typeCheck)
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.Text as Text
 
+-- | Parser for TOML text.
 textP :: Parser Text
 textP = multilineBasicStringP
-     <|> multilineLiteralStringP
-     <|> literalStringP
-     <|> basicStringP
-     <?> "text"
+    <|> multilineLiteralStringP
+    <|> literalStringP
+    <|> basicStringP
+    <?> "text"
 
-
+-- | Parse a non-control character (control character is a non-printing
+-- character of the Latin-1 subset of Unicode).
 nonControlCharP :: Parser Text
-nonControlCharP = Text.singleton <$> satisfy (not . isControl)
-
+nonControlCharP = Text.singleton <$> satisfy (not . isControl) <?> "non-control char"
 
 escapeSequenceP :: Parser Text
 escapeSequenceP = char '\\' >> anySingle >>= \case
-                    'b'  -> pure "\b"
-                    't'  -> pure "\t"
-                    'n'  -> pure "\n"
-                    'f'  -> pure "\f"
-                    'r'  -> pure "\r"
-                    '"'  -> pure "\""
-                    '\\' -> pure "\\"
-                    'u'  -> hexUnicodeP 4
-                    'U'  -> hexUnicodeP 8
-                    c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
+    'b'  -> pure "\b"
+    't'  -> pure "\t"
+    'n'  -> pure "\n"
+    'f'  -> pure "\f"
+    'r'  -> pure "\r"
+    '"'  -> pure "\""
+    '\\' -> pure "\\"
+    'u'  -> hexUnicodeP 4
+    'U'  -> hexUnicodeP 8
+    c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
   where
     hexUnicodeP :: Int -> Parser Text
-    hexUnicodeP n = count n hexDigitChar
-                    >>= \x -> case toUnicode $ hexToInt x of
-                          Just c  -> pure (Text.singleton c)
-                          Nothing -> fail $ "Invalid unicode character: "
-                                          <> "\\"
-                                          <> (if n == 4 then "u" else "U")
-                                          <> x
+    hexUnicodeP n = count n hexDigitChar >>= \x -> case toUnicode $ hexToInt x of
+        Just c  -> pure (Text.singleton c)
+        Nothing -> fail $ "Invalid unicode character: \\"
+            <> (if n == 4 then "u" else "U")
+            <> x
       where
         hexToInt :: String -> Int
         hexToInt xs = read $ "0x" ++ xs
@@ -78,10 +77,9 @@ escapeSequenceP = char '\\' >> anySingle >>= \case
           | x >= 0xE000 && x <= 0x10FFFF = Just (chr x)
           | otherwise                    = Nothing
 
-
 basicStringP :: Parser Text
 basicStringP = lexeme $ mconcat
-            <$> (char '"' *> (escapeSequenceP <|> nonControlCharP) `manyTill` char '"')
+    <$> (char '"' *> (escapeSequenceP <|> nonControlCharP) `manyTill` char '"')
 
 
 literalStringP :: Parser Text
@@ -100,6 +98,7 @@ multilineP quotesP allowedCharP = lexeme $ fmap mconcat $ quotesP
 multilineBasicStringP :: Parser Text
 multilineBasicStringP = multilineP quotesP allowedCharP
   where
+    quotesP :: Parser Text
     quotesP = string "\"\"\""
 
     allowedCharP :: Parser Text
@@ -112,11 +111,11 @@ multilineBasicStringP = multilineP quotesP allowedCharP
 multilineLiteralStringP :: Parser Text
 multilineLiteralStringP = multilineP quotesP allowedCharP
   where
+    quotesP :: Parser Text
     quotesP = string "'''"
 
     allowedCharP :: Parser Text
     allowedCharP = nonControlCharP <|> eol <|> Text.singleton <$> tab
-
 
 -- Keys
 
@@ -128,11 +127,11 @@ bareKeyP = lexeme $ Text.pack <$> bareStrP
 
 
 keyComponentP :: Parser Piece
-keyComponentP = Piece <$> (
-                  bareKeyP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP)
-                )
+keyComponentP = Piece <$>
+    (bareKeyP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))
   where
     -- adds " or ' to both sides
+    quote :: Text -> Text -> Text
     quote q t = q <> t <> q
 
 
@@ -195,76 +194,74 @@ boolP = False <$ text "false"
     <?> "bool"
 
 
-dateTimeP :: Parser DateTime
-dateTimeP = lexeme (try hoursP <|> dayLocalZoned) <?> "datetime"
-  where
-    -- dayLocalZoned can parse: only a local date, a local date with time, or
-    -- a local date with a time and an offset
-    dayLocalZoned :: Parser DateTime
-    dayLocalZoned = do
-      let makeLocal (Day day) (Hours hours) = Local $ LocalTime day hours
-          makeLocal _         _             = error "Invalid arguments, unable to construct `Local`"
-          makeZoned (Local localTime) mins  = Zoned $ ZonedTime localTime (minutesToTimeZone mins)
-          makeZoned _                 _     = error "Invalid arguments, unable to construct `Zoned`"
-      day        <- try dayP
-      maybeHours <- optional (try $ (char 'T' <|> char ' ') *> hoursP)
-      case maybeHours of
-        Nothing    -> return day
+dateTimeP :: Parser UValue
+dateTimeP = lexeme (try (UHours <$> hoursP) <|> dayLocalZoned) <?> "datetime"
+
+-- dayLocalZoned can parse: only a local date, a local date with time, or
+-- a local date with a time and an offset
+dayLocalZoned :: Parser UValue
+dayLocalZoned = do
+    day        <- try dayP
+    maybeHours <- optional (try $ (char 'T' <|> char ' ') *> hoursP)
+    case maybeHours of
+        Nothing    -> pure $ UDay day
         Just hours -> do
-          maybeOffset <- optional (try timeOffsetP)
-          return $ case maybeOffset of
-                    Nothing     -> makeLocal day hours
-                    Just offset -> makeZoned (makeLocal day hours) offset
+            maybeOffset <- optional (try timeOffsetP)
+            let localTime = LocalTime day hours
+            pure $ case maybeOffset of
+                Nothing     -> ULocal localTime
+                Just offset -> UZoned $ ZonedTime localTime (minutesToTimeZone offset)
 
-    timeOffsetP :: Parser Int
-    timeOffsetP = z <|> numOffset
-      where
-        z = 0 <$ char 'Z'
-        numOffset = do
-          sign    <- char '+' <|> char '-'
-          hours   <- int2DigitsP
-          _       <- char ':'
-          minutes <- int2DigitsP
-          let totalMinutes = hours * 60 + minutes
-          return $ if sign == '+'
-                    then totalMinutes
-                    else negate totalMinutes
-
-    hoursP :: Parser DateTime
-    hoursP = do
+timeOffsetP :: Parser Int
+timeOffsetP = z <|> numOffset
+  where
+    z = 0 <$ char 'Z'
+    numOffset = do
+      sign    <- char '+' <|> char '-'
       hours   <- int2DigitsP
       _       <- char ':'
       minutes <- int2DigitsP
-      _       <- char ':'
-      seconds <- picoTruncated
-      case makeTimeOfDayValid hours minutes seconds of
-        Just time -> return (Hours time)
-        Nothing   -> fail $ "Invalid time of day: "
-                          <> show hours
-                          <> ":"
-                          <> show minutes
-                          <> ":" <> show seconds
+      let totalMinutes = hours * 60 + minutes
+      return $ if sign == '+'
+                then totalMinutes
+                else negate totalMinutes
 
-    dayP :: Parser DateTime
-    dayP = do
-      year  <- integer4DigitsP
-      _     <- char '-'
-      month <- int2DigitsP
-      _     <- char '-'
-      day   <- int2DigitsP
-      case fromGregorianValid year month day of
-        Just date -> return (Day date)
-        Nothing   -> fail $ "Invalid date: " <> show year <> "-" <> show month <> "-" <> show day
+hoursP :: Parser TimeOfDay
+hoursP = do
+    hours   <- int2DigitsP
+    _ <- char ':'
+    minutes <- int2DigitsP
+    _ <- char ':'
+    seconds <- picoTruncated
+    case makeTimeOfDayValid hours minutes seconds of
+      Just time -> pure time
+      Nothing   -> fail $
+         "Invalid time of day: " <> show hours <> ":" <> show minutes <> ":" <> show seconds
 
-    integer4DigitsP = (read :: String -> Integer) <$> count 4 digitChar
-    int2DigitsP     = (read :: String -> Int)     <$> count 2 digitChar
-    picoTruncated   = do
-      let rdPico = read :: String -> Pico
-      int <- count 2 digitChar
-      frc <- optional (char '.' >> take 12 <$> some digitChar)
-      case frc of
-        Nothing   -> return (rdPico int)
-        Just frc' -> return (rdPico $ int ++ "." ++ frc')
+dayP :: Parser Day
+dayP = do
+    year  <- integer4DigitsP
+    _     <- char '-'
+    month <- int2DigitsP
+    _     <- char '-'
+    day   <- int2DigitsP
+    case fromGregorianValid year month day of
+      Just date -> pure date
+      Nothing   -> fail $ "Invalid date: " <> show year <> "-" <> show month <> "-" <> show day
+
+integer4DigitsP :: Parser Integer
+integer4DigitsP = read <$> count 4 digitChar
+
+int2DigitsP :: Parser Int
+int2DigitsP = read <$> count 2 digitChar
+
+picoTruncated :: Parser Pico
+picoTruncated = do
+    int <- count 2 digitChar
+    frc <- optional (char '.' >> take 12 <$> some digitChar)
+    pure $ read $ case frc of
+        Nothing   -> int
+        Just frc' -> int ++ "." ++ frc'
 
 
 arrayP :: Parser [UValue]
@@ -272,17 +269,20 @@ arrayP = lexeme (between (char '[' *> sc) (char ']') elements) <?> "array"
   where
     elements :: Parser [UValue]
     elements = option [] $ do -- Zero or more elements
-                 v   <- valueP -- Parse the first value to determine the type
-                 sep <- optional spComma
-                 vs  <- case sep of
-                          Nothing -> pure []
-                          Just _  -> (element v `sepEndBy` spComma) <* skipMany spComma
-                 return (v:vs)
+        v   <- valueP -- Parse the first value to determine the type
+        sep <- optional spComma
+        vs  <- case sep of
+                 Nothing -> pure []
+                 Just _  -> (element v `sepEndBy` spComma) <* skipMany spComma
+        pure (v:vs)
 
     element :: UValue -> Parser UValue
     element = \case
         UBool    _ -> UBool    <$> boolP
-        UDate    _ -> UDate    <$> dateTimeP
+        UZoned   _ -> dayLocalZoned
+        ULocal   _ -> dayLocalZoned
+        UDay     _ -> UDay     <$> dayP
+        UHours   _ -> UHours   <$> hoursP
         UDouble  _ -> UDouble  <$> try doubleP
         UInteger _ -> UInteger <$> integerP
         UText    _ -> UText    <$> textP
@@ -296,7 +296,7 @@ valueP :: Parser UValue
 valueP = UText    <$> textP
      <|> UBool    <$> boolP
      <|> UArray   <$> arrayP
-     <|> UDate    <$> dateTimeP
+     <|> dateTimeP
      <|> UDouble  <$> try doubleP
      <|> UInteger <$> integerP
 

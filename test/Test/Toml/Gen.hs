@@ -38,7 +38,7 @@ import Test.Tasty.Hedgehog (testProperty)
 
 import Toml.Bi.Map (toMArray)
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
-import Toml.Type (AnyValue (..), DateTime (..), TOML (..), TValue (..), Value (..))
+import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
@@ -151,14 +151,6 @@ genZoned = do
     let zTime = minutesToTimeZone zMin
     pure $ ZonedTime local zTime
 
-genDate :: MonadGen m => m DateTime
-genDate = Gen.choice
-    [ Day   <$> genDay
-    , Hours <$> genHours
-    , Local <$> genLocal
-    , Zoned <$> genZoned
-    ]
-
 genBool :: MonadGen m => m Bool
 genBool = Gen.bool
 
@@ -219,7 +211,10 @@ noneArrayList =
     , AnyValue . Integer <$> genInteger
     , AnyValue . Double  <$> genDouble
     , AnyValue . Text    <$> genText
-    , AnyValue . Date    <$> genDate
+    , AnyValue . Zoned   <$> genZoned
+    , AnyValue . Local   <$> genLocal
+    , AnyValue . Day     <$> genDay
+    , AnyValue . Hours   <$> genHours
     ]
 
 genArrayFrom :: MonadGen m => m AnyValue -> m (Value 'TArray)

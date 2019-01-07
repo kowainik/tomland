@@ -11,7 +11,7 @@ import Text.Megaparsec (parse)
 import Toml.Parser.TOML (hasKeyP, tableP, tomlP)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, textP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
-import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
+import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
 
 import qualified Data.HashMap.Lazy as HashMap
 import qualified Data.List.NonEmpty as NE
@@ -47,12 +47,8 @@ spec_Parser = do
         squote = quoteWith "'"
         dquote = quoteWith "\""
 
-        makeDay year month day = Day $ fromGregorian year month day
-        makeHours hour minute second = Hours $ TimeOfDay hour minute second
-        makeLocal (Day day) (Hours hours) = Local $ LocalTime day hours
-        makeLocal _ _                     = error "Invalid arguments, unable to construct `Local`"
-        makeZoned (Local local) offset = Zoned $ ZonedTime local offset
-        makeZoned _ _                  = error "Invalid arguments, unable to construct `Zoned`"
+        makeDay year month day = fromGregorian year month day
+        makeHours hour minute second = TimeOfDay hour minute second
         makeOffset hours minutes =
             minutesToTimeZone (hours * 60 + minutes * signum hours)
 
@@ -69,9 +65,8 @@ spec_Parser = do
             parseArray "[1.2, 2.3, 3.4]" [UDouble 1.2, UDouble 2.3, UDouble 3.4]
             parseArray "['x', 'y']"      [UText "x", UText "y"]
             parseArray "[[1], [2]]" [UArray [UInteger 1], UArray [UInteger 2]]
-            parseArray
-                "[1920-12-10, 10:15:30]"
-                [UDate (makeDay 1920 12 10), UDate (makeHours 10 15 30)]
+            parseArray "[1920-12-10, 1999-01-09]" [UDay (makeDay 1920 12 10), UDay (makeDay 1999 1 9)]
+            parseArray "[16:33:05, 10:15:30]" [UHours (makeHours 16 33 5), UHours (makeHours 10 15 30)]
         it "can parse multiline arrays"
             $ parseArray "[\n1,\n2\n]" [UInteger 1, UInteger 2]
         it "can parse an array of arrays" $ parseArray
@@ -98,6 +93,7 @@ spec_Parser = do
             arrayFailOn "[1 2 3]"
             arrayFailOn "[1 . 2 . 3]"
             arrayFailOn "['x' - 'y' - 'z']"
+            arrayFailOn "[1920-12-10, 10:15:30]"
 
     describe "boolP" $ do
         it "can parse `true` and `false`" $ do
@@ -268,7 +264,7 @@ spec_Parser = do
                 )
             parseHasKey
                 "x = 1920-12-10"
-                (makeKey ["x"], Left $ AnyValue (Date (makeDay 1920 12 10)))
+                (makeKey ["x"], Left $ AnyValue (Day (makeDay 1920 12 10)))
         --xit "can parse a key/value pair when the value is an inline table" $ do
         --  pending
         it "ignores white spaces around key names and values" $ do
@@ -416,46 +412,46 @@ spec_Parser = do
         it "can parse a date-time with an offset" $ do
             parseDateTime
                 "1979-05-27T07:32:00Z"
-                (makeZoned
-                    (makeLocal (makeDay 1979 5 27) (makeHours 7 32 0))
+                (UZoned $ ZonedTime
+                    (LocalTime (makeDay 1979 5 27) (makeHours 7 32 0))
                     (makeOffset 0 0)
                 )
             parseDateTime
                 "1979-05-27T00:32:00+07:10"
-                (makeZoned
-                    (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+                (UZoned $ ZonedTime
+                    (LocalTime (makeDay 1979 5 27) (makeHours 0 32 0))
                     (makeOffset 7 10)
                 )
             parseDateTime
                 "1979-05-27T00:32:00.999999-07:25"
-                (makeZoned
-                    (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0.999999))
+                (UZoned $ ZonedTime
+                    (LocalTime (makeDay 1979 5 27) (makeHours 0 32 0.999999))
                     (makeOffset (-7) 25)
                 )
         it
                 "can parse a date-time with an offset when the T delimiter is replaced with a space"
             $ parseDateTime
                   "1979-05-27 07:32:00Z"
-                  (makeZoned
-                      (makeLocal (makeDay 1979 5 27) (makeHours 7 32 0))
+                  (UZoned $ ZonedTime
+                      (LocalTime (makeDay 1979 5 27) (makeHours 7 32 0))
                       (makeOffset 0 0)
                   )
         it "can parse a date-time without an offset" $ do
             parseDateTime
                 "1979-05-27T17:32:00"
-                (makeLocal (makeDay 1979 5 27) (makeHours 17 32 0))
+                (ULocal $ LocalTime (makeDay 1979 5 27) (makeHours 17 32 0))
             parseDateTime
                 "1979-05-27T00:32:00.999999"
-                (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0.999999))
+                (ULocal $ LocalTime (makeDay 1979 5 27) (makeHours 0 32 0.999999))
         it "can parse a local date"
-            $ parseDateTime "1979-05-27" (makeDay 1979 5 27)
+            $ parseDateTime "1979-05-27" (UDay $ makeDay 1979 5 27)
         it "can parse a local time" $ do
-            parseDateTime "07:32:00"        (makeHours 7 32 0)
-            parseDateTime "00:32:00.999999" (makeHours 0 32 0.999999)
+            parseDateTime "07:32:00"        (UHours $ makeHours 7 32 0)
+            parseDateTime "00:32:00.999999" (UHours $ makeHours 0 32 0.999999)
         it
                 "truncates the additional precision after picoseconds in the fractional seconds"
             $ parseDateTime "00:32:00.99999999999199"
-                            (makeHours 0 32 0.999999999991)
+                            (UHours $ makeHours 0 32 0.999999999991)
         it "fails if the date is not valid" $ do
             dateTimeFailOn "1920-15-12"
             dateTimeFailOn "1920-12-40"
@@ -478,16 +474,16 @@ spec_Parser = do
             $ do
                   parseDateTime
                       "1979-05-27T00:32:00X"
-                      (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+                      (ULocal $ LocalTime (makeDay 1979 5 27) (makeHours 0 32 0))
                   parseDateTime
                       "1979-05-27T00:32:00+07:1"
-                      (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+                      (ULocal $ LocalTime (makeDay 1979 5 27) (makeHours 0 32 0))
                   parseDateTime
                       "1979-05-27T00:32:00+7:01"
-                      (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+                      (ULocal $ LocalTime (makeDay 1979 5 27) (makeHours 0 32 0))
                   parseDateTime
                       "1979-05-27T00:32:0007:00"
-                      (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
+                      (ULocal $ LocalTime (makeDay 1979 5 27) (makeHours 0 32 0))
 
     describe "tableP" $ do
         it "can parse a TOML table" $ do

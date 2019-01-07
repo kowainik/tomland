@@ -9,7 +9,7 @@ import Data.Time (fromGregorian)
 
 import Toml (ParseException (..), TomlCodec, pretty, (.=), (<!>))
 import Toml.Edsl (mkToml, table, (=:))
-import Toml.Type (DateTime (..), TOML (..), Value (..))
+import Toml.Type (TOML (..), Value (..))
 
 import qualified Data.Text.IO as TIO
 import qualified Toml
@@ -84,7 +84,7 @@ myToml :: TOML
 myToml = mkToml $ do
     "a" =: Bool True
     "list" =: Array ["one", "two"]
-    "time" =: Array [Date $ Day (fromGregorian 2018 3 29)]
+    "time" =: Array [Day (fromGregorian 2018 3 29)]
     table "table.name.1" $ do
         "aInner" =: 1
         "listInner" =: Array [Bool True, Bool False]
