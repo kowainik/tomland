@@ -28,6 +28,8 @@ The change log is available [on GitHub][2].
   Allow underscores in floats.
 * [#134](https://github.com/kowainik/tomland/issues/134):
   Pretty printer arrays of tables and golden tests.
+* [#119](https://github.com/kowainik/tomland/issues/119):
+  Add property-based tests for `BiMap`.
 
 ## 0.5.0 — Nov 12, 2018
 
