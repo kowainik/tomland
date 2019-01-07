@@ -8,7 +8,7 @@ import Test.Hspec.Megaparsec (parseSatisfies, shouldFailOn, shouldParse)
 import Test.Tasty.Hspec (Spec, context, describe, it)
 import Text.Megaparsec (parse)
 
-import Toml.Parser.TOML (hasKeyP, tableHeaderP, tomlP)
+import Toml.Parser.TOML (hasKeyP, tableP, tomlP)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, textP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), DateTime (..), TOML (..), UValue (..), Value (..))
@@ -30,7 +30,7 @@ spec_Parser = do
         parseKey        = parseX keyP
         parseHasKey     = parseX hasKeyP
         parseText       = parseX textP
-        parseTable      = parseX tableHeaderP
+        parseTable      = parseX tableP
         parseToml       = parseX tomlP
 
         arrayFailOn     = failOn arrayP
@@ -489,7 +489,7 @@ spec_Parser = do
                       "1979-05-27T00:32:0007:00"
                       (makeLocal (makeDay 1979 5 27) (makeHours 0 32 0))
 
-    describe "tableHeaderP" $ do
+    describe "tableP" $ do
         it "can parse a TOML table" $ do
             let key1KV = (makeKey ["key1"], AnyValue (Text "some string"))
                 key2KV = (makeKey ["key2"], AnyValue (Integer 123))

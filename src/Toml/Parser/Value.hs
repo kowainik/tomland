@@ -6,6 +6,7 @@ module Toml.Parser.Value
        , integerP
        , keyP
        , tableNameP
+       , tableArrayNameP
        , textP
        , valueP
        , anyValueP
@@ -141,6 +142,10 @@ keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
 
 tableNameP :: Parser Key
 tableNameP = between (text "[") (text "]") keyP
+
+
+tableArrayNameP :: Parser Key
+tableArrayNameP = between (text "[[") (text "]]") keyP
 
 
 -- Values

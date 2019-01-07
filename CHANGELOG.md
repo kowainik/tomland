@@ -30,6 +30,8 @@ The change log is available [on GitHub][2].
   Pretty printer arrays of tables and golden tests.
 * [#119](https://github.com/kowainik/tomland/issues/119):
   Add property-based tests for `BiMap`.
+* [#143](https://github.com/kowainik/tomland/issues/143):
+  Parser for arrays of tables.
 
 ## 0.5.0 — Nov 12, 2018
 
