@@ -42,7 +42,6 @@ spec_Parser = do
         hasKeyFailOn    = failOn hasKeyP
         integerFailOn   = failOn integerP
         textFailOn      = failOn textP
-        inlineArrFailOn = failOn inlineArrayP
 
         doubleSatisfies = parseXSatisfies doubleP
 
