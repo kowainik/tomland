@@ -32,6 +32,8 @@ The change log is available [on GitHub][2].
   Add property-based tests for `BiMap`.
 * [#143](https://github.com/kowainik/tomland/issues/143):
   Parser for arrays of tables.
+* [#144](https://github.com/kowainik/tomland/issues/144):
+  Added tests for arrays of tables.
 
 ## 0.5.0 — Nov 12, 2018
 
