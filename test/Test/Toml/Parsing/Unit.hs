@@ -510,8 +510,8 @@ spec_Parser = do
               toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
               arr1 = tomlFromArray [(makeKey ["array"], toml1 :| [toml2])]
               table = (makeKey ["table"], arr1)
-          parseTable ("[table]\n[[table.array]] \nkey1 = \"some string\"\n \
-                              \ [[table.array]] \nkey2 = 123") table
+          parseTable "[table]\n[[table.array]] \nkey1 = \"some string\"\n \
+                              \ [[table.array]] \nkey2 = 123" table
 
     describe "tableArrayP" $ do
         it "can parse an empty array"
@@ -542,16 +542,16 @@ spec_Parser = do
                 toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
                 arr = tomlFromArray [(makeKey ["table-1-1"], NE.fromList [toml1, toml2])]
                 array = (makeKey ["table-1"], arr :| [])
-            parseTableArray ("[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
-                                         \ [[table-1.table-1-1]] \nkey2 = 123") array
+            parseTableArray "[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
+                                         \ [[table-1.table-1-1]] \nkey2 = 123" array
         it "can parse an array of arrays" $ do
             let toml1 = tomlFromKeyVal [(makeKey ["key1"], AnyValue (Text "some string"))]
                 toml2 = tomlFromKeyVal [(makeKey ["key2"], AnyValue (Integer 123))]
                 arr1 = (makeKey ["table-1-1"], toml1 :| [])
                 arr2 = (makeKey ["table-1-2"], toml2 :| [])
                 array = (makeKey ["table-1"], tomlFromArray [arr1, arr2] :| [])
-            parseTableArray ("[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
-                                         \ [[table-1.table-1-2]] \nkey2 = 123") array
+            parseTableArray "[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
+                                         \ [[table-1.table-1-2]] \nkey2 = 123" array
 
     describe "tomlP" $ do
        it "can parse TOML files" $ do
@@ -580,7 +580,7 @@ spec_Parser = do
               array2 = (makeKey ["array2"], toml3 :| [])
               table2 = (makeKey ["table2"], toml4)
               toml = tomlFromTable [table1, table2] <> tomlFromArray [array1, array2]
-          parseToml ("[[array1]]\n key1 = \"some string\" \n \
+          parseToml "[[array1]]\n key1 = \"some string\" \n \
                      \[table1]  \n key2 = 123 \n \
                      \[[array2]]\n key3 = 3.14 \n \
-                     \[table2]  \n key4 = true") toml
+                     \[table2]  \n key4 = true" toml
