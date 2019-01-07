@@ -13,7 +13,6 @@ module Toml.Type.Value
 
          -- * Value
        , Value (..)
-       , DateTime (..)
        , eqValueList
        , valueType
 
@@ -22,7 +21,7 @@ module Toml.Type.Value
        , sameValue
        ) where
 
-import Control.DeepSeq (NFData(..), rnf)
+import Control.DeepSeq (NFData (..), rnf)
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
@@ -30,7 +29,7 @@ import Data.Type.Equality ((:~:) (..))
 import GHC.Generics (Generic)
 
 -- | Needed for GADT parameterization
-data TValue = TBool | TInteger | TDouble | TText | TDate | TArray
+data TValue = TBool | TInteger | TDouble | TText | TZoned | TLocal | TDay | THours | TArray
     deriving (Eq, Show, Read, NFData, Generic)
 
 showType :: TValue -> String
@@ -85,8 +84,41 @@ bare-key = "value"
     -}
     Text :: Text -> Value 'TText
 
-    -- | Date-time. See documentation for 'DateTime' type.
-    Date :: DateTime -> Value 'TDate
+    {- | Offset date-time:
+
+@
+odt1 = 1979-05-27T07:32:00Z
+odt2 = 1979-05-27T00:32:00-07:00
+@
+    -}
+    Zoned :: ZonedTime -> Value 'TZoned
+
+    {- | Local date-time (without offset):
+
+@
+ldt1 = 1979-05-27T07:32:00
+ldt2 = 1979-05-27T00:32:00.999999
+@
+    -}
+    Local :: LocalTime -> Value 'TLocal
+
+    {- | Local date (only day):
+
+@
+ld1 = 1979-05-27
+@
+    -}
+    Day :: Day -> Value 'TDay
+
+    {- | Local time (time of the day):
+
+@
+lt1 = 07:32:00
+lt2 = 00:32:00.999999
+
+@
+    -}
+    Hours :: TimeOfDay -> Value 'THours
 
     {- | Array of values. According to TOML specification all values in array
       should have the same type. This is guaranteed statically with this type.
@@ -106,12 +138,15 @@ arr6 = [ 1, 2.0 ] # INVALID
 deriving instance Show (Value t)
 
 instance NFData (Value t) where
-    rnf (Bool n) = rnf n
+    rnf (Bool n)    = rnf n
     rnf (Integer n) = rnf n
-    rnf (Double n) = rnf n
-    rnf (Text n) = rnf n
-    rnf (Date n) = rnf n
-    rnf (Array n) = rnf n
+    rnf (Double n)  = rnf n
+    rnf (Text n)    = rnf n
+    rnf (Zoned n)   = rnf n
+    rnf (Local n)   = rnf n
+    rnf (Day n)     = rnf n
+    rnf (Hours n)   = rnf n
+    rnf (Array n)   = rnf n
 
 instance (t ~ 'TInteger) => Num (Value t) where
     (Integer a) + (Integer b) = Integer $ a + b
@@ -131,7 +166,10 @@ instance Eq (Value t) where
         | isNaN f1 && isNaN f2 = True
         | otherwise = f1 == f2
     (Text s1)    == (Text s2)    = s1 == s2
-    (Date d1)    == (Date d2)    = d1 == d2
+    (Zoned a)    == (Zoned b)    = zonedTimeToUTC a == zonedTimeToUTC b
+    (Local a)    == (Local b)    = a == b
+    (Day a)      == (Day b)      = a == b
+    (Hours a)    == (Hours b)    = a == b
     (Array a1)   == (Array a2)   = eqValueList a1 a2
 
 eqValueList :: [Value a] -> [Value b] -> Bool
@@ -148,59 +186,11 @@ valueType (Bool _)    = TBool
 valueType (Integer _) = TInteger
 valueType (Double _)  = TDouble
 valueType (Text _)    = TText
-valueType (Date _)    = TDate
+valueType (Zoned _)   = TZoned
+valueType (Local _)   = TLocal
+valueType (Day _)     = TDay
+valueType (Hours _)   = THours
 valueType (Array _)   = TArray
-
-data DateTime
-      {- | Offset date-time:
-
-@
-odt1 = 1979-05-27T07:32:00Z
-odt2 = 1979-05-27T00:32:00-07:00
-@
-      -}
-    = Zoned !ZonedTime
-
-      {- | Local date-time (without offset):
-
-@
-ldt1 = 1979-05-27T07:32:00
-ldt2 = 1979-05-27T00:32:00.999999
-@
-      -}
-    | Local !LocalTime
-
-      {- | Local date (only day):
-
-@
-ld1 = 1979-05-27
-@
-      -}
-    | Day !Day
-
-      {- | Local time (time of the day):
-
-@
-lt1 = 07:32:00
-lt2 = 00:32:00.999999
-
-@
-      -}
-    | Hours !TimeOfDay
-    deriving (Show)
-
-instance Eq DateTime where
-    (Zoned a) == (Zoned b) = zonedTimeToUTC a == zonedTimeToUTC b
-    (Local a) == (Local b) = a == b
-    (Day a)   == (Day b)   = a == b
-    (Hours a) == (Hours b) = a == b
-    _         == _         = False
-
-instance NFData DateTime where
-    rnf (Zoned n) = rnf n
-    rnf (Local n) = rnf n
-    rnf (Day n)   = rnf n
-    rnf (Hours n) = rnf n
 
 ----------------------------------------------------------------------------
 -- Typechecking values
@@ -221,7 +211,10 @@ sameValue Bool{}    Bool{}    = Right Refl
 sameValue Integer{} Integer{} = Right Refl
 sameValue Double{}  Double{}  = Right Refl
 sameValue Text{}    Text{}    = Right Refl
-sameValue Date{}    Date{}    = Right Refl
+sameValue Zoned{}   Zoned{}   = Right Refl
+sameValue Local{}   Local{}   = Right Refl
+sameValue Day{}     Day{}     = Right Refl
+sameValue Hours{}   Hours{}   = Right Refl
 sameValue Array{}   Array{}   = Right Refl
 sameValue l         r         = Left $ TypeMismatchError
                                          { typeExpected = valueType l

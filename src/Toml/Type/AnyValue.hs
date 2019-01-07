@@ -17,17 +17,21 @@ module Toml.Type.AnyValue
        , matchInteger
        , matchDouble
        , matchText
-       , matchDate
+       , matchZoned
+       , matchLocal
+       , matchDay
+       , matchHours
        , matchArray
        , applyAsToAny
        ) where
 
 import Control.DeepSeq (NFData, rnf)
 import Data.Text (Text)
+import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Type.Equality ((:~:) (..))
 import GHC.Generics (Generic)
 
-import Toml.Type.Value (DateTime, TValue (..), TypeMismatchError (..), Value (..), sameValue)
+import Toml.Type.Value (TValue (..), TypeMismatchError (..), Value (..), sameValue)
 
 
 -- | Existential wrapper for 'Value'.
@@ -78,10 +82,25 @@ matchText :: Value t -> Either MatchError Text
 matchText (Text s) = Right s
 matchText value    = mkMatchError TText value
 
--- | Extract 'DateTime' from 'Value'.
-matchDate :: Value t -> Either MatchError DateTime
-matchDate (Date d) = Right d
-matchDate value    = mkMatchError TDate value
+-- | Extract 'ZonedTime' from 'Value'.
+matchZoned :: Value t -> Either MatchError ZonedTime
+matchZoned (Zoned d) = Right d
+matchZoned value     = mkMatchError TZoned value
+
+-- | Extract 'LocalTime' from 'Value'.
+matchLocal :: Value t -> Either MatchError LocalTime
+matchLocal (Local d) = Right d
+matchLocal value     = mkMatchError TLocal value
+
+-- | Extract 'Day' from 'Value'.
+matchDay :: Value t -> Either MatchError Day
+matchDay (Day d) = Right d
+matchDay value   = mkMatchError TDay value
+
+-- | Extract 'TimeOfDay' from 'Value'.
+matchHours :: Value t -> Either MatchError TimeOfDay
+matchHours (Hours d) = Right d
+matchHours value     = mkMatchError THours value
 
 -- | Extract list of elements of type @a@ from array.
 matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError [a]
