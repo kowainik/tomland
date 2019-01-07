@@ -75,7 +75,7 @@ childKeyP key p = try $ do
   (k, x) <- p
   case keysDiff key k of
     FstIsPref k' -> return (k', x)
-    _            -> fail $ show k <> " is not a child key of " <> show key
+    _            -> fail $ show k ++ " is not a child key of " ++ show key
 
 -- | 'sameKeyP key p' returns the result of 'p' if the key returned by 'p' is
 -- the same as 'key', and fails otherwise.
@@ -84,7 +84,7 @@ sameKeyP key parser = try $ do
   (k, x) <- parser
   case keysDiff key k of
     Equal -> return (k, x)
-    _     -> fail $ show k <> " is not the same as " <> show key
+    _     -> fail $ show k ++ " is not the same as " ++ show key
 
 -- Helper functions
 
