@@ -2,9 +2,9 @@
 {-# LANGUAGE DeriveGeneric  #-}
 
 module Benchmark.Type
-       ( HaskellType(..)
-       , FruitInside(..)
-       , SizeInside(..)
+       ( HaskellType (..)
+       , FruitInside (..)
+       , SizeInside (..)
        ) where
 
 import Control.DeepSeq (NFData)

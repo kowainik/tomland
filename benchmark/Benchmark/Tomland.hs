@@ -1,7 +1,7 @@
 module Benchmark.Tomland
-       ( convert
-       , decode
+       ( decode
        , parse
+       , convert
        ) where
 
 import Data.Text (Text)
@@ -11,6 +11,11 @@ import Toml (DecodeException, TOML, TomlCodec, parse, (.=))
 
 import qualified Toml
 
+decode :: Text -> Either DecodeException HaskellType
+decode = Toml.decode codec
+
+convert :: TOML -> Either DecodeException HaskellType
+convert = Toml.runTomlCodec codec
 
 -- | Codec to use in tomland decode and convert functions.
 codec :: TomlCodec HaskellType
@@ -31,11 +36,4 @@ insideF = FruitInside
     <*> Toml.text "description" .= fiDescription
 
 insideS :: TomlCodec SizeInside
-insideS = Toml.dimap unSize SizeInside $
-    Toml.arrayOf (Toml._Array Toml._Double) "dimensions"
-
-convert :: TOML -> Either DecodeException HaskellType
-convert = Toml.runTomlCodec codec
-
-decode :: Text -> Either DecodeException HaskellType
-decode = Toml.decode codec
+insideS = Toml.diwrap $ Toml.arrayOf (Toml._Array Toml._Double) "dimensions"
