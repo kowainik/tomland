@@ -1,7 +1,10 @@
 module Toml.Parser.Core
-       ( module Text.Megaparsec
+       ( -- * Reexports from @megaparsec@
+         module Text.Megaparsec
        , module Text.Megaparsec.Char
        , module Text.Megaparsec.Char.Lexer
+
+         -- * Core parsers for TOML
        , Parser
        , lexeme
        , sc
@@ -16,27 +19,27 @@ import Data.Void (Void)
 import Text.Megaparsec (Parsec, anySingle, errorBundlePretty, match, parse, satisfy, try, (<?>))
 import Text.Megaparsec.Char (alphaNumChar, char, digitChar, eol, hexDigitChar, space, space1,
                              string, tab)
-import Text.Megaparsec.Char.Lexer (binary, float, hexadecimal, octal, signed, skipLineComment, symbol)
+import Text.Megaparsec.Char.Lexer (binary, float, hexadecimal, octal, signed, skipLineComment,
+                                   symbol)
 import qualified Text.Megaparsec.Char.Lexer as L (lexeme, space)
 
 
--- The parser
+-- | The parser
 type Parser = Parsec Void Text
 
-
--- space consumer
+-- | Space and comment consumer. Currently also consumes newlines.
 sc :: Parser ()
 sc = L.space space1 lineComment blockComment
   where
     lineComment  = skipLineComment "#"
     blockComment = empty
 
-
--- wrapper for consuming spaces after every lexeme (not before it!)
+{- | Wrapper for consuming spaces after every lexeme (not before it!). Consumes
+all characters according to 'sc' parser.
+-}
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
-
--- parser for "fixed" string
+-- | 'Parser' for "fixed" string.
 text :: Text -> Parser Text
 text = symbol sc
