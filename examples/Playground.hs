@@ -14,6 +14,20 @@ import Toml.Type (TOML (..), Value (..))
 import qualified Data.Text.IO as TIO
 import qualified Toml
 
+newtype TestInside = TestInside { unInside :: Text }
+
+insideCodec :: TomlCodec TestInside
+insideCodec = Toml.dimap unInside TestInside $ Toml.text "inside"
+
+data User = User
+    { userName :: Text
+    , userAge  :: Int
+    }
+
+userCodec :: TomlCodec User
+userCodec = User
+    <$> Toml.text "name" .= userName
+    <*> Toml.int  "age"  .= userAge
 
 newtype N = N Text
 
@@ -29,12 +43,9 @@ data Test = Test
     , testN  :: N
     , testE1 :: Either Integer String
     , testE2 :: Either String Double
+    , users  :: [User]
     }
 
-newtype TestInside = TestInside { unInside :: Text }
-
-insideT :: TomlCodec TestInside
-insideT = Toml.dimap unInside TestInside $ Toml.text "inside"
 
 testT :: TomlCodec Test
 testT = Test
@@ -44,11 +55,12 @@ testT = Test
     <*> Toml.text "testS" .= testS
     <*> Toml.arrayOf Toml._Text "testA" .= testA
     <*> Toml.dioptional (Toml.bool "testM") .= testM
-    <*> Toml.table insideT "testX" .= testX
-    <*> Toml.dioptional ((Toml.table insideT) "testY") .= testY
+    <*> Toml.table insideCodec "testX" .= testX
+    <*> Toml.dioptional ((Toml.table insideCodec) "testY") .= testY
     <*> Toml.diwrap (Toml.text "testN") .= testN
     <*> eitherT1 .= testE1
     <*> eitherT2 .= testE2
+    <*> Toml.list userCodec "user" .= users
   where
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)

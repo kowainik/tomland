@@ -1,6 +1,4 @@
-{-# LANGUAGE UndecidableInstances #-}
-
--- | Contains general underlying monad for bidirectional TOML converion.
+-- | Contains general underlying monad for bidirectional conversion.
 
 module Toml.Bi.Monad
        ( Codec (..)
@@ -15,6 +13,7 @@ module Toml.Bi.Monad
 import Control.Applicative (Alternative (..), optional)
 import Control.Monad (MonadPlus (..))
 import Data.Coerce (Coercible, coerce)
+
 
 {- | Monad for bidirectional conversion. Contains pair of functions:
 
@@ -32,9 +31,9 @@ type 'BiCodec' r w a = 'Codec' r w a a
 @
 
 Type parameter @c@ if fictional. Here some trick is used. This trick is
-implemented in [codec](http://hackage.haskell.org/package/codec) and
-described in more details in [related blog post](https://blog.poisson.chat/posts/2016-10-12-bidirectional-serialization.html).
-
+implemented in the [codec](http://hackage.haskell.org/package/codec) package and
+described in more details in related blog post:
+<https://blog.poisson.chat/posts/2016-10-12-bidirectional-serialization.html>.
 -}
 data Codec r w c a = Codec
     { -- | Extract value of type @a@ from monadic context @r@.
@@ -99,112 +98,114 @@ infixl 3 <!>
 f <!> g = \a -> f a <|> g a
 
 {- | This is an instance of 'Profunctor' for 'Codec'. But since there's no
-@Profunctor@ type class in @base@ or package with no dependencies (and we don't want to bring extra dependencies) this instance is implemented as a single
+@Profunctor@ type class in @base@ or package with no dependencies (and we don't
+want to bring extra dependencies) this instance is implemented as a single
 top-level function.
 
-Useful when you want to parse @newtype@s. For example, if you had data type like this:
+Useful when you want to parse @newtype@s. For example, if you had data type like
+this:
 
 @
-data Example = Example
+__data__ Example = Example
     { foo :: Bool
-    , bar :: Text
+    , bar :: 'Text'
     }
 @
 
-toml bidirectional converter for this type will look like this:
+Bidirectional TOML converter for this type will look like this:
 
 @
-exampleT :: TomlCodec Example
-exampleT = Example
-    \<$\> bool "foo" .= foo
-    \<*\> str  "bar" .= bar
+exampleCodec :: TomlCodec Example
+exampleCodec = Example
+    \<$\> Toml.bool "foo" '.=' foo
+    \<*\> Toml.text "bar" '.=' bar
 @
 
-Now if you change your time in the following way:
+Now if you change your type in the following way:
 
 @
-newtype Email = Email { unEmail :: Text }
+__newtype__ Email = Email { unEmail :: Text }
 
-data Example = Example
+__data__ Example = Example
     { foo :: Bool
     , bar :: Email
     }
 @
 
-you need to patch your toml parser like this:
+you need to patch your TOML codec like this:
 
 @
-exampleT :: TomlCodec Example
-exampleT = Example
-    \<$\> bool "foo" .= foo
-    \<*\> dimap unEmail Email (str "bar") .= bar
+exampleCodec :: TomlCodec Example
+exampleCodec = Example
+    \<$\> Toml.bool "foo" '.=' foo
+    \<*\> 'dimap' unEmail Email (Toml.text "bar") '.=' bar
 @
 -}
-dimap :: (Functor r, Functor w)
-      => (c -> d)  -- ^ Mapper for consumer
-      -> (a -> b)  -- ^ Mapper for producer
-      -> Codec r w d a  -- ^ Source 'Codec' object
-      -> Codec r w c b
+dimap
+    :: (Functor r, Functor w)
+    => (c -> d)       -- ^ Mapper for consumer
+    -> (a -> b)       -- ^ Mapper for producer
+    -> Codec r w d a  -- ^ Source 'Codec' object
+    -> Codec r w c b  -- ^ Target 'Codec' object
 dimap f g codec = Codec
-  { codecRead  = g <$> codecRead codec
-  , codecWrite = fmap g . codecWrite codec . f
-  }
+    { codecRead  = g <$> codecRead codec
+    , codecWrite = fmap g . codecWrite codec . f
+    }
 
-{- |
-Bidirectional converter for @Maybe a@ values.
-
-For example, given the data type
+{- | Bidirectional converter for @Maybe a@ values. For example, given the data
+type:
 
 @
-data Example = Example
+__data__ Example = Example
     { foo :: Bool
     , bar :: Maybe Int
     }
 @
 
-the toml parser will look like
+the TOML codec will look like
 
 @
-exampleT :: TomlCodec Example
-exampleT = Example
-    \<$\> bool "foo" .= foo
-    \<*\> dioptional (int "bar") .= bar
+exampleCodec :: TomlCodec Example
+exampleCodec = Example
+    \<$\> Toml.bool "foo" '.=' foo
+    \<*\> 'dioptional' (Toml.int "bar") '.=' bar
 @
-
 -}
-dioptional :: (Alternative r, Applicative w) => Codec r w c a -> Codec r w (Maybe c) (Maybe a)
+dioptional
+    :: (Alternative r, Applicative w)
+    => Codec r w c a
+    -> Codec r w (Maybe c) (Maybe a)
 dioptional Codec{..} = Codec
-    { codecRead = optional codecRead
+    { codecRead  = optional codecRead
     , codecWrite = traverse codecWrite
     }
 
-{- |
-Used for @newtype@ wrappers.
-
-For example, given the data types
+{- | Combinator used for @newtype@ wrappers. For example, given the data types:
 
 @
-newtype N = N Int
+__newtype__ N = N Int
 
-data Example = Example
+__data__ Example = Example
     { foo :: Bool
     , bar :: N
     }
 @
 
-the toml parser will look like
+the TOML codec can look like
 
 @
-exampleT :: TomlCodec Example
-exampleT = Example
-    \<$\> bool "foo" .= foo
-    \<*\> diwrap (int "bar") .= bar
+exampleCodec :: TomlCodec Example
+exampleCodec = Example
+    \<$\> Toml.bool "foo" '.=' foo
+    \<*\> 'diwrap' (Toml.int "bar") '.=' bar
 @
-
 -}
-diwrap :: forall b a r w . (Coercible a b, Functor r, Functor w) => BiCodec r w a -> BiCodec r w b
+diwrap
+    :: forall b a r w .
+       (Coercible a b, Functor r, Functor w)
+    => BiCodec r w a
+    -> BiCodec r w b
 diwrap = dimap coerce coerce
-
 
 {- | Operator to connect two operations:
 
@@ -214,12 +215,15 @@ diwrap = dimap coerce coerce
 In code this should be used like this:
 
 @
-data Foo = Foo { fooBar :: Int, fooBaz :: String }
+__data__ Foo = Foo
+    { fooBar :: Int
+    , fooBaz :: String
+    }
 
-foo :: TomlCodec Foo
-foo = Foo
- \<$\> int "bar" .= fooBar
- \<*\> str "baz" .= fooBaz
+fooCodec :: TomlCodec Foo
+fooCodec = Foo
+    \<$\> Toml.int "bar" '.=' fooBar
+    \<*\> Toml.str "baz" '.=' fooBaz
 @
 -}
 infixl 5 .=
