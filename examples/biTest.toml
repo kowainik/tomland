@@ -17,3 +17,11 @@ either = 3.5
 
 # [testY]
 #   inside = "yyy"
+
+[[user]]
+name = "Foo"
+age = 42
+
+[[user]]
+name = "Bar"
+age = 777
