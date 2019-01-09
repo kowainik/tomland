@@ -12,8 +12,9 @@ import Test.Tasty.Hspec (Expectation, Spec, context, describe, it)
 import Text.Megaparsec (Parsec, ShowErrorComponent, Stream, parse)
 
 import Toml.Edsl (mkToml, table, tableArray, (=:))
-import Toml.Parser.TOML (hasKeyP, tableArrayP, tableP, tomlP)
-import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP, keyP, textP)
+import Toml.Parser.String (textP)
+import Toml.Parser.TOML (hasKeyP, tableArrayP, tableP, tomlP, keyP)
+import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
 
