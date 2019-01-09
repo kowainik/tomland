@@ -14,6 +14,7 @@ module Toml.Parser.TOML
 import Control.Applicative (Alternative (..))
 import Control.Monad.Combinators (between, eitherP, optional, sepEndBy)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
+import Data.Semigroup ((<>))
 import Data.Text (Text)
 
 import Toml.Parser.Core (Parser, alphaNumChar, char, lexeme, sc, text, try)
