@@ -30,11 +30,15 @@ data PrintOptions = PrintOptions
     , indent     :: Int   -- ^ indentation size
     } deriving (Show)
 
-{- | Default printing options. -}
+{- | Default printing options.
+
+1. Sorts all keys and tables by name.
+2. Indents with 2 spaces.
+-}
 defaultOptions :: PrintOptions
 defaultOptions = PrintOptions True 2
 
-{- | Converts 'TOML' type into 'Text' (using 'defaultOptions').
+{- | Converts 'TOML' type into 'Data.Text.Text' (using 'defaultOptions').
 
 For example, this
 
@@ -49,6 +53,7 @@ TOML
                        [("name", AnyValue $ Text "Kowainik")]
                  }
            )]
+    , tomlTableArrays = mempty
     }
 @
 
@@ -58,18 +63,17 @@ will be translated to this
 title = "TOML Example"
 
 [example.owner]
-  name = "Kowainik"
-
+  name = \"Kowainik\"
 @
 -}
 pretty :: TOML -> Text
 pretty = prettyOptions defaultOptions
 
--- | Converts 'TOML' type into 'Text' using provided 'PrintOptions'
+-- | Converts 'TOML' type into 'Data.Text.Text' using provided 'PrintOptions'
 prettyOptions :: PrintOptions -> TOML -> Text
 prettyOptions options = Text.unlines . prettyTomlInd options 0 ""
 
--- | Converts 'TOML' into a list of 'Text' elements with the given indent.
+-- | Converts 'TOML' into a list of 'Data.Text.Text' elements with the given indent.
 prettyTomlInd :: PrintOptions -- ^ Printing options
               -> Int          -- ^ Current indentation
               -> Text         -- ^ Accumulator for table names

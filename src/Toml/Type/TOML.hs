@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
+-- | Type of TOML AST. This is intermediate representation of TOML parsed from text.
+
 module Toml.Type.TOML
        ( TOML (..)
        , insertKeyVal
@@ -10,8 +12,8 @@ module Toml.Type.TOML
 
 import Control.DeepSeq (NFData)
 import Data.HashMap.Strict (HashMap)
-import Data.Semigroup (Semigroup (..))
 import Data.List.NonEmpty (NonEmpty)
+import Data.Semigroup (Semigroup (..))
 import GHC.Generics (Generic)
 
 import Toml.PrefixTree (Key (..), PrefixMap)
@@ -21,11 +23,12 @@ import Toml.Type.Value (Value)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Toml.PrefixTree as Prefix
 
+
 -- TODO: describe how some TOML document will look like with this type
 {- | Represents TOML configuration value. -}
 data TOML = TOML
-    { tomlPairs  :: HashMap Key AnyValue
-    , tomlTables :: PrefixMap TOML
+    { tomlPairs       :: HashMap Key AnyValue
+    , tomlTables      :: PrefixMap TOML
     , tomlTableArrays :: HashMap Key (NonEmpty TOML)
     } deriving (Show, Eq, NFData, Generic)
 

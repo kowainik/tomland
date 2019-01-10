@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
+-- | Parser for text to TOML AST.
+
 module Toml.Parser
        ( ParseException (..)
        , parse

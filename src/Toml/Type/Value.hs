@@ -6,6 +6,8 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators      #-}
 
+-- | GADT value for TOML.
+
 module Toml.Type.Value
        ( -- * Type of value
          TValue (..)
@@ -32,6 +34,7 @@ import GHC.Generics (Generic)
 data TValue = TBool | TInteger | TDouble | TText | TZoned | TLocal | TDay | THours | TArray
     deriving (Eq, Show, Read, NFData, Generic)
 
+-- | Convert 'TValue' constructors to 'String' without @T@ prefix.
 showType :: TValue -> String
 showType = drop 1 . show
 
@@ -127,7 +130,7 @@ lt2 = 00:32:00.999999
 arr1 = [ 1, 2, 3 ]
 arr2 = [ "red", "yellow", "green" ]
 arr3 = [ [ 1, 2 ], [3, 4, 5] ]
-arr4 = [ "all", 'strings', """are the same""", '''type''']
+arr4 = [ "all", \'strings\', """are the same""", \'\'\'type\'\'\']
 arr5 = [ [ 1, 2 ], ["a", "b", "c"] ]
 
 arr6 = [ 1, 2.0 ] # INVALID
@@ -172,6 +175,7 @@ instance Eq (Value t) where
     (Hours a)    == (Hours b)    = a == b
     (Array a1)   == (Array a2)   = eqValueList a1 a2
 
+-- | Compare list of 'Value' of possibly different types.
 eqValueList :: [Value a] -> [Value b] -> Bool
 eqValueList [] [] = True
 eqValueList (x:xs) (y:ys) = case sameValue x y of
@@ -179,7 +183,7 @@ eqValueList (x:xs) (y:ys) = case sameValue x y of
     Left _     -> False
 eqValueList _ _ = False
 
--- | Reifies type of 'Value' into 'ValueType'. Unfortunately, there's no way to
+-- | Reifies type of 'Value' into 'TValue'. Unfortunately, there's no way to
 -- guarante that 'valueType' will return @t@ for object with type @Value \'t@.
 valueType :: Value t -> TValue
 valueType (Bool _)    = TBool
@@ -206,6 +210,10 @@ instance Show TypeMismatchError where
     show TypeMismatchError{..} = "Expected type '" ++ showType typeExpected
                               ++ "' but actual type: '" ++ showType typeActual ++ "'"
 
+{- | Checks whether two values are the same. This function is used for type
+checking where first argument is expected type and second argument is actual
+type.
+-}
 sameValue :: Value a -> Value b -> Either TypeMismatchError (a :~: b)
 sameValue Bool{}    Bool{}    = Right Refl
 sameValue Integer{} Integer{} = Right Refl

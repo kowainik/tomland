@@ -1,5 +1,7 @@
 {-# LANGUAGE GADTs #-}
 
+-- | Intermediate untype value representation used for parsing.
+
 module Toml.Type.UValue
        ( UValue (..)
        , typeCheck
@@ -12,7 +14,7 @@ import Data.Type.Equality ((:~:) (..))
 import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Value (TypeMismatchError, Value (..), sameValue)
 
--- | Untyped value of 'TOML'. You shouldn't use this type in your code. Use
+-- | Untyped value of @TOML@. You shouldn't use this type in your code. Use
 -- 'Value' instead.
 data UValue
     = UBool !Bool

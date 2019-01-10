@@ -1,5 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
+{- | Coding functions like 'decode' and 'encode'. Also contains specialization of 'Codec' for TOML.
+-}
+
 module Toml.Bi.Code
        ( -- * Types
          TomlCodec
@@ -42,7 +45,7 @@ import Toml.Type (TOML (..), TValue, showType)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TIO
 
--- | Type of exception for converting from 'Toml' to user custom data type.
+-- | Type of exception for converting from TOML to user custom data type.
 data DecodeException
     = TrivialError
     | BiMapError TomlBiMapError
@@ -74,11 +77,11 @@ prettyException = \case
     joinKey :: Key -> Text
     joinKey = Text.intercalate "." . map unPiece . toList . unKey
 
--- | Immutable environment for 'Toml' conversion.
+-- | Immutable environment for TOML conversion.
 -- This is @r@ type variable in 'Codec' data type.
 type Env = ExceptT DecodeException (Reader TOML)
 
-{- | Mutable context for 'Toml' conversion.
+{- | Mutable context for TOML conversion.
 This is @w@ type variable in 'Codec' data type.
 
 @
@@ -89,8 +92,9 @@ MaybeT (State TOML) a
 -}
 type St = MaybeT (State TOML)
 
--- | Specialied 'Bi' type alias for 'Toml' monad. Keeps 'TOML' object either as
--- environment or state.
+{- | Specialied 'BiCodec' type alias for bidirectional TOML serialization. Keeps
+'TOML' object as both environment and state.
+-}
 type TomlCodec a = BiCodec Env St a
 
 -- | Convert textual representation of toml into user data type.
@@ -107,6 +111,7 @@ runTomlCodec codec = runReader (runExceptT $ codecRead codec)
 encode :: TomlCodec a -> a -> Text
 encode codec obj = pretty $ execTomlCodec codec obj
 
+-- | Runs 'codecWrite' of 'TomlCodec' and returns intermediate TOML AST.
 execTomlCodec :: TomlCodec a -> a -> TOML
 execTomlCodec codec obj = execState (runMaybeT $ codecWrite codec obj) mempty
 

@@ -3,28 +3,34 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PatternSynonyms            #-}
 
+-- | Implementation of prefix tree for TOML AST.
+
 module Toml.PrefixTree
-       ( PrefixTree (..)
+       ( -- * Core types
+         Piece (..)
+       , Key (..)
+       , Prefix
+       , pattern (:||)
+
+         -- * Key difference
+       , KeysDiff (..)
+       , keysDiff
+
+         -- * Non-empty prefix tree
+       , PrefixTree (..)
        , (<|)
        , singleT
        , insertT
        , lookupT
        , toListT
 
+         -- * Prefix map that stores roots of 'PrefixTree'
        , PrefixMap
        , single
        , insert
        , lookup
        , fromList
        , toList
-
-         -- * Types
-       , Piece (..)
-       , Key (..)
-       , pattern (:||)
-       , Prefix
-       , KeysDiff (..)
-       , keysDiff
        ) where
 
 import Prelude hiding (lookup)
@@ -45,13 +51,14 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
 
+
 -- | Represents the key piece of some layer.
 newtype Piece = Piece { unPiece :: Text }
     deriving stock (Generic)
     deriving newtype (Show, Eq, Ord, Hashable, IsString, NFData)
 
 {- | Key of value in @key = val@ pair. Represents as non-empty list of key
-components -- 'Piece's. Key like
+components — 'Piece's. Key like
 
 @
 site."google.com"
@@ -62,16 +69,17 @@ is represented like
 @
 Key (Piece "site" :| [Piece "\\"google.com\\""])
 @
-
 -}
 newtype Key = Key { unKey :: NonEmpty Piece }
     deriving stock (Generic)
     deriving newtype (Show, Eq, Ord, Hashable, NFData, Semigroup)
 
 {- | Split a dot-separated string into 'Key'. Empty string turns into a 'Key'
-with single element - empty 'Piece'. This instance is not safe for now. Use
-carefully. If you try to use as a key string like this @site.\"google.com\"@ you
-will have list of three components instead of desired two.
+with single element — empty 'Piece'.
+
+This instance is not safe for now. Use carefully. If you try to use as a key
+string like this @site.\"google.com\"@ you will have list of three components
+instead of desired two.
 -}
 instance IsString Key where
     fromString :: String -> Key
@@ -81,7 +89,8 @@ instance IsString Key where
             []   -> error "Text.splitOn returned empty string"  -- can't happen
             x:xs -> coerce @(NonEmpty Text) @Key (x :| xs)
 
--- | Pattern synonym for constructing keys
+{- | Bidirectional pattern synonym for constructing and deconstructing 'Key's.
+-}
 pattern (:||) :: Piece -> [Piece] -> Key
 pattern x :|| xs <- Key (x :| xs)
   where
@@ -119,8 +128,8 @@ data KeysDiff
         !Key     -- ^ Rest of the first key.
     | Diff       -- ^ Key have a common prefix.
         !Key     -- ^ Common prefix.
-        !Key     -- ^ Rest of first key.
-        !Key     -- ^ Rest of second key.
+        !Key     -- ^ Rest of the first key.
+        !Key     -- ^ Rest of the second key.
     deriving (Show, Eq)
 
 -- | Compares two keys
