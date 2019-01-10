@@ -64,7 +64,6 @@ type V = Int
 genVal :: MonadGen m => m V
 genVal = Gen.int (Range.constant 0 256)
 
--- TODO: Arrays and Date.
 -- | Generates random value of 'AnyValue' type.
 genAnyValue :: MonadGen m => m AnyValue
 genAnyValue = Gen.choice $
@@ -164,10 +163,10 @@ genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
 
 genDouble :: MonadGen m => m Double
 genDouble = Gen.frequency
-    [ (50, Gen.double $ Range.constant @Double (-1000000.0) 1000000.0)
-    , (5, Gen.constant $ 1/0)
-    , (5, Gen.constant $ -1/0)
-    , (5, Gen.constant $ 0/0)
+    [ (10, Gen.double $ Range.constant @Double (-1000000.0) 1000000.0)
+    , (1, Gen.constant $ 1/0)
+    , (1, Gen.constant $ -1/0)
+    , (1, Gen.constant $ 0/0)
     ]
 
 -- | Generatates control sympol.

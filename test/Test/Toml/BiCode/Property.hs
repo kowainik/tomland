@@ -37,8 +37,8 @@ data BigType = BigType
     , btNatural       :: Natural
     , btInt           :: Int
     , btWord          :: Word
-    , btDouble        :: Double
-    , btFloat         :: Float
+    , btDouble        :: Batman Double
+    , btFloat         :: Batman Float
     , btText          :: Text
     , btString        :: String
     , btBS            :: ByteString
@@ -49,7 +49,7 @@ data BigType = BigType
     , btArray         :: [Int]
     , btArraySet      :: Set Word
     , btArrayIntSet   :: IntSet
-    , btArrayHashSet  :: HashSet Double
+    , btArrayHashSet  :: HashSet Natural
     , btArrayNonEmpty :: NonEmpty Text
     , btNonEmpty      :: NonEmpty ByteString
     , btList          :: [Bool]
@@ -57,6 +57,16 @@ data BigType = BigType
     , btSum           :: BigTypeSum
     , btRecord        :: BigTypeRecord
     } deriving (Show, Eq)
+
+-- | Wrapper over 'Double' and 'Float' to be equal on @NaN@ values.
+newtype Batman a = Batman a
+    deriving (Show)
+
+instance RealFloat a => Eq (Batman a) where
+    Batman a == Batman b =
+        if isNaN a
+            then isNaN b
+            else a == b
 
 newtype BigTypeNewtype = BigTypeNewtype ZonedTime
     deriving (Show)
@@ -79,8 +89,8 @@ bigTypeCodec = BigType
     <*> Toml.natural                         "natural"             .= btNatural
     <*> Toml.int                             "int"                 .= btInt
     <*> Toml.word                            "word"                .= btWord
-    <*> Toml.double                          "double"              .= btDouble
-    <*> Toml.float                           "float"               .= btFloat
+    <*> Toml.diwrap (Toml.double "double")                         .= btDouble
+    <*> Toml.diwrap (Toml.float "float")                           .= btFloat
     <*> Toml.text                            "text"                .= btText
     <*> Toml.string                          "string"              .= btString
     <*> Toml.byteString                      "bs"                  .= btBS
@@ -91,7 +101,7 @@ bigTypeCodec = BigType
     <*> Toml.arrayOf Toml._Int               "arrayOfInt"          .= btArray
     <*> Toml.arraySetOf Toml._Word           "arraySetOfWord"      .= btArraySet
     <*> Toml.arrayIntSet                     "arrayIntSet"         .= btArrayIntSet
-    <*> Toml.arrayHashSetOf Toml._Double     "arrayHashSetDouble"  .= btArrayHashSet
+    <*> Toml.arrayHashSetOf Toml._Natural    "arrayHashSetDouble"  .= btArrayHashSet
     <*> Toml.arrayNonEmptyOf Toml._Text      "arrayNonEmptyOfText" .= btArrayNonEmpty
     <*> Toml.nonEmpty (Toml.byteString "bs") "nonEmptyBS"          .= btNonEmpty
     <*> Toml.list (Toml.bool "bool")         "listBool"            .= btList
@@ -111,8 +121,8 @@ _BigTypeSumB = Toml.prism BigTypeSumB $ \case
 
 bigTypeSumCodec :: TomlCodec BigTypeSum
 bigTypeSumCodec =
-        Toml.match (_BigTypeSumA >>> Toml._Integer) "integer"
-    <|> Toml.match (_BigTypeSumB >>> Toml._Text)    "text"
+        Toml.match (_BigTypeSumA >>> Toml._Integer) "sum.integer"
+    <|> Toml.match (_BigTypeSumB >>> Toml._Text)    "sum.text"
 
 bigTypeRecordCodec :: TomlCodec BigTypeRecord
 bigTypeRecordCodec = BigTypeRecord
@@ -127,11 +137,11 @@ genBigType :: Gen BigType
 genBigType = do
     btBool          <- genBool
     btInteger       <- genInteger
-    btNatural       <- fromInteger <$> genInteger
+    btNatural       <- genNatural
     btInt           <- genInt
     btWord          <- genWord
-    btDouble        <- genDouble
-    btFloat         <- genFloat
+    btDouble        <- Batman <$> genDouble
+    btFloat         <- Batman <$> genFloat
     btText          <- genText
     btString        <- genString
     btBS            <- genBS
@@ -139,23 +149,26 @@ genBigType = do
     btLocalTime     <- genLocal
     btDay           <- genDay
     btTimeOfDay     <- genHours
-    btArray         <- Gen.list (Range.constant 0 256) genInt
-    btArraySet      <- Gen.set (Range.constant 0 256) genWord
+    btArray         <- Gen.list (Range.constant 0 5) genInt
+    btArraySet      <- Gen.set (Range.constant 0 5) genWord
     btArrayIntSet   <- genIntSet
-    btArrayHashSet  <- genHashSet genDouble
+    btArrayHashSet  <- genHashSet genNatural
     btArrayNonEmpty <- genNonEmpty genText
     btNonEmpty      <- genNonEmpty genBS
-    btList          <- Gen.list (Range.constant 0 256) genBool
+    btList          <- Gen.list (Range.constant 0 5) genBool
     btNewtype       <- genNewType
     btSum           <- genSum
     btRecord        <- genRec
     pure BigType {..}
 
 genInt :: Gen Int
-genInt = Gen.int (Range.constant 0 256)
+genInt = Gen.int $ Range.constant 0 256
+
+genNatural :: Gen Natural
+genNatural = fromIntegral <$> Gen.int (Range.constant 1 256)
 
 genWord :: Gen Word
-genWord = Gen.word (Range.constant 1 256)
+genWord = Gen.word $ Range.constant 0 256
 
 genFloat :: Gen Float
 genFloat = Gen.float (Range.constant 0 256)
@@ -164,16 +177,16 @@ genString :: Gen String
 genString = T.unpack <$> genText
 
 genBS :: Gen ByteString
-genBS = Gen.bytes (Range.constant 0 256)
+genBS = Gen.utf8 (Range.constant 0 20) Gen.alphaNum
 
 genIntSet :: Gen IntSet
-genIntSet = fromList <$> Gen.list (Range.constant 0 256) genInt
+genIntSet = fromList <$> Gen.list (Range.constant 0 5) genInt
 
 genHashSet :: (Eq a, Hashable a) => Gen a -> Gen (HashSet a)
-genHashSet genA = fromList <$> Gen.list (Range.constant 0 256) genA
+genHashSet genA = fromList <$> Gen.list (Range.constant 0 5) genA
 
 genNonEmpty :: Gen a -> Gen (NonEmpty a)
-genNonEmpty = Gen.nonEmpty (Range.constant 1 256)
+genNonEmpty = Gen.nonEmpty (Range.constant 1 5)
 
 genNewType :: Gen BigTypeNewtype
 genNewType = BigTypeNewtype <$> genZoned
@@ -186,6 +199,6 @@ genSum = Gen.choice
 
 genRec :: Gen BigTypeRecord
 genRec = do
-    btrBoolSet <- Gen.set (Range.constant 0 256) genBool
-    btrNewtypeList <- Gen.list (Range.constant 0 256) genSum
+    btrBoolSet <- fromList <$> Gen.list (Range.constant 0 5) genBool
+    btrNewtypeList <- Gen.list (Range.constant 0 5) genSum
     pure BigTypeRecord{..}
