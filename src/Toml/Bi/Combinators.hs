@@ -271,7 +271,9 @@ nonEmpty codec key = Codec input output
 -- | 'Codec' for list of values. Represented in TOML as array of tables.
 list :: forall a . TomlCodec a -> Key -> TomlCodec [a]
 list codec key = Codec
-    { codecRead = toList <$> codecRead nonEmptyCodec
+    { codecRead = (toList <$> codecRead nonEmptyCodec) `catchError` \case
+        TableNotFound errKey | errKey == key -> pure []
+        err -> throwError err
     , codecWrite = \case
         [] -> pure []
         l@(x:xs) -> l <$ codecWrite nonEmptyCodec (x :| xs)
