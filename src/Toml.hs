@@ -6,7 +6,7 @@ __import__ Toml (TomlCodec, (.=))
 __import__ __qualified__ Toml
 @
 
-Simple @'TomlCodec'@ looks like this:
+Simple @'TomlCodec'@ could be written in the following way:
 
 @
 __data__ User = User
