@@ -15,6 +15,7 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashSet as HS
 import qualified Data.IntSet as IS
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Text.Lazy as L
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import qualified Test.Toml.Gen as G
@@ -41,6 +42,9 @@ genLByteString :: Gen BL.ByteString
 genLByteString =
   BB.toLazyByteString . BB.byteString <$>
   Gen.utf8 range100 Gen.unicodeAll
+
+genLText :: Gen L.Text
+genLText = L.fromStrict <$> G.genText
 
 -- Tests
 
@@ -73,6 +77,7 @@ test_BiMaps = pure $ testGroup "BiMap roundtrip tests" $ concat
     , prop "Float"
         (testBiMap B._Float (Gen.float $ Range.constant (-10000.0) 10000.0))
     , prop "Text" (testBiMap B._Text G.genText)
+    , prop "LazyText" (testBiMap B._LText genLText)
     , prop "String"
         (testBiMap B._String (Gen.string range100 Gen.unicode))
     , prop "Read (Integer)" (testBiMap B._Read G.genInteger)

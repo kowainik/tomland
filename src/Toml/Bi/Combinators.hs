@@ -18,6 +18,7 @@ module Toml.Bi.Combinators
        , float
          -- ** Text types
        , text
+       , lazyText
        , byteString
        , lazyByteString
        , string
@@ -69,7 +70,7 @@ import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec, execTomlCodec)
 import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
-                    _HashSet, _Int, _IntSet, _Integer, _LByteString, _LocalTime, _Natural,
+                    _HashSet, _Int, _IntSet, _Integer, _LByteString, _LText, _LocalTime, _Natural,
                     _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Bi.Monad (Codec (..))
 import Toml.PrefixTree (Key)
@@ -78,6 +79,7 @@ import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insert
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
 import qualified Toml.PrefixTree as Prefix
+import qualified Data.Text.Lazy as L
 
 
 {- | General function to create bidirectional converters for key-value pairs. In
@@ -143,6 +145,10 @@ float = match _Float
 -- | Codec for text values.
 text :: Key -> TomlCodec Text
 text = match _Text
+
+-- | Codec for lazy text values.
+lazyText :: Key -> TomlCodec L.Text
+lazyText = match _LText
 
 -- | Codec for text values with custom error messages for parsing.
 textBy :: (a -> Text) -> (Text -> Either Text a) -> Key -> TomlCodec a

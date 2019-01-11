@@ -24,6 +24,7 @@ module Toml.Bi.Map
          -- * Helpers for BiMap and AnyValue
        , mkAnyValueBiMap
        , _TextBy
+       , _LTextText
        , _NaturalInteger
        , _StringText
        , _ReadString
@@ -37,6 +38,7 @@ module Toml.Bi.Map
        , _Double
        , _Integer
        , _Text
+       , _LText
        , _ZonedTime
        , _LocalTime
        , _Day
@@ -296,6 +298,16 @@ _Double = mkAnyValueBiMap matchDouble Double
 -}
 _Text :: TomlBiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
+
+-- | Helper bimap for 'Data.Text.Lazy.Text' and 'Data.Text.Text'.
+_LTextText :: BiMap e TL.Text Text
+_LTextText = iso TL.toStrict TL.fromStrict
+
+{- | 'Data.Text.Lazy.Text' bimap for 'AnyValue'. Usually used as
+'Toml.Bi.Combinators.lazyText' combinator.
+-}
+_LText :: TomlBiMap TL.Text AnyValue
+_LText = _LTextText >>> _Text
 
 {- | 'Data.Time.ZonedTime' bimap for 'AnyValue'. Usually used as
 'Toml.Bi.Combinators.zonedTime' combinator.
