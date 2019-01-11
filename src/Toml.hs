@@ -20,7 +20,7 @@ userCodec = User
     \<*\> Toml.'int'  "age"  '.=' userAge
 @
 
-For bigger examples see README.md in the repository:
+For more detailed examples see README.md in the repository:
 
 * [tomland/README.md](https://github.com/kowainik/tomland#tomland)
 
