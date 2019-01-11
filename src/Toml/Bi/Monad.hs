@@ -22,7 +22,7 @@ import Data.Coerce (Coercible, coerce)
 
 In practice instead of @r@ we will use some @Reader Toml@ and instead of @w@ we will
 use @State Toml@. This approach with the bunch of utility functions allows to
-have single description for from/to 'Toml' conversion.
+have single description for from/to @TOML@ conversion.
 
 In practice this type will always be used in the following way:
 
@@ -97,7 +97,7 @@ infixl 3 <!>
 (<!>) :: Alternative f => (a -> f x) -> (a -> f x) -> (a -> f x)
 f <!> g = \a -> f a <|> g a
 
-{- | This is an instance of 'Profunctor' for 'Codec'. But since there's no
+{- | This is an instance of @Profunctor@ for 'Codec'. But since there's no
 @Profunctor@ type class in @base@ or package with no dependencies (and we don't
 want to bring extra dependencies) this instance is implemented as a single
 top-level function.
@@ -108,7 +108,7 @@ this:
 @
 __data__ Example = Example
     { foo :: Bool
-    , bar :: 'Text'
+    , bar :: Text
     }
 @
 

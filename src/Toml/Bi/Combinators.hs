@@ -220,7 +220,7 @@ handleErrorInTable key = \case
     TypeMismatch name t1 t2 -> throwError $ TypeMismatch (key <> name) t1 t2
     e                       -> throwError e
 
--- | Run 'codecRead' function with given 'TOML' inside 'ReaderT' context.
+-- | Run 'codecRead' function with given 'TOML' inside 'Control.Monad.Reader.ReaderT' context.
 codecReadTOML :: TOML -> TomlCodec a -> Env a
 codecReadTOML toml codec = local (const toml) (codecRead codec)
 
