@@ -127,6 +127,7 @@ test-suite tomland-test
   main-is:             Spec.hs
 
   other-modules:       Test.Toml.BiMap.Property
+                       Test.Toml.BiCode.Property
                        Test.Toml.Gen
                        Test.Toml.Property
                        Test.Toml.Parsing.Property
@@ -140,6 +141,7 @@ test-suite tomland-test
   build-depends:       base
                      , bytestring ^>= 0.10
                      , containers >= 0.5.7 && < 0.7
+                     , hashable
                      , hedgehog ^>= 0.6
                      , hspec-megaparsec
                      , megaparsec
