@@ -3,7 +3,6 @@ module Test.Toml.BiCode.Property where
 import Control.Applicative ((<|>))
 import Control.Category ((>>>))
 import Data.ByteString (ByteString)
-import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
@@ -17,11 +16,11 @@ import Numeric.Natural (Natural)
 import Toml (TomlBiMap, TomlCodec, (.=))
 import Toml.Bi.Code (decode, encode)
 
-import Test.Toml.Gen (PropertyTest, genBool, genDay, genDouble, genHours, genInteger, genLocal,
-                      genText, genZoned, prop)
+import Test.Toml.Gen (PropertyTest, genBool, genByteString, genDay, genDouble, genFloat, genHashSet,
+                      genHours, genInt, genIntSet, genInteger, genLByteString, genLocal, genNatural,
+                      genNonEmpty, genString, genText, genWord, genZoned, prop)
 
 import qualified Data.ByteString.Lazy as L
-import qualified Data.Text as T
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import qualified Toml
@@ -144,8 +143,8 @@ genBigType = do
     btFloat         <- Batman <$> genFloat
     btText          <- genText
     btString        <- genString
-    btBS            <- genBS
-    btLazyBS        <- L.fromStrict <$> genBS
+    btBS            <- genByteString
+    btLazyBS        <- genLByteString
     btLocalTime     <- genLocal
     btDay           <- genDay
     btTimeOfDay     <- genHours
@@ -154,39 +153,14 @@ genBigType = do
     btArrayIntSet   <- genIntSet
     btArrayHashSet  <- genHashSet genNatural
     btArrayNonEmpty <- genNonEmpty genText
-    btNonEmpty      <- genNonEmpty genBS
+    btNonEmpty      <- genNonEmpty genByteString
     btList          <- Gen.list (Range.constant 0 5) genBool
     btNewtype       <- genNewType
     btSum           <- genSum
     btRecord        <- genRec
     pure BigType {..}
 
-genInt :: Gen Int
-genInt = Gen.int $ Range.constant 0 256
-
-genNatural :: Gen Natural
-genNatural = fromIntegral <$> Gen.int (Range.constant 1 256)
-
-genWord :: Gen Word
-genWord = Gen.word $ Range.constant 0 256
-
-genFloat :: Gen Float
-genFloat = Gen.float (Range.constant 0 256)
-
-genString :: Gen String
-genString = T.unpack <$> genText
-
-genBS :: Gen ByteString
-genBS = Gen.utf8 (Range.constant 0 20) Gen.alphaNum
-
-genIntSet :: Gen IntSet
-genIntSet = fromList <$> Gen.list (Range.constant 0 5) genInt
-
-genHashSet :: (Eq a, Hashable a) => Gen a -> Gen (HashSet a)
-genHashSet genA = fromList <$> Gen.list (Range.constant 0 5) genA
-
-genNonEmpty :: Gen a -> Gen (NonEmpty a)
-genNonEmpty = Gen.nonEmpty (Range.constant 1 5)
+-- Custom generators
 
 genNewType :: Gen BigTypeNewtype
 genNewType = BigTypeNewtype <$> genZoned

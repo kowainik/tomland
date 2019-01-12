@@ -2,51 +2,17 @@
 
 module Test.Toml.BiMap.Property where
 
-import Hedgehog (Gen, PropertyT, Range, assert, forAll, tripping, (===))
+import Hedgehog (Gen, PropertyT, assert, forAll, tripping, (===))
 
-import Data.Time (Day, ZonedTime (..))
-import GHC.Natural (Natural)
+import Data.Time (ZonedTime (..))
 import Test.Tasty (testGroup)
 import Test.Toml.Gen (PropertyTest, prop)
 import Toml.Bi.Map (BiMap (..), TomlBiMap)
 
-import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.HashSet as HS
-import qualified Data.IntSet as IS
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Text.Lazy as L
 import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
 import qualified Test.Toml.Gen as G
 import qualified Toml.Bi.Map as B
 
--- Custom generators
-
-range100 :: Range Int
-range100 = Range.constant 0 100
-
-genNatural :: Gen Natural
-genNatural = fromIntegral <$> Gen.word Range.constantBounded
-
-genInSet :: Gen IS.IntSet
-genInSet = IS.fromList <$> Gen.list range100 (Gen.int Range.constantBounded)
-
-genHashSet :: Gen (HS.HashSet Integer)
-genHashSet = HS.fromList <$> Gen.list range100 G.genInteger
-
-genNEDays :: Gen (NE.NonEmpty Day)
-genNEDays = Gen.nonEmpty (Range.constant 1 100) G.genDay
-
-genLByteString :: Gen BL.ByteString
-genLByteString =
-  BB.toLazyByteString . BB.byteString <$>
-  Gen.utf8 range100 Gen.unicodeAll
-
-genLText :: Gen L.Text
-genLText = L.fromStrict <$> G.genText
-
--- Tests
 
 testBiMap
     :: (Monad m, Show a, Show b, Eq a)
@@ -70,30 +36,26 @@ test_BiMaps :: PropertyTest
 test_BiMaps = pure $ testGroup "BiMap roundtrip tests" $ concat
     [ prop "Bool" (testBiMap B._Bool G.genBool)
     , prop "Integer" (testBiMap B._Integer G.genInteger)
-    , prop "Natural" (testBiMap B._Natural genNatural)
-    , prop "Int" (testBiMap B._Int (Gen.int Range.constantBounded))
-    , prop "Word" (testBiMap B._Word (Gen.word Range.constantBounded))
+    , prop "Natural" (testBiMap B._Natural G.genNatural)
+    , prop "Int" (testBiMap B._Int G.genInt)
+    , prop "Word" (testBiMap B._Word G.genWord)
     , prop "Double" testDouble
-    , prop "Float"
-        (testBiMap B._Float (Gen.float $ Range.constant (-10000.0) 10000.0))
+    , prop "Float" (testBiMap B._Float G.genFloat)
     , prop "Text" (testBiMap B._Text G.genText)
-    , prop "LazyText" (testBiMap B._LText genLText)
-    , prop "String"
-        (testBiMap B._String (Gen.string range100 Gen.unicode))
+    , prop "LazyText" (testBiMap B._LText G.genLText)
+    , prop "String" (testBiMap B._String G.genString)
     , prop "Read (Integer)" (testBiMap B._Read G.genInteger)
-    , prop "ByteString"
-        (testBiMap B._ByteString (Gen.utf8 range100 Gen.unicodeAll))
-    , prop "Lazy ByteString" (testBiMap B._LByteString genLByteString)
+    , prop "ByteString" (testBiMap B._ByteString G.genByteString)
+    , prop "Lazy ByteString" (testBiMap B._LByteString G.genLByteString)
     , prop "ZonedTime" (testBiMap B._ZonedTime G.genZoned)
     , prop "LocalTime" (testBiMap B._LocalTime G.genLocal)
     , prop "TimeOfDay" (testBiMap B._TimeOfDay G.genHours)
     , prop "Day" (testBiMap B._Day G.genDay)
-    , prop "IntSet" (testBiMap B._IntSet genInSet)
-    , prop "Array (Day)"
-        (testBiMap (B._Array B._Day) (Gen.list range100 G.genDay))
-    , prop "Set (Day)" (testBiMap (B._Set B._Day) (Gen.set range100 G.genDay))
-    , prop "NonEmpty (Day)" (testBiMap (B._NonEmpty B._Day) genNEDays)
-    , prop "HashSet (Integer)" (testBiMap (B._HashSet B._Integer) genHashSet)
+    , prop "IntSet" (testBiMap B._IntSet G.genIntSet)
+    , prop "Array (Day)" (testBiMap (B._Array B._Day) (G.genList G.genDay))
+    , prop "Set (Day)" (testBiMap (B._Set B._Day) (Gen.set G.range100 G.genDay))
+    , prop "NonEmpty (Day)" (testBiMap (B._NonEmpty B._Day) (G.genNonEmpty G.genDay))
+    , prop "HashSet (Integer)" (testBiMap (B._HashSet B._Integer) (G.genHashSet G.genInteger))
     ]
 
 -- Orphan instances
