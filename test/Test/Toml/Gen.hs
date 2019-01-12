@@ -214,7 +214,7 @@ genWord :: MonadGen m => m Word
 genWord = Gen.word Range.constantBounded
 
 genNatural :: MonadGen m => m Natural
-genNatural = fromIntegral <$> Gen.word Range.constantBounded
+genNatural = fromIntegral <$> genWord
 
 genFloat :: MonadGen m => m Float
 genFloat = Gen.float (Range.constant (-10000.0) 10000.0)
