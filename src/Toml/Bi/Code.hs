@@ -68,7 +68,7 @@ instance Monoid DecodeException where
 
 -- | Converts 'DecodeException' into pretty human-readable text.
 prettyException :: DecodeException -> Text
-prettyException = \case
+prettyException de = "tomland decode error:  " <> case de of
     TrivialError -> "'empty' parser from 'Alternative' is used"
     BiMapError biError -> prettyBiMapError biError
     KeyNotFound name -> "Key " <> joinKey name <> "is not found"
