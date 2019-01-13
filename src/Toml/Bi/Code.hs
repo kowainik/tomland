@@ -53,7 +53,10 @@ data DecodeException
     | TableNotFound Key  -- ^ No such table
     | TypeMismatch Key Text TValue  -- ^ Expected type vs actual type
     | ParseError ParseException  -- ^ Exception during parsing
-    deriving (Eq, Show, Generic, NFData)  -- TODO: manual pretty show instances
+    deriving (Eq, Generic, NFData)
+
+instance Show DecodeException where
+    show = Text.unpack . prettyException
 
 instance Semigroup DecodeException where
     TrivialError <> e = e
@@ -66,12 +69,13 @@ instance Monoid DecodeException where
 -- | Converts 'DecodeException' into pretty human-readable text.
 prettyException :: DecodeException -> Text
 prettyException = \case
-    TrivialError -> "Using 'empty' parser"
+    TrivialError -> "'empty' parser from 'Alternative' is used"
     BiMapError biError -> prettyBiMapError biError
-    KeyNotFound name -> "Key " <> joinKey name <> " not found"
-    TableNotFound name -> "Table [" <> joinKey name <> "] not found"
-    TypeMismatch name expected actual -> "Expected type " <> expected <> " for key " <> joinKey name
-                                      <> " but got: " <> Text.pack (showType actual)
+    KeyNotFound name -> "Key " <> joinKey name <> "is not found"
+    TableNotFound name -> "Table [" <> joinKey name <> "] is not found"
+    TypeMismatch name expected actual -> "Type for key " <> joinKey name <> "doesn't match."
+        <> "\n  Expected: " <> expected
+        <> "\n  Actual:   " <> Text.pack (showType actual)
     ParseError (ParseException msg) -> "Parse error during conversion from TOML to custom user type: \n  " <> msg
   where
     joinKey :: Key -> Text
