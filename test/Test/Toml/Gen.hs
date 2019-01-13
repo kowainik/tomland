@@ -103,7 +103,7 @@ genAnyValue :: MonadGen m => m AnyValue
 genAnyValue = Gen.choice $
     (AnyValue <$> genArray) : noneArrayList
 
-    -- TODO: unicode support
+-- [#177]: see issue here: https://github.com/kowainik/tomland/issues/177
 genPiece :: MonadGen m => m Piece
 genPiece = Piece <$> Gen.text (Range.constant 1 50) Gen.alphaNum
 
