@@ -24,8 +24,67 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Toml.PrefixTree as Prefix
 
 
--- TODO: describe how some TOML document will look like with this type
-{- | Represents TOML configuration value. -}
+{- | Represents TOML configuration value.
+
+For example, if we have the following @TOML@ file:
+
+@
+server.port        = 8080
+server.codes       = [ 5, 10, 42 ]
+server.description = "This is production server."
+
+[mail]
+    host = "smtp.gmail.com"
+    send-if-inactive = false
+
+[[user]]
+    id = 42
+
+[[user]]
+    name = "Foo Bar"
+@
+
+corresponding 'TOML' looks like:
+
+@
+TOML
+    { tomlPairs = fromList
+        [ ( "server" :| [ "port" ] , Integer 8080)
+        , ( "server" :| [ "codes" ] , Array [ Integer 5 , Integer 10 , Integer 42])
+        , ( "server" :| [ "description" ] , Text "This is production server.")
+        ]
+    , tomlTables = fromList
+        [ ( "mail"
+          , Leaf ( "mail" :| [] )
+              ( TOML
+                  { tomlPairs = fromList
+                      [ ( "host" :| [] , Text "smtp.gmail.com")
+                      , ( "send-if-inactive" :| [] , Bool False)
+                      ]
+                  , tomlTables = fromList []
+                  , tomlTableArrays = fromList []
+                  }
+              )
+          )
+        ]
+    , tomlTableArrays = fromList
+        [ ( "user" :| []
+          , TOML
+              { tomlPairs = fromList [( "id" :| [] , Integer 42)]
+              , tomlTables = fromList []
+              , tomlTableArrays = fromList []
+              } :|
+              [ TOML
+                  { tomlPairs = fromList [( "name" :| [] , Text "Foo Bar")]
+                  , tomlTables = fromList []
+                  , tomlTableArrays = fromList []
+                  }
+              ]
+          )
+        ]
+    }
+@
+-}
 data TOML = TOML
     { tomlPairs       :: HashMap Key AnyValue
     , tomlTables      :: PrefixMap TOML
