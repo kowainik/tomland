@@ -142,3 +142,29 @@ main = do
         Left err -> print err
         Right settings -> TIO.putStrLn $ Toml.encode settingsCodec settings
 ```
+
+## Benchmarks and comparison with other libraries
+
+`tomland` is compared with other libraries. Since it uses 2-step approach with
+converting text to intermediate AST and only then decoding Haskell type from
+this AST, benchmarks are also implemented in a way to reflect this difference.
+
+| Library            | parse :: Text -> AST | transform :: AST -> Haskell |
+|--------------------|----------------------|-----------------------------|
+| `tomland`          | `387.5 μs`           | `1.313 μs`                  |
+| `htoml`            | `801.2 μs`           | `32.54 μs`                  |
+| `htoml-megaparsec` | `318.7 μs`           | `34.74 μs`                  |
+| `toml-parser`      | `157.2 μs`           | `1.156 μs`                  |
+
+You may see that `tomland` is not the fastest one (though still very fast). But
+performance hasn’t been optimized so far and:
+
+1. `toml-parser` doesn’t support the array of tables and because of that it’s
+   hardly possible to specify the list of custom data types in TOML with this
+   library.
+2. `tomland` supports latest TOML spec while `htoml` and `htoml-megaparsec`
+   don’t have support for all types, values and formats.
+3. `tomland` is the only library that has pretty-printing.
+4. `toml-parser` doesn’t have ways to convert TOML AST to custom Haskell types
+   and `htoml*` libraries use typeclasses-based approach via `aeson` library.
+5. `tomland` is bidirectional :slightly_smiling_face:

@@ -14,6 +14,7 @@ import qualified Toml.Printer as Printer
 ----------------------------------------------------------------------------
 -- Key printing and parsing
 ----------------------------------------------------------------------------
+
 test_KeyPrinting :: PropertyTest
 test_KeyPrinting = prop "Key printing: fromString . prettyKey == id" $ do
     key <- forAll genKey
@@ -52,7 +53,7 @@ test_PrefixTreeInsertInsert =  prop "insert x a . insert x b == insert x a" $ do
 ----------------------------------------------------------------------------
 
 -- useful functions to test generators
--- TODO: commented to avoid warnings
+-- uncomment when you need them
 
 -- depth :: PrefixMap a -> Int
 -- depth = HashMap.foldl' (\acc t -> max acc (depthT t)) 0

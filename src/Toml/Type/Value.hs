@@ -38,8 +38,6 @@ data TValue = TBool | TInteger | TDouble | TText | TZoned | TLocal | TDay | THou
 showType :: TValue -> String
 showType = drop 1 . show
 
--- TODO: examples are copy-pasted from TOML specification. Probably most of them
--- will be moved into parsing module in future.
 -- | Value in @key = value@ pair.
 data Value (t :: TValue) where
     {- | Boolean value:
@@ -59,9 +57,9 @@ int2 = 42
 int3 = 0
 int4 = -17
 int5 = 5_349_221
-hex1 = 0xDEADBEEF
-oct2 = 0o755 # useful for Unix file permissions
-bin1 = 0b11010110
+hex1 = 0xDEADBEEF  # hexadecimal
+oct2 = 0o755  # octal, useful for Unix file permissions
+bin1 = 0b11010110  # binary
 @
     -}
     Integer :: Integer -> Value 'TInteger
@@ -69,10 +67,28 @@ bin1 = 0b11010110
     {- | Floating point number:
 
 @
-flt1 = -3.1415   # fractional
-flt2 = 1e6       # exponent
-flt3 = 6.626e-34 # both
-flt4 = 9_224_617.445_991_228_313
+# fractional
+flt1 = +1.0
+flt2 = 3.1415
+flt3 = -0.01
+
+# exponent
+flt4 = 5e+22
+flt5 = 1e6
+flt6 = -2E-2
+
+# both
+flt7 = 6.626e-34
+
+# infinity
+sf1 = inf  # positive infinity
+sf2 = +inf # positive infinity
+sf3 = -inf # negative infinity
+
+# not a number
+sf4 = nan  # actual sNaN/qNaN encoding is implementation specific
+sf5 = +nan # same as \`nan\`
+sf6 = -nan # same as \`nan\`
 @
     -}
     Double :: Double -> Value 'TDouble
@@ -80,9 +96,21 @@ flt4 = 9_224_617.445_991_228_313
     {- | String value:
 
 @
-key = "value"
-bare_key = "value"
-bare-key = "value"
+# basic string
+name = \"Orange\"
+physical.color = "orange"
+physical.shape = "round"
+
+# multiline basic string
+str1 = """
+Roses are red
+Violets are blue"""
+
+# literal string: What you see is what you get.
+winpath  = 'C:\Users\nodejs\templates'
+winpath2 = '\\ServerX\admin$\system32\'
+quoted   = 'Tom \"Dubs\" Preston-Werner'
+regex    = '<\i\c*\s*>'
 @
     -}
     Text :: Text -> Value 'TText
@@ -92,6 +120,7 @@ bare-key = "value"
 @
 odt1 = 1979-05-27T07:32:00Z
 odt2 = 1979-05-27T00:32:00-07:00
+odt3 = 1979-05-27T00:32:00.999999-07:00
 @
     -}
     Zoned :: ZonedTime -> Value 'TZoned
