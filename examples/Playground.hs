@@ -80,11 +80,11 @@ main = do
     TIO.putStrLn "=== Printing manually specified TOML ==="
     TIO.putStrLn $ pretty myToml
 
-    TIO.putStrLn "=== Printing parsed TOML ==="
-    content <- TIO.readFile "examples/test.toml"
-    case Toml.parse content of
-        Left (ParseException e) -> TIO.putStrLn e
-        Right toml              -> TIO.putStrLn $ pretty toml
+    TIO.putStrLn "=== Trying to print invalid TOML ==="
+    content <- TIO.readFile "examples/invalid.toml"
+    TIO.putStrLn $ case Toml.parse content of
+        Left (ParseException e) -> e
+        Right toml              -> pretty toml
 
     TIO.putStrLn "=== Testing bidirectional conversion ==="
     biFile <- TIO.readFile "examples/biTest.toml"
