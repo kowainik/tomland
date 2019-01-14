@@ -71,9 +71,9 @@ prettyException :: DecodeException -> Text
 prettyException de = "tomland decode error:  " <> case de of
     TrivialError -> "'empty' parser from 'Alternative' is used"
     BiMapError biError -> prettyBiMapError biError
-    KeyNotFound name -> "Key " <> joinKey name <> "is not found"
+    KeyNotFound name -> "Key " <> joinKey name <> " is not found"
     TableNotFound name -> "Table [" <> joinKey name <> "] is not found"
-    TypeMismatch name expected actual -> "Type for key " <> joinKey name <> "doesn't match."
+    TypeMismatch name expected actual -> "Type for key " <> joinKey name <> " doesn't match."
         <> "\n  Expected: " <> expected
         <> "\n  Actual:   " <> Text.pack (showType actual)
     ParseError (ParseException msg) -> "Parse error during conversion from TOML to custom user type: \n  " <> msg

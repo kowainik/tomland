@@ -1,5 +1,6 @@
 # tomland
 
+![palm](https://user-images.githubusercontent.com/4276606/51088259-7a777000-176e-11e9-9d76-6be4023c0ac3.png)
 [![Build status](https://secure.travis-ci.org/kowainik/tomland.svg)](https://travis-ci.org/kowainik/tomland)
 [![Hackage](https://img.shields.io/hackage/v/tomland.svg)](https://hackage.haskell.org/package/tomland)
 [![Stackage LTS](http://stackage.org/package/tomland/badge/lts)](http://stackage.org/lts/package/tomland)
@@ -15,7 +16,7 @@
 Bidirectional TOML serialization. The following blog post has more details about
 library design:
 
-* TODO: insert link to blog post
+* [`tomland`: Bidirectional TOML serialization](https://kowainik.github.io/posts/2019-01-14-tomland)
 
 This README contains a basic usage example of the `tomland` library. All code
 below can be compiled and run with the following command:
@@ -168,3 +169,9 @@ performance hasn’t been optimized so far and:
 4. `toml-parser` doesn’t have ways to convert TOML AST to custom Haskell types
    and `htoml*` libraries use typeclasses-based approach via `aeson` library.
 5. `tomland` is bidirectional :slightly_smiling_face:
+
+## Acknowledgement
+
+Icons made by [Freepik](http://www.freepik.com) from
+[www.flaticon.com](https://www.flaticon.com/) is licensed by
+[CC 3.0 BY](http://creativecommons.org/licenses/by/3.0/).

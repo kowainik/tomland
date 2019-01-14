@@ -1,9 +1,25 @@
-# Change log
+# Changelog
 
 tomland uses [PVP Versioning][1].
-The change log is available [on GitHub][2].
+The changelog is available [on GitHub][2].
 
-## Unreleased: 1.0.0
+## 1.0.0 — Jan 14, 2019
+
+* [#13](https://github.com/kowainik/tomland/issues/13):
+  Support array of tables.
+
+  + [#131](https://github.com/kowainik/tomland/issues/131):
+    Uncommenting `tomlTableArrays` from `TOML`.
+  + [#134](https://github.com/kowainik/tomland/issues/134):
+    Pretty printer arrays of tables and golden tests.
+  + [#143](https://github.com/kowainik/tomland/issues/143):
+    Parser for arrays of tables.
+  + [#155](https://github.com/kowainik/tomland/issues/155):
+    Add `list` and `nonEmpty` combinators for coding lists of custom user types.
+  + [#142](https://github.com/kowainik/tomland/issues/142):
+    Adding EDSL support for arrays of tables.
+  + [#144](https://github.com/kowainik/tomland/issues/144):
+    Added tests for arrays of tables.
 
 * [#140](https://github.com/kowainik/tomland/issues/140):
   **Breaking change:** Replace `wrapper` by `diwrap`.
@@ -13,29 +29,22 @@ The change log is available [on GitHub][2].
   **Breaking change:** Removing `mdimap`.
 
   _Migration guide:_ change `Toml.mdimap showX parseX (Toml.text "foo")` to `Toml.textBy showX parseX "foo"`.
-* [#131](https://github.com/kowainik/tomland/issues/131):
-  Uncommenting `tomlTableArrays` from `TOML`.
-* [#64](https://github.com/kowainik/tomland/issues/64):
-  Integer parser doesn't accept leading zeros.
-* [#142](https://github.com/kowainik/tomland/issues/142):
-  Adding EDSL support for arrays of tables.
 * [#137](https://github.com/kowainik/tomland/issues/137):
   Replace `Maybe` with `Either` in `BiMap`.
-  Adding EDSL support for arrays of tables
-* [#149](https://github.com/kowainik/tomland/issues/149):
-  Removing records syntax from `PrefixTree`.
-* [#146](https://github.com/kowainik/tomland/issues/146):
-  Allow underscores in floats.
-* [#134](https://github.com/kowainik/tomland/issues/134):
-  Pretty printer arrays of tables and golden tests.
-* [#119](https://github.com/kowainik/tomland/issues/119):
-  Add property-based tests for `BiMap`.
-* [#143](https://github.com/kowainik/tomland/issues/143):
-  Parser for arrays of tables.
-* [#144](https://github.com/kowainik/tomland/issues/144):
-  Added tests for arrays of tables.
 * [#174](https://github.com/kowainik/tomland/issues/174):
   Add `_LText` and `lazyText` codecs.
+* [#163](https://github.com/kowainik/tomland/issues/163):
+   Move all time data types from nested `DateTime` to `Value`.
+* [#146](https://github.com/kowainik/tomland/issues/146):
+  Allow underscores in floats.
+* [#64](https://github.com/kowainik/tomland/issues/64):
+  Integer parser doesn't accept leading zeros.
+* [#50](https://github.com/kowainik/tomland/issues/50):
+   Add property-based tests for encoder and decoder.
+* [#119](https://github.com/kowainik/tomland/issues/119):
+  Add property-based tests for `BiMap`.
+* [#149](https://github.com/kowainik/tomland/issues/149):
+  Removing records syntax from `PrefixTree`.
 
 ## 0.5.0 — Nov 12, 2018
 

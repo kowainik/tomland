@@ -26,7 +26,8 @@ For more detailed examples see README.md in the repository:
 
 For the details of the library implementation see blog post:
 
-* [tomland: Bidirectional TOML serialization](TODO)
+
+* [tomland: Bidirectional TOML serialization](https://kowainik.github.io/posts/2019-01-14-tomland)
 -}
 
 module Toml
