@@ -213,7 +213,7 @@ eqValueList (x:xs) (y:ys) = case sameValue x y of
 eqValueList _ _ = False
 
 -- | Reifies type of 'Value' into 'TValue'. Unfortunately, there's no way to
--- guarante that 'valueType' will return @t@ for object with type @Value \'t@.
+-- guarantee that 'valueType' will return @t@ for object with type @Value \'t@.
 valueType :: Value t -> TValue
 valueType (Bool _)    = TBool
 valueType (Integer _) = TInteger
