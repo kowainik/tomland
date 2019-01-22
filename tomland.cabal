@@ -27,7 +27,7 @@ license:             MPL-2.0
 license-file:        LICENSE
 author:              Kowainik
 maintainer:          xrom.xkov@gmail.com
-copyright:           2018-present Kowainik
+copyright:           2018-2019 Kowainik
 category:            TOML, Text, Configuration
 build-type:          Simple
 extra-doc-files:     README.md
