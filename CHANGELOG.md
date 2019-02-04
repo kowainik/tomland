@@ -3,6 +3,10 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## 1.0.1
+* [#177](https://github.com/kowainik/tomland/issues/177):
+  Add a more extensive property generator for `Piece`.
+
 ## 1.0.0 — Jan 14, 2019
 
 * [#13](https://github.com/kowainik/tomland/issues/13):
