@@ -109,12 +109,14 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
   where
     alphadashes :: MonadGen m => m Char
     alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
+    unicodeNotNull :: MonadGen m => m Char
+    unicodeNotNull = Gen.filter (/= '\NUL') Gen.unicode
     bare :: MonadGen m => m Text
     bare = Gen.text (Range.constant 1 10) alphadashes
     wrapChar :: Char -> Text -> Text
-    wrapChar c = Text.cons c . (`Text.append` (Text.singleton c))
+    wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
     quotedWith :: MonadGen m => Char -> m Text
-    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) Gen.unicode)
+    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) unicodeNotNull)
     quoted :: MonadGen m => m Text
     quoted = Gen.choice [quotedWith '"', quotedWith '\'']
 
