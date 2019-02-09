@@ -71,6 +71,7 @@ import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTr
 import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..))
 
 import qualified Data.ByteString.Lazy as LB
+import qualified Data.Char as Char
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as L
@@ -103,9 +104,22 @@ genAnyValue :: MonadGen m => m AnyValue
 genAnyValue = Gen.choice $
     (AnyValue <$> genArray) : noneArrayList
 
--- [#177]: see issue here: https://github.com/kowainik/tomland/issues/177
+-- | Generate either a bare piece, or a quoted piece
 genPiece :: MonadGen m => m Piece
-genPiece = Piece <$> Gen.text (Range.constant 1 50) Gen.alphaNum
+genPiece = Piece <$> Gen.choice [bare, quoted]
+  where
+    alphadashes :: MonadGen m => m Char
+    alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
+    notControl :: MonadGen m => m Char
+    notControl = Gen.filter (not . Char.isControl) Gen.unicode
+    bare :: MonadGen m => m Text
+    bare = Gen.text (Range.constant 1 10) alphadashes
+    wrapChar :: Char -> Text -> Text
+    wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
+    quotedWith :: MonadGen m => Char -> m Text
+    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) notControl)
+    quoted :: MonadGen m => m Text
+    quoted = Gen.choice [quotedWith '"', quotedWith '\'']
 
 genKey :: MonadGen m => m Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
