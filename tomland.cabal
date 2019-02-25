@@ -32,7 +32,7 @@ category:            TOML, Text, Configuration
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-data-dir:            test/golden
+extra-source-files:  test/golden/*.golden
 tested-with:         GHC == 8.2.2
                    , GHC == 8.4.4
                    , GHC == 8.6.3
