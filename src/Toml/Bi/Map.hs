@@ -67,9 +67,8 @@ module Toml.Bi.Map
        ) where
 
 import Control.Arrow ((>>>))
-import Control.Monad ((>=>))
-
 import Control.DeepSeq (NFData)
+import Control.Monad ((>=>))
 import Data.Bifunctor (bimap, first)
 import Data.ByteString (ByteString)
 import Data.Hashable (Hashable)
