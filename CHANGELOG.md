@@ -3,9 +3,13 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
-## Unreleased: 1.0.1
+## 1.0.1.0 — May 17, 2019
+
 * [#177](https://github.com/kowainik/tomland/issues/177):
   Add a more extensive property generator for `Piece`.
+* [#187](https://github.com/kowainik/tomland/issues/187):
+  Bump up to `hedgehog-1.0`.
+* Support GHC 8.6.5
 
 ## 1.0.0 — Jan 14, 2019
 
