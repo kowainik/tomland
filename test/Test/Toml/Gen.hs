@@ -2,6 +2,7 @@
 {-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 -- | This module contains all generators for @tomland@ testing.
 
@@ -52,6 +53,7 @@ import Control.Applicative (liftA2)
 import Control.Monad (forM, replicateM)
 import Data.ByteString (ByteString)
 import Data.Fixed (Fixed (..))
+import Data.Functor.Identity (Identity)
 import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
@@ -61,7 +63,7 @@ import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGrego
                   minutesToTimeZone)
 import GHC.Exts (fromList)
 import GHC.Stack (HasCallStack)
-import Hedgehog (Gen, MonadGen, PropertyT, Range, property)
+import Hedgehog (Gen, GenBase, MonadGen, PropertyT, Range, property)
 import Numeric.Natural (Natural)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
@@ -105,37 +107,42 @@ genAnyValue = Gen.choice $
     (AnyValue <$> genArray) : noneArrayList
 
 -- | Generate either a bare piece, or a quoted piece
-genPiece :: MonadGen m => m Piece
+genPiece :: forall m . (MonadGen m, GenBase m ~ Identity) => m Piece
 genPiece = Piece <$> Gen.choice [bare, quoted]
   where
-    alphadashes :: MonadGen m => m Char
+    alphadashes :: m Char
     alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
-    notControl :: MonadGen m => m Char
+
+    notControl :: m Char
     notControl = Gen.filter (not . Char.isControl) Gen.unicode
-    bare :: MonadGen m => m Text
+
+    bare :: m Text
     bare = Gen.text (Range.constant 1 10) alphadashes
+
     wrapChar :: Char -> Text -> Text
     wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
-    quotedWith :: MonadGen m => Char -> m Text
+
+    quotedWith :: Char -> m Text
     quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) notControl)
-    quoted :: MonadGen m => m Text
+
+    quoted :: m Text
     quoted = Gen.choice [quotedWith '"', quotedWith '\'']
 
-genKey :: MonadGen m => m Key
+genKey :: (MonadGen m, GenBase m ~ Identity) => m Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
 
-genKeyAnyValue :: MonadGen m => m (Key, AnyValue)
+genKeyAnyValue :: (MonadGen m, GenBase m ~ Identity) => m (Key, AnyValue)
 genKeyAnyValue = liftA2 (,) genKey genAnyValue
 
-genKeyAnyValueList :: MonadGen m => m [(Key, AnyValue)]
+genKeyAnyValueList :: (MonadGen m, GenBase m ~ Identity) => m [(Key, AnyValue)]
 genKeyAnyValueList = Gen.list (Range.linear 0 10) genKeyAnyValue
 
 -- Generates key-value pair for PrefixMap
-genEntry :: MonadGen m => m (Piece, Key)
+genEntry :: (MonadGen m, GenBase m ~ Identity) => m (Piece, Key)
 genEntry = genKey >>= \case
     key@(piece :|| _) -> pure (piece, key)
 
-genPrefixMap :: MonadGen m => m (PrefixMap V)
+genPrefixMap :: (MonadGen m, GenBase m ~ Identity) => m (PrefixMap V)
 genPrefixMap = do
     entries <- Gen.list (Range.linear 0 10) genEntry
     kvps    <- forM entries $ \(piece, key) -> do
@@ -144,7 +151,7 @@ genPrefixMap = do
 
     pure $ fromList kvps
 
-genPrefixTree :: forall m . MonadGen m => Key -> m (PrefixTree V)
+genPrefixTree :: forall m . (MonadGen m, GenBase m ~ Identity) => Key -> m (PrefixTree V)
 genPrefixTree key = Gen.recursive
     -- list picker generator combinator
     Gen.choice
@@ -161,7 +168,7 @@ genPrefixTree key = Gen.recursive
 makeToml :: [(Key, AnyValue)] -> TOML
 makeToml kv = TOML (fromList kv) mempty mempty
 
-genToml :: MonadGen m => m TOML
+genToml :: (MonadGen m, GenBase m ~ Identity) => m TOML
 genToml = Gen.recursive
             Gen.choice
             [ makeToml <$> genKeyAnyValueList ]
