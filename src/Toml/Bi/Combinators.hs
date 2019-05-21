@@ -164,7 +164,7 @@ read :: (Show a, Read a) => Key -> TomlCodec a
 read = match _Read
 
 -- | Codec for general nullary sum data types with a 'Bounded', 'Enum', 'Read',
--- and 'Show' instance.
+-- and 'Show' instance. This codec provides much better error messages than 'read' for nullary sum types.
 sumType :: (Bounded a, Enum a, Read a, Show a) => Key -> TomlCodec a
 sumType = match _SumType
 
