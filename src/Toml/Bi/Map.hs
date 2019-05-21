@@ -29,7 +29,7 @@ module Toml.Bi.Map
        , _StringText
        , _ReadString
        , _BoundedInteger
-       , _SumTypeText
+       , _EnumBoundedText
        , _ByteStringText
        , _LByteStringText
 
@@ -59,7 +59,7 @@ module Toml.Bi.Map
 
        , _Left
        , _Right
-       , _SumType
+       , _EnumBounded
        , _Just
 
          -- * Useful utility functions
@@ -383,15 +383,15 @@ _BoundedInteger = BiMap (Right . toInteger) eitherBounded
          in Left $ ArbitraryError msg
       | otherwise = Right (fromIntegral n)
 
--- | Helper bimap for 'SumType' and 'Data.Text.Text'.
-_SumTypeText :: (Read a, Show a, Enum a, Bounded a) => TomlBiMap a Text
-_SumTypeText = BiMap
+-- | Helper bimap for 'EnumBounded' and 'Data.Text.Text'.
+_EnumBoundedText :: (Read a, Show a, Enum a, Bounded a) => TomlBiMap a Text
+_EnumBoundedText = BiMap
     { forward  = Right . tShow
-    , backward = toSumType
+    , backward = toEnumBounded
     }
   where
-    toSumType :: forall a. (Read a, Show a, Enum a, Bounded a) => Text -> Either TomlBiMapError a
-    toSumType value
+    toEnumBounded :: forall a. (Read a, Show a, Enum a, Bounded a) => Text -> Either TomlBiMapError a
+    toEnumBounded value
       | value `elem` options =
           Right (fromText value)
       | otherwise =
@@ -402,9 +402,9 @@ _SumTypeText = BiMap
         fromText = read . T.unpack
 
 -- | Bimap for nullary sum data types with 'Read', 'Show', 'Enum' and 'Bounded'
--- instances.  Usually used as 'Toml.Bi.Combinators.sumType' combinator.
-_SumType :: (Read a, Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
-_SumType = _SumTypeText >>> _Text
+-- instances.  Usually used as 'Toml.Bi.Combinators.enumBounded' combinator.
+_EnumBounded :: (Read a, Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
+_EnumBounded = _EnumBoundedText >>> _Text
 
 {- | 'Word' bimap for 'AnyValue'. Usually used as
 'Toml.Bi.Combinators.word' combinator.

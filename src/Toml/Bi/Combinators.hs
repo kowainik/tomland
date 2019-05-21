@@ -38,7 +38,7 @@ module Toml.Bi.Combinators
          -- * Additional codecs for custom types
        , textBy
        , read
-       , sumType
+       , enumBounded
 
          -- * Combinators for tables
        , table
@@ -70,17 +70,18 @@ import Data.Word (Word)
 import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec, execTomlCodec)
-import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
-                    _HashSet, _Int, _IntSet, _Integer, _LByteString, _LText, _LocalTime, _Natural,
-                    _NonEmpty, _Read, _Set, _String, _SumType, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
+import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _EnumBounded,
+                    _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString, _LText, _LocalTime,
+                    _Natural, _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word,
+                    _ZonedTime)
 import Toml.Bi.Monad (Codec (..))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
-import qualified Toml.PrefixTree as Prefix
 import qualified Data.Text.Lazy as L
+import qualified Toml.PrefixTree as Prefix
 
 
 {- | General function to create bidirectional converters for key-value pairs. In
@@ -165,8 +166,8 @@ read = match _Read
 
 -- | Codec for general nullary sum data types with a 'Bounded', 'Enum', 'Read',
 -- and 'Show' instance. This codec provides much better error messages than 'read' for nullary sum types.
-sumType :: (Bounded a, Enum a, Read a, Show a) => Key -> TomlCodec a
-sumType = match _SumType
+enumBounded :: (Bounded a, Enum a, Read a, Show a) => Key -> TomlCodec a
+enumBounded = match _EnumBounded
 
 -- | Codec for text values as 'ByteString'.
 byteString :: Key -> TomlCodec ByteString
