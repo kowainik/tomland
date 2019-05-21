@@ -395,7 +395,7 @@ _SumTypeText = BiMap
       | value `elem` options =
           Right (fromText value)
       | otherwise =
-          let msg = "Value is " <> value <> " but expected one of: " <> T.intercalate ", " options
+          let msg = "Value is '" <> value <> "' but expected one of: " <> T.intercalate ", " options
           in Left (ArbitraryError msg)
       where
         options  = fmap tShow ([minBound @a .. maxBound @a])
