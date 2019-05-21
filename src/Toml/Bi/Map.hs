@@ -384,13 +384,13 @@ _BoundedInteger = BiMap (Right . toInteger) eitherBounded
       | otherwise = Right (fromIntegral n)
 
 -- | Helper bimap for 'EnumBounded' and 'Data.Text.Text'.
-_EnumBoundedText :: (Read a, Show a, Enum a, Bounded a) => TomlBiMap a Text
+_EnumBoundedText :: forall a. (Read a, Show a, Enum a, Bounded a) => TomlBiMap a Text
 _EnumBoundedText = BiMap
     { forward  = Right . tShow
     , backward = toEnumBounded
     }
   where
-    toEnumBounded :: forall a. (Read a, Show a, Enum a, Bounded a) => Text -> Either TomlBiMapError a
+    toEnumBounded :: Text -> Either TomlBiMapError a
     toEnumBounded value
       | value `elem` options =
           Right (fromText value)
