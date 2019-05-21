@@ -5,6 +5,10 @@ testS = "foobar"
 testA = [   "abacaba", "foo", 'bar'    ]
 testN = "newtype"
 
+testC = "Light"
+# testC = "Dark"
+# testC = "HighContrast"
+
 # either.Left = 3
 either.Right = "Right"
 
