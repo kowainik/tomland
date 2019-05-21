@@ -29,6 +29,7 @@ module Toml.Bi.Map
        , _StringText
        , _ReadString
        , _BoundedInteger
+       , _SumTypeText
        , _ByteStringText
        , _LByteStringText
 
@@ -58,6 +59,7 @@ module Toml.Bi.Map
 
        , _Left
        , _Right
+       , _SumType
        , _Just
 
          -- * Useful utility functions
@@ -380,6 +382,29 @@ _BoundedInteger = BiMap (Right . toInteger) eitherBounded
          let msg = "Value " <> tShow n <> " is greater than maxBound: " <> tShow (maxBound @a)
          in Left $ ArbitraryError msg
       | otherwise = Right (fromIntegral n)
+
+-- | Helper bimap for 'SumType' and 'Data.Text.Text'.
+_SumTypeText :: (Read a, Show a, Enum a, Bounded a) => TomlBiMap a Text
+_SumTypeText = BiMap
+    { forward  = Right . tShow
+    , backward = toSumType
+    }
+  where
+    toSumType :: forall a. (Read a, Show a, Enum a, Bounded a) => Text -> Either TomlBiMapError a
+    toSumType value
+      | value `elem` options =
+          Right (fromText value)
+      | otherwise =
+          let msg = "Value is " <> value <> " but expected one of: " <> T.intercalate ", " options
+          in Left (ArbitraryError msg)
+      where
+        options  = fmap tShow ([minBound @a .. maxBound @a])
+        fromText = read . T.unpack
+
+-- | Bimap for nullary sum data types with 'Read', 'Show', 'Enum' and 'Bounded'
+-- instances.  Usually used as 'Toml.Bi.Combinators.sumType' combinator.
+_SumType :: (Read a, Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
+_SumType = _SumTypeText >>> _Text
 
 {- | 'Word' bimap for 'AnyValue'. Usually used as
 'Toml.Bi.Combinators.word' combinator.
