@@ -38,6 +38,7 @@ module Toml.Bi.Combinators
          -- * Additional codecs for custom types
        , textBy
        , read
+       , sumType
 
          -- * Combinators for tables
        , table
@@ -71,7 +72,7 @@ import Numeric.Natural (Natural)
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec, execTomlCodec)
 import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
                     _HashSet, _Int, _IntSet, _Integer, _LByteString, _LText, _LocalTime, _Natural,
-                    _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
+                    _NonEmpty, _Read, _Set, _String, _SumType, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
 import Toml.Bi.Monad (Codec (..))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
@@ -161,6 +162,11 @@ string = match _String
 -- | Codec for values with a 'Read' and 'Show' instance.
 read :: (Show a, Read a) => Key -> TomlCodec a
 read = match _Read
+
+-- | Codec for general nullary sum data types with a 'Bounded', 'Enum', 'Read',
+-- and 'Show' instance.
+sumType :: (Bounded a, Enum a, Read a, Show a) => Key -> TomlCodec a
+sumType = match _SumType
 
 -- | Codec for text values as 'ByteString'.
 byteString :: Key -> TomlCodec ByteString
