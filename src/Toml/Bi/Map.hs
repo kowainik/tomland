@@ -73,6 +73,7 @@ import Control.DeepSeq (NFData)
 import Data.Bifunctor (bimap, first)
 import Data.ByteString (ByteString)
 import Data.Hashable (Hashable)
+import Data.Map (Map)
 import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
@@ -90,6 +91,7 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashSet as HS
 import qualified Data.IntSet as IS
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -384,26 +386,27 @@ _BoundedInteger = BiMap (Right . toInteger) eitherBounded
       | otherwise = Right (fromIntegral n)
 
 -- | Helper bimap for 'EnumBounded' and 'Data.Text.Text'.
-_EnumBoundedText :: forall a. (Read a, Show a, Enum a, Bounded a) => TomlBiMap a Text
+_EnumBoundedText :: forall a. (Show a, Enum a, Bounded a) => TomlBiMap a Text
 _EnumBoundedText = BiMap
     { forward  = Right . tShow
     , backward = toEnumBounded
     }
   where
     toEnumBounded :: Text -> Either TomlBiMapError a
-    toEnumBounded value
-      | value `elem` options =
-          Right (fromText value)
-      | otherwise =
-          let msg = "Value is '" <> value <> "' but expected one of: " <> T.intercalate ", " options
-          in Left (ArbitraryError msg)
+    toEnumBounded value = case M.lookup value enumOptions of
+        Just a  -> Right a
+        Nothing ->
+            let msg = "Value is '" <> value <> "' but expected one of: " <> T.intercalate ", " options
+            in Left (ArbitraryError msg)
       where
-        options  = fmap tShow ([minBound @a .. maxBound @a])
-        fromText = read . T.unpack
+        enumOptions :: Map Text a
+        enumOptions = M.fromList $ zip options enums
+        options  = fmap tShow enums
+        enums = [minBound @a .. maxBound @a]
 
--- | Bimap for nullary sum data types with 'Read', 'Show', 'Enum' and 'Bounded'
+-- | Bimap for nullary sum data types with 'Show', 'Enum' and 'Bounded'
 -- instances.  Usually used as 'Toml.Bi.Combinators.enumBounded' combinator.
-_EnumBounded :: (Read a, Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
+_EnumBounded :: (Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
 _EnumBounded = _EnumBoundedText >>> _Text
 
 {- | 'Word' bimap for 'AnyValue'. Usually used as

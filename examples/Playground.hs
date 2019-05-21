@@ -34,7 +34,7 @@ newtype N = N Text
 data ColorScheme = Light
                  | Dark
                  | HighContrast
-                 deriving (Read, Show, Enum, Bounded)
+                 deriving (Show, Enum, Bounded)
 
 data Test = Test
     { testB  :: Bool
