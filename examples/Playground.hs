@@ -31,6 +31,11 @@ userCodec = User
 
 newtype N = N Text
 
+data ColorScheme = Light
+                 | Dark
+                 | HighContrast
+                 deriving (Show, Enum, Bounded)
+
 data Test = Test
     { testB  :: Bool
     , testI  :: Int
@@ -41,6 +46,7 @@ data Test = Test
     , testX  :: TestInside
     , testY  :: Maybe TestInside
     , testN  :: N
+    , testC  :: ColorScheme
     , testE1 :: Either Integer String
     , testE2 :: Either String Double
     , users  :: [User]
@@ -58,6 +64,7 @@ testT = Test
     <*> Toml.table insideCodec "testX" .= testX
     <*> Toml.dioptional ((Toml.table insideCodec) "testY") .= testY
     <*> Toml.diwrap (Toml.text "testN") .= testN
+    <*> Toml.enumBounded "testC" .= testC
     <*> eitherT1 .= testE1
     <*> eitherT2 .= testE2
     <*> Toml.list userCodec "user" .= users
