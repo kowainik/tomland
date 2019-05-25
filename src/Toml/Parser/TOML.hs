@@ -7,22 +7,20 @@ module Toml.Parser.TOML
        , hasKeyP
        , tableP
        , tableArrayP
-       , inlineTableP
-       , inlineArrayP
        , tomlP
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Monad.Combinators (between, eitherP, optional, sepEndBy, sepEndBy1)
-import Data.List.NonEmpty (NonEmpty (..), (<|))
+import Control.Monad.Combinators (between, optional, sepEndBy, sepEndBy1)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 
-import Toml.Parser.Core (Parser, alphaNumChar, char, lexeme, sc, text, try)
+import Data.List.NonEmpty (NonEmpty ((:|)), (<|))
+import Toml.Parser.Core (Parser, alphaNumChar, char, eof, lexeme, sc, text, try)
 import Toml.Parser.String (basicStringP, literalStringP)
 import Toml.Parser.Value (anyValueP)
-import Toml.PrefixTree (Key (..), KeysDiff (..), Piece (..), fromList, keysDiff)
-import Toml.Type (AnyValue, TOML (..))
+import Toml.PrefixTree (Key (..), KeysDiff (..), Piece (..), keysDiff, single)
+import Toml.Type (TOML (..))
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
 import qualified Data.HashMap.Lazy as HashMap
@@ -57,74 +55,64 @@ tableNameP = between (text "[") (text "]") keyP
 tableArrayNameP :: Parser Key
 tableArrayNameP = between (text "[[") (text "]]") keyP
 
--- Tables
-
 -- | Parser for lines starting with 'key =', either values or inline tables.
-hasKeyP :: Parser (Key, Either AnyValue TOML)
-hasKeyP = (,) <$> keyP <* text "=" <*> eitherP anyValueP inlineTableP
+hasKeyP :: Parser TOML
+hasKeyP = keyP <* text "="
+    >>= \k -> inlineTableP k <|> try (inlineArrayP k) <|> keyValueP k
+
+-- | Parser for key/value pairs.
+keyValueP :: Key -> Parser TOML
+keyValueP k = anyValueP
+    >>= \v -> pure $ TOML (HashMap.singleton k v) mempty mempty
 
 -- | Parser for inline tables.
-inlineTableP :: Parser TOML
-inlineTableP = between
+inlineTableP :: Key -> Parser TOML
+inlineTableP k = between
     (text "{") (text "}")
-    (tomlFromInline <$> hasKeyP `sepEndBy` text ",")
+    (mconcat <$> hasKeyP `sepEndBy` text ",")
+    >>= \v -> pure $ TOML mempty (single k v) mempty
+
+-- | Parser for inline arrays of tables.
+inlineArrayP :: Key -> Parser TOML
+inlineArrayP k = between
+    (text "[") (text "]")
+    (NE.fromList <$> inlineTableP k `sepEndBy1` text ",")
+    >>= \v -> pure $ TOML mempty mempty (HashMap.singleton k v)
 
 -- | Parser for a table.
 tableP :: Parser (Key, TOML)
 tableP = do
     key  <- tableNameP
     toml <- subTableContent key
-    pure (key, toml)
+    pure (key, TOML mempty (single key toml) mempty)
 
 -- | Parser for an array of tables.
-tableArrayP :: Parser (Key, NonEmpty TOML)
+tableArrayP :: Parser (Key, TOML)
 tableArrayP = do
     key       <- tableArrayNameP
     localToml <- subTableContent key
     more      <- optional $ sameKeyP key tableArrayP
     case more of
-        Nothing         -> pure (key, localToml :| [])
-        Just (_, tomls) -> pure (key, localToml <| tomls)
-
--- | Parser for inline arrays of tables
-inlineArrayP :: Parser (Key, NonEmpty TOML)
-inlineArrayP = (,)
-  <$> keyP <* text "="
-  <*> between
-        (text "[") (text "]")
-        (NE.fromList <$> inlineTableP `sepEndBy1` text ",")
+        Nothing         -> pure (key, TOML mempty mempty (HashMap.singleton key (localToml :| [])))
+        Just (_, tomls) -> pure (key, TOML mempty mempty (HashMap.singleton key (localToml <| (tomlTableArrays tomls HashMap.! key))))
 
 -- | Parser for a '.toml' file
 tomlP :: Parser TOML
 tomlP = do
     sc
-    (val, inline)  <- distributeEithers <$> many hasKeyP
-    (table, array) <- fmap distributeEithers
-        $ many
-        $ eitherPairP (try tableP) (tableArrayP <|> inlineArrayP)
-
-    pure TOML
-        { tomlPairs       = HashMap.fromList val
-        , tomlTables      = fromList $ inline ++ table
-        , tomlTableArrays = HashMap.fromList array
-        }
+    hasKey <- many hasKeyP
+    noKey  <- many $ try tableP <|> tableArrayP
+    eof
+    pure $ mconcat $ hasKey <> map snd noKey
 
 -- | Parser for full 'TOML' under a certain key
 subTableContent :: Key -> Parser TOML
 subTableContent key = do
-    (val, inline)  <- distributeEithers <$> many hasKeyP
-    (table, array) <- fmap distributeEithers
-        $ many
-        $ childKeyP key
-        $ eitherPairP (try tableP) (tableArrayP <|> inlineArrayP)
+    hasKey <- many hasKeyP
+    noKey  <- many $ childKeyP key $ try tableP <|> tableArrayP
+    pure $ mconcat $ hasKey <> map snd noKey
 
-    pure TOML
-        { tomlPairs       = HashMap.fromList val
-        , tomlTables      = fromList $ inline ++ table
-        , tomlTableArrays = HashMap.fromList array
-        }
-
--- | @childKeyP key p@ returns the result of @p@ if the key returned by @p@ is
+-- | @childKeyP key p@ pures the result of @p@ if the key pureed by @p@ is
 -- a child key of the @key@, and fails otherwise.
 childKeyP :: Key -> Parser (Key, a) -> Parser (Key, a)
 childKeyP key p = try $ do
@@ -133,7 +121,7 @@ childKeyP key p = try $ do
         FstIsPref k' -> pure (k', x)
         _            -> fail $ show k ++ " is not a child key of " ++ show key
 
--- | @sameKeyP key p@ returns the result of @p@ if the key returned by @p@ is
+-- | @sameKeyP key p@ pures the result of @p@ if the key pureed by @p@ is
 -- the same as @key@, and fails otherwise.
 sameKeyP :: Key -> Parser (Key, a) -> Parser (Key, a)
 sameKeyP key parser = try $ do
@@ -141,23 +129,3 @@ sameKeyP key parser = try $ do
     case keysDiff key k of
         Equal -> pure (k, x)
         _     -> fail $ show k ++ " is not the same as " ++ show key
-
--- Helper functions
-
--- | Helper function to create a 'TOML' from a list of key/values or inline tables.
-tomlFromInline :: [(Key, Either AnyValue TOML)] -> TOML
-tomlFromInline kvs =
-    let (lefts, rights) = distributeEithers kvs
-    in TOML (HashMap.fromList lefts) (fromList rights) mempty
-
--- | Helper function to seperate the 'Either'.
-distributeEithers :: [(c, Either a b)] -> ([(c, a)], [(c, b)])
-distributeEithers = foldr distribute ([], [])
-  where
-    distribute :: (c, Either a b) -> ([(c, a)], [(c, b)]) -> ([(c, a)], [(c, b)])
-    distribute (k, Left a) (ls, rs)  = ((k, a) : ls, rs)
-    distribute (k, Right b) (ls, rs) = (ls, (k, b) : rs)
-
--- | Helper function to make an 'Either' parser.
-eitherPairP :: Alternative m => m (c, a) -> m (c, b) -> m (c, Either a b)
-eitherPairP a b = (fmap Left <$> a) <|> (fmap Right <$> b)
