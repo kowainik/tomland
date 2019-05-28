@@ -11,7 +11,7 @@ module Toml.Printer
        ) where
 
 import Data.HashMap.Strict (HashMap)
-import Data.List (sortOn, splitAt)
+import Data.List (sortBy, splitAt)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -26,9 +26,11 @@ import qualified Data.Text as Text
 
 {- | Configures the pretty printer. -}
 data PrintOptions = PrintOptions
-    { shouldSort :: Bool  -- ^ should table keys be sorted or not
-    , indent     :: Int   -- ^ indentation size
-    } deriving (Show)
+    {- | How table keys should be sorted, if at all. -}
+    { printOptionsSorting :: !(Maybe (Key -> Key -> Ordering))
+    {- | Number of spaces by which to indent. -}
+    , printOptionsIndent  :: !Int
+    }
 
 {- | Default printing options.
 
@@ -36,7 +38,7 @@ data PrintOptions = PrintOptions
 2. Indents with 2 spaces.
 -}
 defaultOptions :: PrintOptions
-defaultOptions = PrintOptions True 2
+defaultOptions = PrintOptions (Just compare) 2
 
 {- | Converts 'TOML' type into 'Data.Text.Text' (using 'defaultOptions').
 
@@ -171,13 +173,17 @@ prettyTableArrays options i pref = mapOrdered arrText options
 
 -- Returns an indentation prefix
 tabWith :: PrintOptions -> Int -> Text
-tabWith options n = Text.replicate (n * indent options) " "
+tabWith options n = Text.replicate (n * printOptionsIndent options) " "
 
 -- Returns a proper sorting function
-mapOrdered :: Ord k => ((k, v) -> [t]) -> PrintOptions -> HashMap k v -> [t]
-mapOrdered f options
-    | shouldSort options = concatMap f . sortOn fst . HashMap.toList
-    | otherwise          = concatMap f . HashMap.toList
+mapOrdered :: ((Key, v) -> [t]) -> PrintOptions -> HashMap Key v -> [t]
+mapOrdered f options = case printOptionsSorting options of
+    Just sorter -> concatMap f . sortBy (applyToFirst sorter) . HashMap.toList
+    Nothing     -> concatMap f . HashMap.toList
+
+-- Compares pairs of tuples by their first elements with a custom sorter
+applyToFirst :: Ord a => (a -> a -> Ordering) -> (a, b) -> (a, b) -> Ordering
+applyToFirst sorter x y = sorter (fst x) (fst y)
 
 -- Adds next part of the table name to the accumulator.
 addPrefix :: Key -> Text -> Text
