@@ -130,8 +130,14 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options
 
 -- | Returns pretty formatted tables section of the 'TOML'.
 prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> [Text]
-prettyTables options i pref = mapOrdered (prettyTable . snd) options
+prettyTables options i pref asPieces = mapOrdered (prettyTable . snd) options asKeys
   where
+    asKeys :: HashMap Key (PrefixTree TOML)
+    asKeys = HashMap.fromList . map pieceToKey $ HashMap.toList asPieces
+
+    pieceToKey :: (Piece, a) -> (Key, a)
+    pieceToKey (piece, x) = (Key (pure piece), x)
+
     prettyTable :: PrefixTree TOML -> [Text]
     prettyTable (Leaf k toml) =
         let name = addPrefix k pref

@@ -4,12 +4,12 @@ module Test.Toml.Printer.Golden
        ( test_prettyGolden
        ) where
 
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Silver (goldenVsAction)
-import Data.List.NonEmpty (NonEmpty ((:|)))
 
 import Toml (TOML, Value (..))
-import Toml.Edsl ((=:), mkToml, table, tableArray, empty)
+import Toml.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.PrefixTree ((<|))
 import Toml.Printer (PrintOptions (..), defaultOptions, prettyOptions)
 
@@ -34,16 +34,16 @@ example = mkToml $ do
 
 noFormatting :: PrintOptions
 noFormatting = PrintOptions
-    { shouldSort = False
-    , indent     = 0
+    { printOptionsSorting = Nothing
+    , printOptionsIndent  = 0
     }
 
 test_prettyGolden :: TestTree
 test_prettyGolden =
     testGroup "Toml.Printer"
         [ test "pretty_default" defaultOptions
-        , test "pretty_sorted_only" noFormatting{ shouldSort = True}
-        , test "pretty_indented_only" noFormatting{ indent = 4 }
+        , test "pretty_sorted_only" noFormatting { printOptionsSorting = Just compare }
+        , test "pretty_indented_only" noFormatting { printOptionsIndent = 4 }
         , test "pretty_unformatted" noFormatting
         ]
   where
