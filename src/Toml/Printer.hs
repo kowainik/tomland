@@ -26,9 +26,9 @@ import qualified Data.Text as Text
 
 {- | Configures the pretty printer. -}
 data PrintOptions = PrintOptions
-    {- | How table keys should be sorted, if at all. -}
-    { printOptionsSorting :: !(Maybe (Key -> Key -> Ordering))
-    {- | Number of spaces by which to indent. -}
+    { -- | How table keys should be sorted, if at all.
+      printOptionsSorting :: !(Maybe (Key -> Key -> Ordering))
+      -- | Number of spaces by which to indent.
     , printOptionsIndent  :: !Int
     }
 
@@ -80,7 +80,7 @@ prettyTomlInd :: PrintOptions -- ^ Printing options
               -> Int          -- ^ Current indentation
               -> Text         -- ^ Accumulator for table names
               -> TOML         -- ^ Given 'TOML'
-              -> [Text]         -- ^ Pretty result
+              -> [Text]       -- ^ Pretty result
 prettyTomlInd options i prefix TOML{..} = concat
     [ prettyKeyValue    options i tomlPairs
     , prettyTables      options i prefix tomlTables
@@ -173,7 +173,7 @@ prettyTableArrays options i pref = mapOrdered arrText options
 
 -- Returns an indentation prefix
 tabWith :: PrintOptions -> Int -> Text
-tabWith options n = Text.replicate (n * printOptionsIndent options) " "
+tabWith PrintOptions{..} n = Text.replicate (n * printOptionsIndent) " "
 
 -- Returns a proper sorting function
 mapOrdered :: ((Key, v) -> [t]) -> PrintOptions -> HashMap Key v -> [t]
@@ -181,9 +181,9 @@ mapOrdered f options = case printOptionsSorting options of
     Just sorter -> concatMap f . sortBy (applyToFirst sorter) . HashMap.toList
     Nothing     -> concatMap f . HashMap.toList
 
--- Compares pairs of tuples by their first elements with a custom sorter
-applyToFirst :: Ord a => (a -> a -> Ordering) -> (a, b) -> (a, b) -> Ordering
-applyToFirst sorter x y = sorter (fst x) (fst y)
+-- Applies a binary function to the first elements of tuples
+applyToFirst :: (a -> b -> c) -> (a, x) -> (b, y) -> c
+applyToFirst f x y = f (fst x) (fst y)
 
 -- Adds next part of the table name to the accumulator.
 addPrefix :: Key -> Text -> Text
