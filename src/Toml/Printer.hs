@@ -10,6 +10,7 @@ module Toml.Printer
        , prettyKey
        ) where
 
+import Data.Bifunctor (first)
 import Data.HashMap.Strict (HashMap)
 import Data.List (sortBy, splitAt)
 import Data.List.NonEmpty (NonEmpty)
@@ -93,7 +94,7 @@ prettyKey = Text.intercalate "." . map unPiece . NonEmpty.toList . unKey
 
 -- | Returns pretty formatted  key-value pairs of the 'TOML'.
 prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> [Text]
-prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options
+prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toList
   where
     kvText :: (Key, AnyValue) -> Text
     kvText (k, AnyValue v) =
@@ -132,11 +133,11 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options
 prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> [Text]
 prettyTables options i pref asPieces = mapOrdered (prettyTable . snd) options asKeys
   where
-    asKeys :: HashMap Key (PrefixTree TOML)
-    asKeys = HashMap.fromList . map pieceToKey $ HashMap.toList asPieces
+    asKeys :: [(Key, PrefixTree TOML)]
+    asKeys = map (first pieceToKey) $ HashMap.toList asPieces
 
-    pieceToKey :: (Piece, a) -> (Key, a)
-    pieceToKey (piece, x) = (Key (pure piece), x)
+    pieceToKey :: Piece -> Key
+    pieceToKey piece = Key (pure piece)
 
     prettyTable :: PrefixTree TOML -> [Text]
     prettyTable (Leaf k toml) =
@@ -161,7 +162,7 @@ prettyTables options i pref asPieces = mapOrdered (prettyTable . snd) options as
     prettyTableName n = "[" <> n <> "]"
 
 prettyTableArrays :: PrintOptions -> Int -> Text -> HashMap Key (NonEmpty TOML) -> [Text]
-prettyTableArrays options i pref = mapOrdered arrText options
+prettyTableArrays options i pref = mapOrdered arrText options . HashMap.toList
   where
     arrText :: (Key, NonEmpty TOML) -> [Text]
     arrText (k, ne) =
@@ -182,10 +183,10 @@ tabWith :: PrintOptions -> Int -> Text
 tabWith PrintOptions{..} n = Text.replicate (n * printOptionsIndent) " "
 
 -- Returns a proper sorting function
-mapOrdered :: ((Key, v) -> [t]) -> PrintOptions -> HashMap Key v -> [t]
+mapOrdered :: ((Key, v) -> [t]) -> PrintOptions -> [(Key, v)] -> [t]
 mapOrdered f options = case printOptionsSorting options of
-    Just sorter -> concatMap f . sortBy (applyToFirst sorter) . HashMap.toList
-    Nothing     -> concatMap f . HashMap.toList
+    Just sorter -> concatMap f . sortBy (applyToFirst sorter)
+    Nothing     -> concatMap f
 
 -- Applies a binary function to the first elements of tuples
 applyToFirst :: (a -> b -> c) -> (a, x) -> (b, y) -> c
