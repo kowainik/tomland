@@ -1,5 +1,3 @@
-
-
 -- | This module contains golden tests for @Toml.Printer@.
 
 module Test.Toml.Printer.Golden
