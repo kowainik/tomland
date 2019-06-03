@@ -1,0 +1,26 @@
+a = "a"
+b = "bb"
+c = "cccc"
+d = "ddd"
+
+[baz]
+
+[doo]
+
+[foo]
+
+[qux.doo]
+spam = "!"
+egg = "?"
+
+[[deeper]]
+green = true
+
+[[deeper]]
+[deeper.blue]
+red = 255
+
+[[deepest]]
+ping = "pong"
+
+[[deepest]]
