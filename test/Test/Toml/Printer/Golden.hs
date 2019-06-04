@@ -39,15 +39,18 @@ noFormatting = PrintOptions
     , printOptionsIndent  = 0
     }
 
--- | Sorts "spam" to the beginning and "egg" to the end
-spamEgg :: Key -> Key -> Ordering
-spamEgg k1 k2
-    | (k1 == fromText "spam") || (k2 == fromText "egg") = LT
-    | (k1 == fromText "egg") || (k2 == fromText "spam") = GT
-    | otherwise                                         = compare k1 k2
+-- | Decorate keys as tuples so spam comes before egg
+spamEggDecorate :: Key -> (Int, Key)
+spamEggDecorate k
+    | k == fromText "spam" = (0, fromText "spam")
+    | k == fromText "egg" = (1, fromText "egg")
+    | otherwise = (2, k)
   where
     fromText :: Text -> Key
     fromText x = Key $ pure $ Piece x
+
+spamEgg :: Key -> Key -> Ordering
+spamEgg k1 k2 = compare (spamEggDecorate k1) (spamEggDecorate k2)
 
 test_prettyGolden :: TestTree
 test_prettyGolden =
