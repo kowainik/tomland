@@ -137,7 +137,7 @@ prettyTables options i pref asPieces = mapOrdered (prettyTable . snd) options as
     asKeys = map (first pieceToKey) $ HashMap.toList asPieces
 
     pieceToKey :: Piece -> Key
-    pieceToKey piece = Key (pure piece)
+    pieceToKey = Key . pure
 
     prettyTable :: PrefixTree TOML -> [Text]
     prettyTable (Leaf k toml) =

@@ -5,13 +5,13 @@ module Test.Toml.Printer.Golden
        ) where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Text (Text)
+import Data.Ord (comparing)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Silver (goldenVsAction)
 
 import Toml (TOML, Value (..))
 import Toml.Edsl (empty, mkToml, table, tableArray, (=:))
-import Toml.PrefixTree (Key (..), Piece (..), (<|))
+import Toml.PrefixTree (Key (..), (<|))
 import Toml.Printer (PrintOptions (..), defaultOptions, prettyOptions)
 
 example :: TOML
@@ -42,15 +42,12 @@ noFormatting = PrintOptions
 -- | Decorate keys as tuples so spam comes before egg
 spamEggDecorate :: Key -> (Int, Key)
 spamEggDecorate k
-    | k == fromText "spam" = (0, fromText "spam")
-    | k == fromText "egg" = (1, fromText "egg")
+    | k == "spam" = (0, "spam")
+    | k == "egg" = (1, "egg")
     | otherwise = (2, k)
-  where
-    fromText :: Text -> Key
-    fromText x = Key $ pure $ Piece x
 
 spamEgg :: Key -> Key -> Ordering
-spamEgg k1 k2 = compare (spamEggDecorate k1) (spamEggDecorate k2)
+spamEgg = comparing spamEggDecorate
 
 test_prettyGolden :: TestTree
 test_prettyGolden =
