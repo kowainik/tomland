@@ -11,6 +11,7 @@ module Toml.Printer
        ) where
 
 import Data.Bifunctor (first)
+import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import Data.List (sortBy, splitAt)
 import Data.List.NonEmpty (NonEmpty)
@@ -185,12 +186,8 @@ tabWith PrintOptions{..} n = Text.replicate (n * printOptionsIndent) " "
 -- Returns a proper sorting function
 mapOrdered :: ((Key, v) -> [t]) -> PrintOptions -> [(Key, v)] -> [t]
 mapOrdered f options = case printOptionsSorting options of
-    Just sorter -> concatMap f . sortBy (applyToFirst sorter)
+    Just sorter -> concatMap f . sortBy (sorter `on` fst)
     Nothing     -> concatMap f
-
--- Applies a binary function to the first elements of tuples
-applyToFirst :: (a -> b -> c) -> (a, x) -> (b, y) -> c
-applyToFirst f x y = f (fst x) (fst y)
 
 -- Adds next part of the table name to the accumulator.
 addPrefix :: Key -> Text -> Text
