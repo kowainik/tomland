@@ -91,9 +91,9 @@ library
                      , containers >= 0.5.7 && < 0.7
                      , deepseq ^>= 1.4
                      , hashable ^>= 1.2
-                     , megaparsec ^>= 7.0.1
+                     , megaparsec ^>= 7.0.5
                      , mtl ^>= 2.2
-                     , parser-combinators
+                     , parser-combinators ^>= 1.1.0
                      , text ^>= 1.2
                      , time >= 1.8 && < 1.10
                      , transformers ^>= 0.5
@@ -141,7 +141,7 @@ test-suite tomland-test
                      , containers >= 0.5.7 && < 0.7
                      , hashable
                      , hedgehog ^>= 1.0
-                     , hspec-megaparsec
+                     , hspec-megaparsec ^>= 2.0.0
                      , megaparsec
                      , tasty ^>= 1.2
                      , tasty-hedgehog ^>= 1.0.0.0
@@ -171,10 +171,9 @@ benchmark tomland-benchmark
                       -with-rtsopts=-N
                       -O2
 
-  build-depends:      base
-                    , aeson
+  build-depends:      aeson
                     , deepseq ^>= 1.4
-                    , gauge
+                    , gauge ^>= 0.2.4
                     , htoml ^>= 1.0.0.3
                     , htoml-megaparsec ^>= 2.1.0.3
                     , parsec
