@@ -69,7 +69,7 @@ inlineTableP = between
     (tomlFromInline <$> hasKeyP `sepEndBy` text ",")
 
 
--- | Parser for an array of tables.
+-- | Parser for an array of tables under a certain key.
 tableArrayP :: Key -> Parser (NonEmpty TOML)
 tableArrayP key =
     tableP (Just key) `NC.sepBy1` sameKeyP key tableArrayNameP
@@ -78,7 +78,7 @@ tableArrayP key =
 tomlP :: Parser TOML
 tomlP = sc *> tableP Nothing <* eof
 
--- | Parser for full 'TOML' under a certain key
+-- | Parser for a table under a certain key
 tableP :: Maybe Key -> Parser TOML
 tableP key = do
     (val, inline)  <- distributeEithers <$> many hasKeyP
@@ -100,8 +100,9 @@ tableP key = do
         , tomlTableArrays = HashMap.fromList array
         }
 
--- | @childKeyP key p@ returns the result of @p@ if the key returned by @p@ is
--- a child key of the @key@, and fails otherwise.
+-- | @childKeyP (Just key) p@ checks if the result of @p@ if a child key of
+-- @key@ and returns the difference of the keys and the child key.
+-- @childKeyP Nothing p@ is only called from @tomlP@ (no parent key).
 childKeyP :: Maybe Key -> Parser Key -> Parser (Key, Key)
 childKeyP Nothing parser = try $ do
   k <- parser
