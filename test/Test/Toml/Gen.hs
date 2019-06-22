@@ -179,9 +179,9 @@ genToml = Gen.recursive
              $ Gen.list (Range.linear 0 5)
              $ (,) <$> genKey <*> genToml
     arrays = fmap fromList $
-             Gen.list (Range.linear 0 5) $ do
+             Gen.list (Range.linear 0 10) $ do
                key <- genKey
-               arr <- Gen.list (Range.linear 1 5) genToml
+               arr <- Gen.list (Range.linear 1 10) genToml
                return (key, NE.fromList arr)
 
 -- Date generators

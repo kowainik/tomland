@@ -31,7 +31,7 @@ x <> mempty = x
 @
 
 -}
-identityLaw :: (Eq a, Show a, Semigroup a, Monoid a) => Gen a -> PropertyTest
+identityLaw :: (Eq a, Show a, Monoid a) => Gen a -> PropertyTest
 identityLaw gen = prop "Monoid identity laws" $ do
     x <- forAll gen
 

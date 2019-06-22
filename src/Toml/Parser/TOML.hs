@@ -12,12 +12,12 @@ module Toml.Parser.TOML
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Monad.Combinators (between, eitherP, optional, sepEndBy)
-import Data.List.NonEmpty (NonEmpty (..), (<|))
+import Control.Monad.Combinators (between, eitherP, sepEndBy)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 
-import Toml.Parser.Core (Parser, alphaNumChar, char, lexeme, sc, text, try)
+import Toml.Parser.Core (Parser, alphaNumChar, char, eof, lexeme, sc, text, try)
 import Toml.Parser.String (basicStringP, literalStringP)
 import Toml.Parser.Value (anyValueP)
 import Toml.PrefixTree (Key (..), KeysDiff (..), Piece (..), fromList, keysDiff)
@@ -46,7 +46,7 @@ keyComponentP = Piece <$>
 
 -- | Parser for 'Key': dot-separated list of 'Piece'.
 keyP :: Parser Key
-keyP = Key <$> NC.sepBy1 keyComponentP (char '.')
+keyP = Key <$> keyComponentP `NC.sepBy1` char '.'
 
 -- | Parser for table name: 'Key' inside @[]@.
 tableNameP :: Parser Key
@@ -68,46 +68,31 @@ inlineTableP = between
     (text "{") (text "}")
     (tomlFromInline <$> hasKeyP `sepEndBy` text ",")
 
--- | Parser for a table.
-tableP :: Parser (Key, TOML)
-tableP = do
-    key  <- tableNameP
-    toml <- subTableContent key
-    pure (key, toml)
 
 -- | Parser for an array of tables.
-tableArrayP :: Parser (Key, NonEmpty TOML)
-tableArrayP = do
-    key       <- tableArrayNameP
-    localToml <- subTableContent key
-    more      <- optional $ sameKeyP key tableArrayP
-    case more of
-        Nothing         -> pure (key, localToml :| [])
-        Just (_, tomls) -> pure (key, localToml <| tomls)
+tableArrayP :: Key -> Parser (NonEmpty TOML)
+tableArrayP key =
+    tableP (Just key) `NC.sepBy1` sameKeyP key tableArrayNameP
 
 -- | Parser for a '.toml' file
 tomlP :: Parser TOML
-tomlP = do
-    sc
-    (val, inline)  <- distributeEithers <$> many hasKeyP
-    (table, array) <- fmap distributeEithers
-        $ many
-        $ eitherPairP (try tableP) tableArrayP
-
-    pure TOML
-        { tomlPairs       = HashMap.fromList val
-        , tomlTables      = fromList $ inline ++ table
-        , tomlTableArrays = HashMap.fromList array
-        }
+tomlP = sc *> tableP Nothing <* eof
 
 -- | Parser for full 'TOML' under a certain key
-subTableContent :: Key -> Parser TOML
-subTableContent key = do
+tableP :: Maybe Key -> Parser TOML
+tableP key = do
     (val, inline)  <- distributeEithers <$> many hasKeyP
     (table, array) <- fmap distributeEithers
         $ many
-        $ childKeyP key
-        $ eitherPairP (try tableP) tableArrayP
+        $ eitherPairP
+            (try $ do
+              (kDiff, k) <- childKeyP key tableNameP
+              t <- tableP (Just k)
+              pure (kDiff, t))
+            (do
+              (kDiff, k) <- childKeyP key tableArrayNameP
+              a <- tableArrayP k
+              pure (kDiff, a))
 
     pure TOML
         { tomlPairs       = HashMap.fromList val
@@ -117,20 +102,23 @@ subTableContent key = do
 
 -- | @childKeyP key p@ returns the result of @p@ if the key returned by @p@ is
 -- a child key of the @key@, and fails otherwise.
-childKeyP :: Key -> Parser (Key, a) -> Parser (Key, a)
-childKeyP key p = try $ do
-    (k, x) <- p
+childKeyP :: Maybe Key -> Parser Key -> Parser (Key, Key)
+childKeyP Nothing parser = try $ do
+  k <- parser
+  pure (k, k)
+childKeyP (Just key) parser = try $ do
+    k <- parser
     case keysDiff key k of
-        FstIsPref k' -> pure (k', x)
-        _            -> fail $ show k ++ " is not a child key of " ++ show key
+        FstIsPref d -> pure (d, k)
+        _           -> fail $ show k ++ " is not a child key of " ++ show key
 
 -- | @sameKeyP key p@ returns the result of @p@ if the key returned by @p@ is
 -- the same as @key@, and fails otherwise.
-sameKeyP :: Key -> Parser (Key, a) -> Parser (Key, a)
+sameKeyP :: Key -> Parser Key -> Parser Key
 sameKeyP key parser = try $ do
-    (k, x) <- parser
+    k <- parser
     case keysDiff key k of
-        Equal -> pure (k, x)
+        Equal -> pure k
         _     -> fail $ show k ++ " is not the same as " ++ show key
 
 -- Helper functions
