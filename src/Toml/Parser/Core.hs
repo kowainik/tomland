@@ -9,7 +9,6 @@ module Toml.Parser.Core
        , lexeme
        , sc
        , text
-       , eof
        ) where
 
 import Control.Applicative (Alternative (empty))
