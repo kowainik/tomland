@@ -1,7 +1,10 @@
-resolver: lts-13.1
+resolver: lts-13.25
 
 extra-deps:
+  - hedgehog-1.0
+  - parser-combinators-1.1.0
+  - tasty-hedgehog-1.0.0.0
+  - toml-parser-0.1.0.0
+
   - htoml-megaparsec-2.1.0.3
   - composition-prelude-2.0.2.1  # needed for htoml-megaparsec
-  - tasty-hedgehog-0.2.0.0
-  - toml-parser-0.1.0.0

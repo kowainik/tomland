@@ -1,25 +1,44 @@
 {- | This module introduces EDSL for manually specifying 'TOML' data types.
 
-__Example:__
+Consider the following raw TOML:
 
 @
-exampleToml :: TOML
-exampleToml = mkToml $ do
-    \"key1\" =: 1
-    \"key2\" =: Bool True
-    table \"tableName\" $
-        \"tableKey\" =: Array [\"Oh\", \"Hi\", \"Mark\"]
-    tableArray \"arrayName\" $
-        \"elem1\" =: \"yes\" :|
-        [ table \"elem2\" $ \"deep\" =: Integer 7
-        , empty
+key1 = 1
+key2 = true
+
+[meme-quotes]
+  quote1 = [ \"Oh\", \"Hi\", \"Mark\" ]
+
+[[arrayName]]
+  elem1 = "yes"
+
+[[arrayName]]
+  [arrayName.elem2]
+    deep = 7
+
+[[arrayName]]
+@
+
+using functions from this module you can specify the above TOML in safer way:
+
+@
+exampleToml :: 'TOML'
+exampleToml = 'mkToml' $ __do__
+    \"key1\" '=:' 1
+    \"key2\" '=:' Bool True
+    'table' \"meme-quotes\" $
+        \"quote1\" '=:' Array [\"Oh\", \"Hi\", \"Mark\"]
+    'tableArray' \"arrayName\" $
+        \"elem1\" '=:' \"yes\" :|
+        [ 'table' \"elem2\" $ \"deep\" '=:' Integer 7
+        , 'empty'
         ]
 @
-
 -}
 
 module Toml.Edsl
-       ( mkToml
+       ( TDSL
+       , mkToml
        , empty
        , (=:)
        , table
@@ -33,6 +52,7 @@ import Toml.PrefixTree (Key)
 import Toml.Type (TOML (..), Value, insertKeyVal, insertTable, insertTableArrays)
 
 
+-- | Monad for creating TOML.
 type TDSL = State TOML ()
 
 -- | Creates 'TOML' from the 'TDSL'.

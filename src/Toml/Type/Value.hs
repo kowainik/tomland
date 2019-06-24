@@ -6,6 +6,8 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators      #-}
 
+-- | GADT value for TOML.
+
 module Toml.Type.Value
        ( -- * Type of value
          TValue (..)
@@ -32,11 +34,10 @@ import GHC.Generics (Generic)
 data TValue = TBool | TInteger | TDouble | TText | TZoned | TLocal | TDay | THours | TArray
     deriving (Eq, Show, Read, NFData, Generic)
 
+-- | Convert 'TValue' constructors to 'String' without @T@ prefix.
 showType :: TValue -> String
 showType = drop 1 . show
 
--- TODO: examples are copy-pasted from TOML specification. Probably most of them
--- will be moved into parsing module in future.
 -- | Value in @key = value@ pair.
 data Value (t :: TValue) where
     {- | Boolean value:
@@ -56,9 +57,9 @@ int2 = 42
 int3 = 0
 int4 = -17
 int5 = 5_349_221
-hex1 = 0xDEADBEEF
-oct2 = 0o755 # useful for Unix file permissions
-bin1 = 0b11010110
+hex1 = 0xDEADBEEF  # hexadecimal
+oct2 = 0o755  # octal, useful for Unix file permissions
+bin1 = 0b11010110  # binary
 @
     -}
     Integer :: Integer -> Value 'TInteger
@@ -66,10 +67,28 @@ bin1 = 0b11010110
     {- | Floating point number:
 
 @
-flt1 = -3.1415   # fractional
-flt2 = 1e6       # exponent
-flt3 = 6.626e-34 # both
-flt4 = 9_224_617.445_991_228_313
+# fractional
+flt1 = +1.0
+flt2 = 3.1415
+flt3 = -0.01
+
+# exponent
+flt4 = 5e+22
+flt5 = 1e6
+flt6 = -2E-2
+
+# both
+flt7 = 6.626e-34
+
+# infinity
+sf1 = inf  # positive infinity
+sf2 = +inf # positive infinity
+sf3 = -inf # negative infinity
+
+# not a number
+sf4 = nan  # actual sNaN/qNaN encoding is implementation specific
+sf5 = +nan # same as \`nan\`
+sf6 = -nan # same as \`nan\`
 @
     -}
     Double :: Double -> Value 'TDouble
@@ -77,9 +96,21 @@ flt4 = 9_224_617.445_991_228_313
     {- | String value:
 
 @
-key = "value"
-bare_key = "value"
-bare-key = "value"
+# basic string
+name = \"Orange\"
+physical.color = "orange"
+physical.shape = "round"
+
+# multiline basic string
+str1 = """
+Roses are red
+Violets are blue"""
+
+# literal string: What you see is what you get.
+winpath  = 'C:\Users\nodejs\templates'
+winpath2 = '\\ServerX\admin$\system32\'
+quoted   = 'Tom \"Dubs\" Preston-Werner'
+regex    = '<\i\c*\s*>'
 @
     -}
     Text :: Text -> Value 'TText
@@ -89,6 +120,7 @@ bare-key = "value"
 @
 odt1 = 1979-05-27T07:32:00Z
 odt2 = 1979-05-27T00:32:00-07:00
+odt3 = 1979-05-27T00:32:00.999999-07:00
 @
     -}
     Zoned :: ZonedTime -> Value 'TZoned
@@ -127,7 +159,7 @@ lt2 = 00:32:00.999999
 arr1 = [ 1, 2, 3 ]
 arr2 = [ "red", "yellow", "green" ]
 arr3 = [ [ 1, 2 ], [3, 4, 5] ]
-arr4 = [ "all", 'strings', """are the same""", '''type''']
+arr4 = [ "all", \'strings\', """are the same""", \'\'\'type\'\'\']
 arr5 = [ [ 1, 2 ], ["a", "b", "c"] ]
 
 arr6 = [ 1, 2.0 ] # INVALID
@@ -172,6 +204,7 @@ instance Eq (Value t) where
     (Hours a)    == (Hours b)    = a == b
     (Array a1)   == (Array a2)   = eqValueList a1 a2
 
+-- | Compare list of 'Value' of possibly different types.
 eqValueList :: [Value a] -> [Value b] -> Bool
 eqValueList [] [] = True
 eqValueList (x:xs) (y:ys) = case sameValue x y of
@@ -179,8 +212,8 @@ eqValueList (x:xs) (y:ys) = case sameValue x y of
     Left _     -> False
 eqValueList _ _ = False
 
--- | Reifies type of 'Value' into 'ValueType'. Unfortunately, there's no way to
--- guarante that 'valueType' will return @t@ for object with type @Value \'t@.
+-- | Reifies type of 'Value' into 'TValue'. Unfortunately, there's no way to
+-- guarantee that 'valueType' will return @t@ for object with type @Value \'t@.
 valueType :: Value t -> TValue
 valueType (Bool _)    = TBool
 valueType (Integer _) = TInteger
@@ -206,6 +239,10 @@ instance Show TypeMismatchError where
     show TypeMismatchError{..} = "Expected type '" ++ showType typeExpected
                               ++ "' but actual type: '" ++ showType typeActual ++ "'"
 
+{- | Checks whether two values are the same. This function is used for type
+checking where first argument is expected type and second argument is actual
+type.
+-}
 sameValue :: Value a -> Value b -> Either TypeMismatchError (a :~: b)
 sameValue Bool{}    Bool{}    = Right Refl
 sameValue Integer{} Integer{} = Right Refl

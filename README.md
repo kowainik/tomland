@@ -1,7 +1,8 @@
 # tomland
 
-[![Build status](https://secure.travis-ci.org/kowainik/tomland.svg)](https://travis-ci.org/kowainik/tomland)
-[![Hackage](https://img.shields.io/hackage/v/tomland.svg)](https://hackage.haskell.org/package/tomland)
+![palm](https://user-images.githubusercontent.com/4276606/51088259-7a777000-176e-11e9-9d76-6be4023c0ac3.png)
+[![Build status](https://img.shields.io/travis/kowainik/tomland.svg?logo=travis)](https://travis-ci.org/kowainik/tomland)
+[![Hackage](https://img.shields.io/hackage/v/tomland.svg?logo=haskell)](https://hackage.haskell.org/package/tomland)
 [![Stackage LTS](http://stackage.org/package/tomland/badge/lts)](http://stackage.org/lts/package/tomland)
 [![Stackage Nightly](http://stackage.org/package/tomland/badge/nightly)](http://stackage.org/nightly/package/tomland)
 [![MPL-2.0 license](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](https://github.com/kowainik/tomland/blob/master/LICENSE)
@@ -15,7 +16,7 @@
 Bidirectional TOML serialization. The following blog post has more details about
 library design:
 
-* TODO: insert link to blog post
+* [`tomland`: Bidirectional TOML serialization](https://kowainik.github.io/posts/2019-01-14-tomland)
 
 This README contains a basic usage example of the `tomland` library. All code
 below can be compiled and run with the following command:
@@ -142,3 +143,35 @@ main = do
         Left err -> print err
         Right settings -> TIO.putStrLn $ Toml.encode settingsCodec settings
 ```
+
+## Benchmarks and comparison with other libraries
+
+`tomland` is compared with other libraries. Since it uses 2-step approach with
+converting text to intermediate AST and only then decoding Haskell type from
+this AST, benchmarks are also implemented in a way to reflect this difference.
+
+| Library            | parse :: Text -> AST | transform :: AST -> Haskell |
+|--------------------|----------------------|-----------------------------|
+| `tomland`          | `387.5 μs`           | `1.313 μs`                  |
+| `htoml`            | `801.2 μs`           | `32.54 μs`                  |
+| `htoml-megaparsec` | `318.7 μs`           | `34.74 μs`                  |
+| `toml-parser`      | `157.2 μs`           | `1.156 μs`                  |
+
+You may see that `tomland` is not the fastest one (though still very fast). But
+performance hasn’t been optimized so far and:
+
+1. `toml-parser` doesn’t support the array of tables and because of that it’s
+   hardly possible to specify the list of custom data types in TOML with this
+   library.
+2. `tomland` supports latest TOML spec while `htoml` and `htoml-megaparsec`
+   don’t have support for all types, values and formats.
+3. `tomland` is the only library that has pretty-printing.
+4. `toml-parser` doesn’t have ways to convert TOML AST to custom Haskell types
+   and `htoml*` libraries use typeclasses-based approach via `aeson` library.
+5. `tomland` is bidirectional :slightly_smiling_face:
+
+## Acknowledgement
+
+Icons made by [Freepik](http://www.freepik.com) from
+[www.flaticon.com](https://www.flaticon.com/) is licensed by
+[CC 3.0 BY](http://creativecommons.org/licenses/by/3.0/).

@@ -5,6 +5,8 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
 
+-- | Existential wrapper over 'Value' type and matching functions.
+
 module Toml.Type.AnyValue
        ( AnyValue (..)
        , reifyAnyValues
@@ -48,7 +50,7 @@ instance Eq AnyValue where
 instance NFData AnyValue where
     rnf (AnyValue val) = rnf val
 
--- Value mismatch error
+-- | Value type mismatch error.
 data MatchError = MatchError
     { valueExpected :: TValue
     , valueActual   :: AnyValue
@@ -62,42 +64,42 @@ mkMatchError t = Left . MatchError t . AnyValue
 -- Matching functions for values
 ----------------------------------------------------------------------------
 
--- | Extract 'Bool' from 'Value'.
+-- | Extract 'Prelude.Bool' from 'Value'.
 matchBool :: Value t -> Either MatchError Bool
 matchBool (Bool b) = Right b
 matchBool value    = mkMatchError TBool value
 
--- | Extract 'Integer' from 'Value'.
+-- | Extract 'Prelude.Integer' from 'Value'.
 matchInteger :: Value t -> Either MatchError Integer
 matchInteger (Integer n) = Right n
 matchInteger value       = mkMatchError TInteger value
 
--- | Extract 'Double' from 'Value'.
+-- | Extract 'Prelude.Double' from 'Value'.
 matchDouble :: Value t -> Either MatchError Double
 matchDouble (Double f) = Right f
 matchDouble value      = mkMatchError TDouble value
 
--- | Extract 'Text' from 'Value'.
+-- | Extract 'Data.Text.Text' from 'Value'.
 matchText :: Value t -> Either MatchError Text
 matchText (Text s) = Right s
 matchText value    = mkMatchError TText value
 
--- | Extract 'ZonedTime' from 'Value'.
+-- | Extract 'Data.Time.ZonedTime' from 'Value'.
 matchZoned :: Value t -> Either MatchError ZonedTime
 matchZoned (Zoned d) = Right d
 matchZoned value     = mkMatchError TZoned value
 
--- | Extract 'LocalTime' from 'Value'.
+-- | Extract 'Data.Time.LocalTime' from 'Value'.
 matchLocal :: Value t -> Either MatchError LocalTime
 matchLocal (Local d) = Right d
 matchLocal value     = mkMatchError TLocal value
 
--- | Extract 'Day' from 'Value'.
+-- | Extract 'Data.Time.Day' from 'Value'.
 matchDay :: Value t -> Either MatchError Day
 matchDay (Day d) = Right d
 matchDay value   = mkMatchError TDay value
 
--- | Extract 'TimeOfDay' from 'Value'.
+-- | Extract 'Data.Time.TimeOfDay' from 'Value'.
 matchHours :: Value t -> Either MatchError TimeOfDay
 matchHours (Hours d) = Right d
 matchHours value     = mkMatchError THours value

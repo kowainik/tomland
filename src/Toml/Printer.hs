@@ -10,8 +10,10 @@ module Toml.Printer
        , prettyKey
        ) where
 
+import Data.Bifunctor (first)
+import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
-import Data.List (sortOn, splitAt)
+import Data.List (sortBy, splitAt)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -26,15 +28,21 @@ import qualified Data.Text as Text
 
 {- | Configures the pretty printer. -}
 data PrintOptions = PrintOptions
-    { shouldSort :: Bool  -- ^ should table keys be sorted or not
-    , indent     :: Int   -- ^ indentation size
-    } deriving (Show)
+    { -- | How table keys should be sorted, if at all.
+      printOptionsSorting :: !(Maybe (Key -> Key -> Ordering))
+      -- | Number of spaces by which to indent.
+    , printOptionsIndent  :: !Int
+    }
 
-{- | Default printing options. -}
+{- | Default printing options.
+
+1. Sorts all keys and tables by name.
+2. Indents with 2 spaces.
+-}
 defaultOptions :: PrintOptions
-defaultOptions = PrintOptions True 2
+defaultOptions = PrintOptions (Just compare) 2
 
-{- | Converts 'TOML' type into 'Text' (using 'defaultOptions').
+{- | Converts 'TOML' type into 'Data.Text.Text' (using 'defaultOptions').
 
 For example, this
 
@@ -49,6 +57,7 @@ TOML
                        [("name", AnyValue $ Text "Kowainik")]
                  }
            )]
+    , tomlTableArrays = mempty
     }
 @
 
@@ -58,23 +67,22 @@ will be translated to this
 title = "TOML Example"
 
 [example.owner]
-  name = "Kowainik"
-
+  name = \"Kowainik\"
 @
 -}
 pretty :: TOML -> Text
 pretty = prettyOptions defaultOptions
 
--- | Converts 'TOML' type into 'Text' using provided 'PrintOptions'
+-- | Converts 'TOML' type into 'Data.Text.Text' using provided 'PrintOptions'
 prettyOptions :: PrintOptions -> TOML -> Text
 prettyOptions options = Text.unlines . prettyTomlInd options 0 ""
 
--- | Converts 'TOML' into a list of 'Text' elements with the given indent.
+-- | Converts 'TOML' into a list of 'Data.Text.Text' elements with the given indent.
 prettyTomlInd :: PrintOptions -- ^ Printing options
               -> Int          -- ^ Current indentation
               -> Text         -- ^ Accumulator for table names
               -> TOML         -- ^ Given 'TOML'
-              -> [Text]         -- ^ Pretty result
+              -> [Text]       -- ^ Pretty result
 prettyTomlInd options i prefix TOML{..} = concat
     [ prettyKeyValue    options i tomlPairs
     , prettyTables      options i prefix tomlTables
@@ -87,7 +95,7 @@ prettyKey = Text.intercalate "." . map unPiece . NonEmpty.toList . unKey
 
 -- | Returns pretty formatted  key-value pairs of the 'TOML'.
 prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> [Text]
-prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options
+prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toList
   where
     kvText :: (Key, AnyValue) -> Text
     kvText (k, AnyValue v) =
@@ -124,8 +132,14 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options
 
 -- | Returns pretty formatted tables section of the 'TOML'.
 prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> [Text]
-prettyTables options i pref = mapOrdered (prettyTable . snd) options
+prettyTables options i pref asPieces = mapOrdered (prettyTable . snd) options asKeys
   where
+    asKeys :: [(Key, PrefixTree TOML)]
+    asKeys = map (first pieceToKey) $ HashMap.toList asPieces
+
+    pieceToKey :: Piece -> Key
+    pieceToKey = Key . pure
+
     prettyTable :: PrefixTree TOML -> [Text]
     prettyTable (Leaf k toml) =
         let name = addPrefix k pref
@@ -149,7 +163,7 @@ prettyTables options i pref = mapOrdered (prettyTable . snd) options
     prettyTableName n = "[" <> n <> "]"
 
 prettyTableArrays :: PrintOptions -> Int -> Text -> HashMap Key (NonEmpty TOML) -> [Text]
-prettyTableArrays options i pref = mapOrdered arrText options
+prettyTableArrays options i pref = mapOrdered arrText options . HashMap.toList
   where
     arrText :: (Key, NonEmpty TOML) -> [Text]
     arrText (k, ne) =
@@ -167,13 +181,13 @@ prettyTableArrays options i pref = mapOrdered arrText options
 
 -- Returns an indentation prefix
 tabWith :: PrintOptions -> Int -> Text
-tabWith options n = Text.replicate (n * indent options) " "
+tabWith PrintOptions{..} n = Text.replicate (n * printOptionsIndent) " "
 
 -- Returns a proper sorting function
-mapOrdered :: Ord k => ((k, v) -> [t]) -> PrintOptions -> HashMap k v -> [t]
-mapOrdered f options
-    | shouldSort options = concatMap f . sortOn fst . HashMap.toList
-    | otherwise          = concatMap f . HashMap.toList
+mapOrdered :: ((Key, v) -> [t]) -> PrintOptions -> [(Key, v)] -> [t]
+mapOrdered f options = case printOptionsSorting options of
+    Just sorter -> concatMap f . sortBy (sorter `on` fst)
+    Nothing     -> concatMap f
 
 -- Adds next part of the table name to the accumulator.
 addPrefix :: Key -> Text -> Text

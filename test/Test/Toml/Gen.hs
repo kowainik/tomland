@@ -2,6 +2,7 @@
 {-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 -- | This module contains all generators for @tomland@ testing.
 
@@ -11,40 +12,74 @@ module Test.Toml.Gen
        , prop
 
          -- * Generators
-       , genVal
-       , genKey
-       , genPrefixMap
-       , genToml
-       , genBool
+         -- ** Primitive
+       , genInt
        , genInteger
+       , genDouble
+       , genWord
+       , genNatural
+       , genFloat
+
+       , genList
+       , genNonEmpty
+       , genHashSet
+       , genIntSet
+
+       , genBool
+
+       , genText
+       , genString
+       , genByteString
+       , genLByteString
+       , genLText
+
+         -- ** Dates
        , genDay
        , genHours
        , genLocal
        , genZoned
-       , genDouble
-       , genText
+
+         -- ** @TOML@ specific
+       , genVal
+       , genKey
+       , genPrefixMap
+       , genToml
+
+         -- ** Other
+       , range100
        ) where
 
 import Control.Applicative (liftA2)
 import Control.Monad (forM, replicateM)
+import Data.ByteString (ByteString)
 import Data.Fixed (Fixed (..))
+import Data.Functor.Identity (Identity)
+import Data.Hashable (Hashable)
+import Data.HashSet (HashSet)
+import Data.IntSet (IntSet)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian,
                   minutesToTimeZone)
+import GHC.Exts (fromList)
 import GHC.Stack (HasCallStack)
-import Hedgehog (MonadGen, PropertyT, property)
+import Hedgehog (Gen, GenBase, MonadGen, PropertyT, Range, property)
+import Numeric.Natural (Natural)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
 
 import Toml.Bi.Map (toMArray)
-import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..), fromList)
+import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..))
 import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..))
 
-import qualified Data.HashMap.Strict as HashMap
+import qualified Data.ByteString.Lazy as LB
+import qualified Data.Char as Char
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as Text
+import qualified Data.Text.Lazy as L
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Toml.PrefixTree as Toml (fromList)
 
 ----------------------------------------------------------------------------
 -- Property test creator
@@ -59,45 +94,64 @@ prop testName = pure . testProperty testName . property
 -- Common generators
 ----------------------------------------------------------------------------
 
+-- @TOML@ specific
+
 type V = Int
 
 genVal :: MonadGen m => m V
 genVal = Gen.int (Range.constant 0 256)
 
--- TODO: Arrays and Date.
 -- | Generates random value of 'AnyValue' type.
 genAnyValue :: MonadGen m => m AnyValue
 genAnyValue = Gen.choice $
     (AnyValue <$> genArray) : noneArrayList
 
-    -- TODO: unicode support
-genPiece :: MonadGen m => m Piece
-genPiece = Piece <$> Gen.text (Range.constant 1 50) Gen.alphaNum
+-- | Generate either a bare piece, or a quoted piece
+genPiece :: forall m . (MonadGen m, GenBase m ~ Identity) => m Piece
+genPiece = Piece <$> Gen.choice [bare, quoted]
+  where
+    alphadashes :: m Char
+    alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
 
-genKey :: MonadGen m => m Key
+    notControl :: m Char
+    notControl = Gen.filter (not . Char.isControl) Gen.unicode
+
+    bare :: m Text
+    bare = Gen.text (Range.constant 1 10) alphadashes
+
+    wrapChar :: Char -> Text -> Text
+    wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
+
+    quotedWith :: Char -> m Text
+    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) notControl)
+
+    quoted :: m Text
+    quoted = Gen.choice [quotedWith '"', quotedWith '\'']
+
+genKey :: (MonadGen m, GenBase m ~ Identity) => m Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
 
-genKeyAnyValue :: MonadGen m => m (Key, AnyValue)
+genKeyAnyValue :: (MonadGen m, GenBase m ~ Identity) => m (Key, AnyValue)
 genKeyAnyValue = liftA2 (,) genKey genAnyValue
 
-genKeyAnyValueList :: MonadGen m => m [(Key, AnyValue)]
+genKeyAnyValueList :: (MonadGen m, GenBase m ~ Identity) => m [(Key, AnyValue)]
 genKeyAnyValueList = Gen.list (Range.linear 0 10) genKeyAnyValue
 
 -- Generates key-value pair for PrefixMap
-genEntry :: MonadGen m => m (Piece, Key)
+genEntry :: (MonadGen m, GenBase m ~ Identity) => m (Piece, Key)
 genEntry = genKey >>= \case
     key@(piece :|| _) -> pure (piece, key)
 
-genPrefixMap :: MonadGen m => m (PrefixMap V)
+genPrefixMap :: (MonadGen m, GenBase m ~ Identity) => m (PrefixMap V)
 genPrefixMap = do
     entries <- Gen.list (Range.linear 0 10) genEntry
     kvps    <- forM entries $ \(piece, key) -> do
         tree <- genPrefixTree key
         pure (piece, tree)
 
-    pure $ HashMap.fromList kvps
+    pure $ fromList kvps
 
-genPrefixTree :: forall m . MonadGen m => Key -> m (PrefixTree V)
+genPrefixTree :: forall m . (MonadGen m, GenBase m ~ Identity) => Key -> m (PrefixTree V)
 genPrefixTree key = Gen.recursive
     -- list picker generator combinator
     Gen.choice
@@ -112,23 +166,25 @@ genPrefixTree key = Gen.recursive
         pure $ Branch key prefVal prefMap
 
 makeToml :: [(Key, AnyValue)] -> TOML
-makeToml kv = TOML (HashMap.fromList kv) mempty mempty
+makeToml kv = TOML (fromList kv) mempty mempty
 
-genToml :: MonadGen m => m TOML
+genToml :: (MonadGen m, GenBase m ~ Identity) => m TOML
 genToml = Gen.recursive
             Gen.choice
             [ makeToml <$> genKeyAnyValueList ]
             [ TOML <$> keyValues <*> tables <*> arrays ]
   where
-    keyValues = HashMap.fromList <$> genKeyAnyValueList
-    tables = fmap fromList
+    keyValues = fromList <$> genKeyAnyValueList
+    tables = fmap Toml.fromList
              $ Gen.list (Range.linear 0 5)
              $ (,) <$> genKey <*> genToml
-    arrays = fmap HashMap.fromList $
-             Gen.list (Range.linear 0 5) $ do
+    arrays = fmap fromList $
+             Gen.list (Range.linear 0 10) $ do
                key <- genKey
-               arr <- Gen.list (Range.linear 1 5) genToml
+               arr <- Gen.list (Range.linear 1 10) genToml
                return (key, NE.fromList arr)
+
+-- Date generators
 
 genDay :: MonadGen m => m Day
 genDay = do
@@ -156,19 +212,48 @@ genZoned = do
     let zTime = minutesToTimeZone zMin
     pure $ ZonedTime local zTime
 
-genBool :: MonadGen m => m Bool
-genBool = Gen.bool
+-- Primitive generators
+
+range100 :: Range Int
+range100 = Range.constant 0 100
+
+genInt :: MonadGen m => m Int
+genInt = Gen.int Range.constantBounded
 
 genInteger :: MonadGen m => m Integer
-genInteger = toInteger <$> Gen.int (Range.constantBounded @Int)
+genInteger = toInteger <$> genInt
 
 genDouble :: MonadGen m => m Double
 genDouble = Gen.frequency
-    [ (50, Gen.double $ Range.constant @Double (-1000000.0) 1000000.0)
-    , (5, Gen.constant $ 1/0)
-    , (5, Gen.constant $ -1/0)
-    , (5, Gen.constant $ 0/0)
+    [ (10, Gen.double $ Range.constant @Double (-1000000.0) 1000000.0)
+    , (1, Gen.constant $ 1/0)
+    , (1, Gen.constant $ -1/0)
+    , (1, Gen.constant $ 0/0)
     ]
+
+genWord :: MonadGen m => m Word
+genWord = Gen.word Range.constantBounded
+
+genNatural :: MonadGen m => m Natural
+genNatural = fromIntegral <$> genWord
+
+genFloat :: MonadGen m => m Float
+genFloat = Gen.float (Range.constant (-10000.0) 10000.0)
+
+genHashSet :: (Eq a, Hashable a) => Gen a -> Gen (HashSet a)
+genHashSet genA = fromList <$> genList genA
+
+genNonEmpty :: Gen a -> Gen (NonEmpty a)
+genNonEmpty = Gen.nonEmpty (Range.constant 1 5)
+
+genList :: Gen a -> Gen [a]
+genList = Gen.list range100
+
+genIntSet :: Gen IntSet
+genIntSet = fromList <$> genList genInt
+
+genBool :: MonadGen m => m Bool
+genBool = Gen.bool
 
 -- | Generatates control sympol.
 genEscapeSequence :: MonadGen m => m Text
@@ -208,6 +293,18 @@ genText =  fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
     , genUniHex4Color
     , genUniHex8Color
     ]
+
+genString :: Gen String
+genString = Text.unpack <$> genText
+
+genByteString :: Gen ByteString
+genByteString = Gen.utf8 range100 Gen.alphaNum
+
+genLByteString :: Gen LB.ByteString
+genLByteString = LB.fromStrict <$> genByteString
+
+genLText :: Gen L.Text
+genLText = L.fromStrict <$> genText
 
 -- | List of AnyValue generators.
 noneArrayList :: MonadGen m => [m AnyValue]

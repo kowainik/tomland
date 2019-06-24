@@ -1,3 +1,5 @@
+-- | Core types for TOML AST.
+
 module Toml.Type
        ( module Toml.Type.AnyValue
        , module Toml.Type.TOML

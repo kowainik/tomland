@@ -4,13 +4,14 @@ module Test.Toml.Printer.Golden
        ( test_prettyGolden
        ) where
 
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Ord (comparing)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Silver (goldenVsAction)
-import Data.List.NonEmpty (NonEmpty ((:|)))
 
 import Toml (TOML, Value (..))
-import Toml.Edsl ((=:), mkToml, table, tableArray, empty)
-import Toml.PrefixTree ((<|))
+import Toml.Edsl (empty, mkToml, table, tableArray, (=:))
+import Toml.PrefixTree (Key (..), (<|))
 import Toml.Printer (PrintOptions (..), defaultOptions, prettyOptions)
 
 example :: TOML
@@ -34,17 +35,28 @@ example = mkToml $ do
 
 noFormatting :: PrintOptions
 noFormatting = PrintOptions
-    { shouldSort = False
-    , indent     = 0
+    { printOptionsSorting = Nothing
+    , printOptionsIndent  = 0
     }
+
+-- | Decorate keys as tuples so spam comes before egg
+spamEggDecorate :: Key -> (Int, Key)
+spamEggDecorate k
+    | k == "spam" = (0, "spam")
+    | k == "egg" = (1, "egg")
+    | otherwise = (2, k)
+
+spamEgg :: Key -> Key -> Ordering
+spamEgg = comparing spamEggDecorate
 
 test_prettyGolden :: TestTree
 test_prettyGolden =
     testGroup "Toml.Printer"
         [ test "pretty_default" defaultOptions
-        , test "pretty_sorted_only" noFormatting{ shouldSort = True}
-        , test "pretty_indented_only" noFormatting{ indent = 4 }
+        , test "pretty_sorted_only" noFormatting { printOptionsSorting = Just compare }
+        , test "pretty_indented_only" noFormatting { printOptionsIndent = 4 }
         , test "pretty_unformatted" noFormatting
+        , test "pretty_custom_sorted" noFormatting { printOptionsSorting = Just spamEgg }
         ]
   where
     test name options =

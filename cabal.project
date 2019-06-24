@@ -1,0 +1,3 @@
+packages: .
+
+allow-newer: htoml-megaparsec:unordered-containers

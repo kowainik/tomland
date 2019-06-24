@@ -18,6 +18,7 @@ module Toml.Bi.Combinators
        , float
          -- ** Text types
        , text
+       , lazyText
        , byteString
        , lazyByteString
        , string
@@ -37,6 +38,7 @@ module Toml.Bi.Combinators
          -- * Additional codecs for custom types
        , textBy
        , read
+       , enumBounded
 
          -- * Combinators for tables
        , table
@@ -68,15 +70,17 @@ import Data.Word (Word)
 import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec, execTomlCodec)
-import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _Float,
-                    _HashSet, _Int, _IntSet, _Integer, _LByteString, _LocalTime, _Natural,
-                    _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _ZonedTime)
+import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _EnumBounded,
+                    _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString, _LText, _LocalTime,
+                    _Natural, _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word,
+                    _ZonedTime)
 import Toml.Bi.Monad (Codec (..))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text.Lazy as L
 import qualified Toml.PrefixTree as Prefix
 
 
@@ -144,6 +148,10 @@ float = match _Float
 text :: Key -> TomlCodec Text
 text = match _Text
 
+-- | Codec for lazy text values.
+lazyText :: Key -> TomlCodec L.Text
+lazyText = match _LText
+
 -- | Codec for text values with custom error messages for parsing.
 textBy :: (a -> Text) -> (Text -> Either Text a) -> Key -> TomlCodec a
 textBy to from = match (_TextBy to from)
@@ -155,6 +163,11 @@ string = match _String
 -- | Codec for values with a 'Read' and 'Show' instance.
 read :: (Show a, Read a) => Key -> TomlCodec a
 read = match _Read
+
+-- | Codec for general nullary sum data types with a 'Bounded', 'Enum', and 'Show'
+-- instance. This codec provides much better error messages than 'read' for nullary sum types.
+enumBounded :: (Bounded a, Enum a, Show a) => Key -> TomlCodec a
+enumBounded = match _EnumBounded
 
 -- | Codec for text values as 'ByteString'.
 byteString :: Key -> TomlCodec ByteString
@@ -220,7 +233,7 @@ handleErrorInTable key = \case
     TypeMismatch name t1 t2 -> throwError $ TypeMismatch (key <> name) t1 t2
     e                       -> throwError e
 
--- | Run 'codecRead' function with given 'TOML' inside 'ReaderT' context.
+-- | Run 'codecRead' function with given 'TOML' inside 'Control.Monad.Reader.ReaderT' context.
 codecReadTOML :: TOML -> TomlCodec a -> Env a
 codecReadTOML toml codec = local (const toml) (codecRead codec)
 
@@ -271,7 +284,9 @@ nonEmpty codec key = Codec input output
 -- | 'Codec' for list of values. Represented in TOML as array of tables.
 list :: forall a . TomlCodec a -> Key -> TomlCodec [a]
 list codec key = Codec
-    { codecRead = toList <$> codecRead nonEmptyCodec
+    { codecRead = (toList <$> codecRead nonEmptyCodec) `catchError` \case
+        TableNotFound errKey | errKey == key -> pure []
+        err -> throwError err
     , codecWrite = \case
         [] -> pure []
         l@(x:xs) -> l <$ codecWrite nonEmptyCodec (x :| xs)
