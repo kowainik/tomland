@@ -57,49 +57,51 @@ tableNameP = between (text "[") (text "]") keyP
 tableArrayNameP :: Parser Key
 tableArrayNameP = between (text "[[") (text "]]") keyP
 
--- Tables
+-- Helper for building TOML
+toml :: TOML
+toml = mempty
 
 -- | Parser for lines starting with 'key =', either values, inline tables or
 -- inline arrays of tables.
 hasKeyP :: Maybe Key -> Parser TOML
 hasKeyP key = do
     k <- keyP <* text "="
-    (try (keyValue k) <|> try (table key k) <|> tableArray key k)
+    try (tableArray key k) <|> try (table key k) <|> keyValue k
   where
     keyValue :: Key -> Parser TOML
     keyValue k = do
       v <- anyValueP
-      pure $ TOML (HashMap.singleton k v) mempty mempty
+      pure $ toml { tomlPairs = HashMap.singleton k v}
 
     table :: Maybe Key -> Key -> Parser TOML
     table Nothing k = do
       t <- inlineTableP
-      pure $ TOML mempty (single k t) mempty
+      pure $ toml {tomlTables = single k t}
     table (Just parentKey) childKey = do
         case keysDiff parentKey childKey of
             FstIsPref d -> do
                 t <- inlineTableP
-                pure $ TOML mempty (single d t) mempty
+                pure $ toml {tomlTables = single d t}
             _           ->
                 fail $ show childKey ++ " is not a child key of " ++ show parentKey
 
     tableArray :: Maybe Key -> Key -> Parser TOML
     tableArray Nothing k = do
       a <- inlineTableArrayP
-      pure $ TOML mempty mempty (HashMap.singleton k a)
-    tableArray (Just parentKey) childKey = do
+      pure $ toml {tomlTableArrays = HashMap.singleton k a}
+    tableArray (Just parentKey) childKey =
         case keysDiff parentKey childKey of
             FstIsPref d -> do
-                TOML mempty mempty . HashMap.singleton d <$> inlineTableArrayP
+                a <- inlineTableArrayP
+                pure $ toml {tomlTableArrays = HashMap.singleton d a}
             _           ->
                 fail $ show childKey ++ " is not a child key of " ++ show parentKey
-
 
 -- | Parser for inline tables.
 inlineTableP :: Parser TOML
 inlineTableP = between (text "{") (text "}") $ do
   kv <- ((,) <$> (keyP <* text "=") <*> anyValueP) `sepEndBy` text ","
-  pure $ TOML (HashMap.fromList kv) mempty mempty
+  pure $ toml { tomlPairs = HashMap.fromList kv}
 
 -- | Parser for inline arrays of tables.
 inlineTableArrayP :: Parser (NonEmpty TOML)
@@ -116,22 +118,21 @@ tableArrayP key =
 tomlP :: Parser TOML
 tomlP = sc *> localTomlP Nothing <* eof
 
--- | Parser for a table under a certain key
+-- | Parser for a toml under a certain key
 localTomlP :: Maybe Key -> Parser TOML
-localTomlP key = mconcat <$> many (hasKeyP key <|> try subTable <|> subArray)
+localTomlP key = mconcat <$> many (try subArray <|> subTable <|> hasKeyP key)
   where
     subTable :: Parser TOML
     subTable = do
       (kDiff, k) <- childKeyP key tableNameP
       t <- localTomlP (Just k)
-      pure $ TOML mempty (single kDiff t) mempty
+      pure $ toml {tomlTables = single kDiff t}
 
     subArray :: Parser TOML
     subArray = do
       (kDiff, k) <- childKeyP key tableArrayNameP
       a <- tableArrayP k
-      pure $ TOML mempty mempty (HashMap.singleton kDiff a)
-
+      pure $ toml {tomlTableArrays = HashMap.singleton kDiff a}
 
 -- | @childKeyP (Just key) p@ checks if the result of @p@ if a child key of
 -- @key@ and returns the difference of the keys and the child key.
