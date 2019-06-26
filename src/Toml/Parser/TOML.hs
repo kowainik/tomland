@@ -5,7 +5,7 @@ parsers from "Toml.Parser.Value".
 module Toml.Parser.TOML
        ( keyP
        , hasKeyP
-       , tableP
+       , getToml
        , tableArrayP
        , inlineTableP
        , tomlP
@@ -56,8 +56,6 @@ tableNameP = between (text "[") (text "]") keyP
 tableArrayNameP :: Parser Key
 tableArrayNameP = between (text "[[") (text "]]") keyP
 
--- Tables
-
 -- | Parser for lines starting with 'key =', either values or inline tables.
 hasKeyP :: Parser (Key, Either AnyValue TOML)
 hasKeyP = (,) <$> keyP <* text "=" <*> eitherP anyValueP inlineTableP
@@ -68,46 +66,44 @@ inlineTableP = between
     (text "{") (text "}")
     (tomlFromInline <$> hasKeyP `sepEndBy` text ",")
 
-
 -- | Parser for an array of tables under a certain key.
 tableArrayP :: Key -> Parser (NonEmpty TOML)
 tableArrayP key =
-    tableP (Just key) `NC.sepBy1` sameKeyP key tableArrayNameP
+    getToml (Just key) `NC.sepBy1` sameKeyP key tableArrayNameP
 
 -- | Parser for a '.toml' file
 tomlP :: Parser TOML
-tomlP = sc *> tableP Nothing <* eof
+tomlP = sc *> getToml Nothing <* eof
 
 -- | Parser for a table under a certain key
-tableP :: Maybe Key -> Parser TOML
-tableP key = do
+getToml :: Maybe Key -> Parser TOML
+getToml key = do
     (val, inline)  <- distributeEithers <$> many hasKeyP
-    (table, array) <- fmap distributeEithers
-        $ many
-        $ eitherPairP
-            (try $ do
-              (kDiff, k) <- childKeyP key tableNameP
-              t <- tableP (Just k)
-              pure (kDiff, t))
-            (do
-              (kDiff, k) <- childKeyP key tableArrayNameP
-              a <- tableArrayP k
-              pure (kDiff, a))
-
+    (table, array) <- distributeEithers <$> many (eitherPairP subTable subArray)
     pure TOML
         { tomlPairs       = HashMap.fromList val
         , tomlTables      = fromList $ inline ++ table
         , tomlTableArrays = HashMap.fromList array
         }
+  where
+    subTable :: Parser (Key, TOML)
+    subTable = do
+        (kDiff, k) <- try $ childKeyP key tableNameP
+        t <- getToml (Just k)
+        pure (kDiff, t)
+
+    subArray :: Parser (Key, NonEmpty TOML)
+    subArray = do
+        (kDiff, k) <- try $ childKeyP key tableArrayNameP
+        a <- tableArrayP k
+        pure (kDiff, a)
 
 -- | @childKeyP (Just key) p@ checks if the result of @p@ if a child key of
 -- @key@ and returns the difference of the keys and the child key.
 -- @childKeyP Nothing p@ is only called from @tomlP@ (no parent key).
 childKeyP :: Maybe Key -> Parser Key -> Parser (Key, Key)
-childKeyP Nothing parser = try $ do
-  k <- parser
-  pure (k, k)
-childKeyP (Just key) parser = try $ do
+childKeyP Nothing parser = (\k -> (k, k)) <$> parser
+childKeyP (Just key) parser = do
     k <- parser
     case keysDiff key k of
         FstIsPref d -> pure (d, k)
