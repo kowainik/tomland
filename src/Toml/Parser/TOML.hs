@@ -5,7 +5,7 @@ parsers from "Toml.Parser.Value".
 module Toml.Parser.TOML
        ( keyP
        , hasKeyP
-       , localTomlP
+       , getToml
        , tableArrayP
        , inlineTableP
        , inlineTableArrayP
@@ -13,7 +13,7 @@ module Toml.Parser.TOML
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Monad.Combinators (between, sepEndBy)
+import Control.Monad.Combinators (between, eitherP, sepEndBy)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -138,10 +138,8 @@ localTomlP key = mconcat <$> many (try subArray <|> subTable <|> hasKeyP key)
 -- @key@ and returns the difference of the keys and the child key.
 -- @childKeyP Nothing p@ is only called from @tomlP@ (no parent key).
 childKeyP :: Maybe Key -> Parser Key -> Parser (Key, Key)
-childKeyP Nothing parser = try $ do
-  k <- parser
-  pure (k, k)
-childKeyP (Just key) parser = try $ do
+childKeyP Nothing parser = (\k -> (k, k)) <$> parser
+childKeyP (Just key) parser = do
     k <- parser
     case keysDiff key k of
         FstIsPref d -> pure (d, k)
