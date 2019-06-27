@@ -13,7 +13,7 @@ import Text.Megaparsec (Parsec, ShowErrorComponent, Stream, parse)
 
 import Toml.Edsl (mkToml, table, tableArray, (=:))
 import Toml.Parser.String (textP)
-import Toml.Parser.TOML (hasKeyP, tableArrayP, tableP, tomlP, keyP)
+import Toml.Parser.TOML (keyP, tomlP)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
@@ -192,68 +192,30 @@ integerSpecs = describe "integerP" $ do
             parseInteger "0xaBcDeF" 0xaBcDeF
 
 keySpecs :: Spec
-keySpecs = do
-    describe "keyP" $ do
-        context "when the key is a bare key" $ do
-            it "can parse keys which contain ASCII letters, digits, underscores, and dashes" $ do
-                parseKey "key"       (makeKey ["key"])
-                parseKey "bare_key1" (makeKey ["bare_key1"])
-                parseKey "bare-key2" (makeKey ["bare-key2"])
-            it "can parse keys which contain only digits" $
-                parseKey "1234" (makeKey ["1234"])
-        context "when the key is a quoted key" $ do
-            it "can parse keys that follow the exact same rules as basic strings" $ do
-                parseKey (dquote "127.0.0.1") (makeKey [dquote "127.0.0.1"])
-                parseKey (dquote "character encoding") (makeKey [dquote "character encoding"])
-                parseKey (dquote "ʎǝʞ") (makeKey [dquote "ʎǝʞ"])
-            it "can parse keys that follow the exact same rules as literal strings" $ do
-                parseKey (squote "key2") (makeKey [squote "key2"])
-                parseKey (squote "quoted \"value\"") (makeKey [squote "quoted \"value\""])
-        context "when the key is a dotted key" $
-            it "can parse a sequence of bare or quoted keys joined with a dot" $ do
-                parseKey "name"           (makeKey ["name"])
-                parseKey "physical.color" (makeKey ["physical", "color"])
-                parseKey "physical.shape" (makeKey ["physical", "shape"])
-                parseKey "site.\"google.com\"" (makeKey ["site", dquote "google.com"])
-        -- it "ignores whitespaces around dot-separated parts" $
-        --     parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
-
-    describe "hasKeyP" $ do
-        it "can parse key/value pairs" $ do
-            parseHasKey "x='abcdef'" (makeKey ["x"], Left $ AnyValue (Text "abcdef"))
-            parseHasKey "x=1"        (makeKey ["x"], Left $ AnyValue (Integer 1))
-            parseHasKey "x=5.2"      (makeKey ["x"], Left $ AnyValue (Double 5.2))
-            parseHasKey "x=true"     (makeKey ["x"], Left $ AnyValue (Bool True))
-            parseHasKey "x=[1, 2, 3]" (makeKey ["x"] , Left $ AnyValue (Array [Integer 1, Integer 2, Integer 3]))
-            parseHasKey "x = 1920-12-10"
-                (makeKey ["x"], Left $ AnyValue (Day day2))
-        --xit "can parse a key/value pair when the value is an inline table" $ do
-        --  pending
-        it "ignores white spaces around key names and values" $ do
-            parseHasKey "x=1    "   (makeKey ["x"]       , Left $ AnyValue (Integer 1))
-            parseHasKey "x=    1"   (makeKey ["x"]       , Left $ AnyValue (Integer 1))
-            parseHasKey "x    =1"   (makeKey ["x"]       , Left $ AnyValue (Integer 1))
-            parseHasKey "x\t= 1 "   (makeKey ["x"]       , Left $ AnyValue (Integer 1))
-            parseHasKey "\"x\" = 1" (makeKey [dquote "x"], Left $ AnyValue (Integer 1))
-        --xit "fails if the key, equals sign, and value are not on the same line" $ do
-        --  keyValFailOn "x\n=\n1"
-        --  keyValFailOn "x=\n1"
-        --  keyValFailOn "\"x\"\n=\n1"
-        it "works if the value is broken over multiple lines" $
-            parseHasKey "x=[1, \n2\n]" (makeKey ["x"], Left $ AnyValue (Array [Integer 1, Integer 2]))
-        it "fails if the value is not specified" $
-            hasKeyFailOn "x="
-
-        it "can parse a TOML inline table" $
-            parseHasKey "table-1={key1 = \"some string\", key2 = 123}"
-                (makeKey ["table-1"], Right $ tomlFromKeyVal [str, int])
-        it "can parse an empty TOML table" $
-            parseHasKey "table = {}" (makeKey ["table"], Right $ tomlFromKeyVal [])
-        it "allows the name of the table to be any valid TOML key" $ do
-            parseHasKey "dog.\"tater.man\"={}"
-                (makeKey ["dog", dquote "tater.man"], Right $ tomlFromKeyVal [])
-            parseHasKey "j.\"ʞ\".'l'={}"
-                (makeKey ["j", dquote "ʞ", squote "l"], Right $ tomlFromKeyVal [])
+keySpecs = describe "keyP" $ do
+    context "when the key is a bare key" $ do
+        it "can parse keys which contain ASCII letters, digits, underscores, and dashes" $ do
+            parseKey "key"       (makeKey ["key"])
+            parseKey "bare_key1" (makeKey ["bare_key1"])
+            parseKey "bare-key2" (makeKey ["bare-key2"])
+        it "can parse keys which contain only digits" $
+            parseKey "1234" (makeKey ["1234"])
+    context "when the key is a quoted key" $ do
+        it "can parse keys that follow the exact same rules as basic strings" $ do
+            parseKey (dquote "127.0.0.1") (makeKey [dquote "127.0.0.1"])
+            parseKey (dquote "character encoding") (makeKey [dquote "character encoding"])
+            parseKey (dquote "ʎǝʞ") (makeKey [dquote "ʎǝʞ"])
+        it "can parse keys that follow the exact same rules as literal strings" $ do
+            parseKey (squote "key2") (makeKey [squote "key2"])
+            parseKey (squote "quoted \"value\"") (makeKey [squote "quoted \"value\""])
+    context "when the key is a dotted key" $
+        it "can parse a sequence of bare or quoted keys joined with a dot" $ do
+            parseKey "name"           (makeKey ["name"])
+            parseKey "physical.color" (makeKey ["physical", "color"])
+            parseKey "physical.shape" (makeKey ["physical", "shape"])
+            parseKey "site.\"google.com\"" (makeKey ["site", dquote "google.com"])
+    -- it "ignores whitespaces around dot-separated parts" $
+    --     parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
 
 textSpecs :: Spec
 textSpecs = describe "textP" $ do
@@ -392,91 +354,117 @@ dateSpecs = describe "dateTimeP" $ do
         parseDateTime "1979-05-27T00:32:0007:00"
             (ULocal $ LocalTime day1 (TimeOfDay 0 32 0))
 
-tableSpecs :: Spec
-tableSpecs = do
-    describe "tableP" $ do
-        it "can parse a TOML table" $
-          parseTable "[table-1]\nkey1 = \"some string\"\nkey2 = 123"
-                (makeKey ["table-1"], tomlFromKeyVal [str, int])
-        it "can parse an empty TOML table" $
-            parseTable "[table]" (makeKey ["table"], tomlFromKeyVal [])
-        it "allows the name of the table to be any valid TOML key" $ do
-            parseTable "[dog.\"tater.man\"]"
-                (makeKey ["dog", dquote "tater.man"], tomlFromKeyVal [])
-            parseTable "[j.\"ʞ\".'l']"
-                (makeKey ["j", dquote "ʞ", squote "l"], tomlFromKeyVal [])
-        it "can parse a table with subarrays" $ do
-            let arr1 = tomlFromArray [(makeKey ["array"], strT :| [intT])]
-            parseTable "[table]\n[[table.array]] \nkey1 = \"some string\"\n \
-                              \ [[table.array]] \nkey2 = 123" (makeKey ["table"], arr1)
+tomlSpecs :: Spec
+tomlSpecs = do
+    describe "Key/values" $ do
+        it "can parse key/value pairs" $ do
+            parseToml "x='abcdef'" (tomlFromKeyVal [(makeKey ["x"], AnyValue (Text "abcdef"))])
+            parseToml "x=1"        (tomlFromKeyVal [(makeKey ["x"], AnyValue (Integer 1))])
+            parseToml "x=5.2"      (tomlFromKeyVal [(makeKey ["x"], AnyValue (Double 5.2))])
+            parseToml "x=true"     (tomlFromKeyVal [(makeKey ["x"], AnyValue (Bool True))])
+            parseToml "x=[1, 2, 3]" (tomlFromKeyVal [(makeKey ["x"] , AnyValue (Array [Integer 1, Integer 2, Integer 3]))])
+            parseToml "x = 1920-12-10" (tomlFromKeyVal [(makeKey ["x"], AnyValue (Day day2))])
+        it "ignores white spaces around key names and values" $ do
+            let toml = tomlFromKeyVal [(makeKey ["x"], AnyValue (Integer 1))]
+            parseToml "x=1    "   toml
+            parseToml "x=    1"   toml
+            parseToml "x    =1"   toml
+            parseToml "x\t= 1 "   toml
+            parseToml "\"x\" = 1" (tomlFromKeyVal [(makeKey [dquote "x"], AnyValue (Integer 1))])
+        --xit "fails if the key, equals sign, and value are not on the same line" $ do
+        --  keyValFailOn "x\n=\n1"
+        --  keyValFailOn "x=\n1"
+        --  keyValFailOn "\"x\"\n=\n1"
+        it "works if the value is broken over multiple lines" $
+            parseToml "x=[1, \n2\n]" (tomlFromKeyVal [(makeKey ["x"], AnyValue (Array [Integer 1, Integer 2]))])
+        it "fails if the value is not specified" $
+            tomlFailOn "x="
 
-    describe "tableArrayP" $ do
+    describe "tables" $ do
+        it "can parse a TOML table" $
+          parseToml "[table] \n key1 = \"some string\"\nkey2 = 123"
+                $ tomlFromTable [(makeKey ["table"], tomlFromKeyVal [str, int])]
+        it "can parse an empty TOML table" $
+            parseToml "[table]" (tomlFromTable [(makeKey ["table"], mempty)])
+        it "can parse a table with subarrays" $ do
+            let t = tomlFromTable [(makeKey ["table"], tomlFromArray [(makeKey ["array"], strT :| [intT])])]
+            parseToml "[table] \n [[table.array]] \nkey1 = \"some string\"\n \
+                                  \[[table.array]] \nkey2 = 123" t
+        it "can parse a TOML inline table" $
+            parseToml "table={key1 = \"some string\", key2 = 123}"
+                (tomlFromTable [(makeKey ["table"], tomlFromKeyVal [str, int])])
+        it "can parse an empty inline TOML table" $
+            parseToml "table = {}" (tomlFromTable [(makeKey ["table"], mempty)])
+        it "allows the name of the table to be any valid TOML key" $ do
+            parseToml "dog.\"tater.man\"={}"
+                (tomlFromTable [(makeKey ["dog", dquote "tater.man"], mempty)])
+            parseToml "j.\"ʞ\".'l'={}"
+                (tomlFromTable [(makeKey ["j", dquote "ʞ", squote "l"], mempty)])
+
+    describe "array of tables" $ do
         it "can parse an empty array" $
-            parseTableArray "[[tArray]]" (makeKey ["tArray"], mempty :| [])
-        it "allows the name of the table array to be any valid TOML key" $ do
-            parseTableArray "[[dog.\"tater.man\"]]"
-                (makeKey ["dog", dquote "tater.man"], mempty :| [])
-            parseTableArray "[[j.\"ʞ\".'l']]"
-                (makeKey ["j", dquote "ʞ", squote "l"], mempty :| [])
+            parseToml "[[array]]" (tomlFromArray [(makeKey ["array"], mempty :| [])])
         it "can parse an array of key/values" $ do
-            let array  = (makeKey ["tArray"], NE.fromList [strT, intT])
-            parseTableArray "[[tArray]]\nkey1 = \"some string\"\n \
-                           \ [[tArray]]\nkey2 = 123" array
+            let array = tomlFromArray [(makeKey ["array"], NE.fromList [strT, intT])]
+            parseToml "[[array]]\n key1 = \"some string\"\n \
+                      \[[array]]\n key2 = 123" array
         it "can parse an array of tables" $ do
             let table1 = tomlFromTable [(makeKey ["table1"], strT)]
                 table2 = tomlFromTable [(makeKey ["table2"], intT)]
-                array  = (makeKey ["tArray"], NE.fromList [table1, table2])
-            parseTableArray "[[tArray]]\n[tArray.table1] \n key1 = \"some string\"\n \
-                           \ [[tArray]]\n[tArray.table2] \n key2 = 123" array
+                array  = tomlFromArray [(makeKey ["array"], NE.fromList [table1, table2])]
+            parseToml "[[array]]\n[array.table1] \n key1 = \"some string\"\n \
+                      \[[array]]\n[array.table2] \n key2 = 123" array
         it "can parse an array of array" $ do
-            let arr = tomlFromArray [(makeKey ["table-1-1"], NE.fromList [strT, intT])]
-                array = (makeKey ["table-1"], arr :| [])
-            parseTableArray "[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
-                                         \ [[table-1.table-1-1]] \nkey2 = 123" array
+            let arr = tomlFromArray [(makeKey ["subarray"], NE.fromList [strT, intT])]
+                array = tomlFromArray [(makeKey ["array"], arr :| [])]
+            parseToml "[[array]] \n [[array.subarray]] \nkey1 = \"some string\"\n \
+                      \[[array.subarray]] \nkey2 = 123" array
         it "can parse an array of arrays" $ do
-            let arr1 = (makeKey ["table-1-1"], strT :| [])
-                arr2 = (makeKey ["table-1-2"], intT :| [])
-                array = (makeKey ["table-1"], tomlFromArray [arr1, arr2] :| [])
-            parseTableArray "[[table-1]]\n[[table-1.table-1-1]] \nkey1 = \"some string\"\n \
-                                         \ [[table-1.table-1-2]] \nkey2 = 123" array
+            let arr1 = (makeKey ["table-1"], strT :| [])
+                arr2 = (makeKey ["table-2"], intT :| [])
+                array = tomlFromArray [(makeKey ["array"], tomlFromArray [arr1, arr2] :| [])]
+            parseToml "[[array]]\n [[array.table-1]] \nkey1 = \"some string\"\n \
+                                  \[[array.table-2]] \nkey2 = 123" array
+        it "can parse very large arrays" $ do
+            let array = tomlFromArray [(makeKey ["array"], NE.fromList $ replicate 1000 mempty)]
+            parseToml (mconcat $ replicate 1000 "[[array]]\n") array
 
-tomlSpecs :: Spec
-tomlSpecs = describe "tomlP" $ do
-    it "can parse TOML files" $
-       parseToml tomlStr1 toml1
-    it "can parse mix of tables and arrays" $
-       parseToml tomlStr2 toml2
-  where
-    tomlStr1, tomlStr2 :: Text
-    tomlStr1 = T.unlines
-        [ " # This is a TOML document.\n\n"
-        , "title = \"TOML Example\" # Comment \n\n"
-        , "[owner]\n"
-        , "  name = \"Tom Preston-Werner\" "
-        , "  enabled = true # First class dates"
-        ]
-    tomlStr2 = T.unlines
-        [ "[[array1]]\n key1 = \"some string\" \n"
-        , ""
-        , "[table1]  \n key2 = 123 \n"
-        , "[[array2]]\n key3 = 3.14 \n"
-        , "  [table2]  \n key4 = true"
-        ]
+    describe "TOML" $ do
+        it "can parse TOML files" $
+           parseToml tomlStr1 toml1
+        it "can parse mix of tables and arrays" $
+           parseToml tomlStr2 toml2
+      where
+        tomlStr1, tomlStr2 :: Text
+        tomlStr1 = T.unlines
+            [ " # This is a TOML document.\n\n"
+            , "title = \"TOML Example\" # Comment \n\n"
+            , "[owner]\n"
+            , "  name = \"Tom Preston-Werner\" "
+            , "  enabled = true # First class dates"
+            ]
+        tomlStr2 = T.unlines
+            [ "[[array1]]\n key1 = \"some string\" \n"
+            , ""
+            , "[table1]  \n key2 = 123 \n"
+            , "[[array2]]\n key3 = 3.14 \n"
+            , "  [table2]  \n key4 = true"
+            ]
 
-    toml1, toml2 :: TOML
-    toml1 = mkToml $ do
-        "title" =: "TOML Example"
-        table "owner" $ do
-            "name" =: "Tom Preston-Werner"
-            "enabled" =: Bool True
+        toml1, toml2 :: TOML
+        toml1 = mkToml $ do
+            "title" =: "TOML Example"
+            table "owner" $ do
+                "name" =: "Tom Preston-Werner"
+                "enabled" =: Bool True
 
-    toml2 = mkToml $ do
-        tableArray "array1" $
-            "key1" =: "some string" :| []
-        table "table1" $ "key2" =: 123
-        tableArray "array2" $
-            "key3" =: Double 3.14 :| []
-        table "table2" $ "key4" =: Bool True
+        toml2 = mkToml $ do
+            tableArray "array1" $
+                "key1" =: "some string" :| []
+            table "table1" $ "key2" =: 123
+            tableArray "array2" $
+                "key3" =: Double 3.14 :| []
+            table "table2" $ "key4" =: Bool True
 
 ----------------------------------------------------------------------------
 -- Utilities
@@ -501,25 +489,20 @@ parseInteger :: Text -> Integer -> Expectation
 parseInteger = parseX integerP
 parseKey :: Text -> Key -> Expectation
 parseKey = parseX keyP
-parseHasKey :: Text -> (Key, Either AnyValue TOML) -> Expectation
-parseHasKey = parseX hasKeyP
 parseText :: Text -> Text -> Expectation
 parseText = parseX textP
-parseTable :: Text -> (Key, TOML) -> Expectation
-parseTable = parseX tableP
-parseTableArray :: Text -> (Key, NonEmpty TOML) -> Expectation
-parseTableArray = parseX tableArrayP
+
 parseToml :: Text -> TOML -> Expectation
 parseToml = parseX tomlP
 
-arrayFailOn, boolFailOn, dateTimeFailOn, doubleFailOn, hasKeyFailOn, integerFailOn, textFailOn :: Text -> Expectation
+arrayFailOn, boolFailOn, dateTimeFailOn, doubleFailOn, integerFailOn, textFailOn, tomlFailOn :: Text -> Expectation
 arrayFailOn     = failOn arrayP
 boolFailOn      = failOn boolP
 dateTimeFailOn  = failOn dateTimeP
 doubleFailOn    = failOn doubleP
-hasKeyFailOn    = failOn hasKeyP
 integerFailOn   = failOn integerP
 textFailOn      = failOn textP
+tomlFailOn      = failOn tomlP
 
 -- UValue Util
 

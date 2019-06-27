@@ -10,6 +10,8 @@ The changelog is available [on GitHub][2].
 * [#187](https://github.com/kowainik/tomland/issues/187):
   Bump up to `hedgehog-1.0`.
 * Support GHC 8.6.5
+* [#195](https://github.com/kowainik/tomland/issues/195):
+  Fixed an exponential behavior for parsing nested table of arrays.
 
 ## 1.0.0 — Jan 14, 2019
 
