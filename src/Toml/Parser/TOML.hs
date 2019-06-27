@@ -4,16 +4,11 @@ parsers from "Toml.Parser.Value".
 
 module Toml.Parser.TOML
        ( keyP
-       , hasKeyP
-       , getToml
-       , tableArrayP
-       , inlineTableP
-       , inlineTableArrayP
        , tomlP
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Monad.Combinators (between, eitherP, sepEndBy)
+import Control.Monad.Combinators (between, sepEndBy)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -120,17 +115,17 @@ tomlP = sc *> localTomlP Nothing <* eof
 
 -- | Parser for a toml under a certain key
 localTomlP :: Maybe Key -> Parser TOML
-localTomlP key = mconcat <$> many (try subArray <|> subTable <|> hasKeyP key)
+localTomlP key = mconcat <$> many (subArray <|> subTable <|> hasKeyP key)
   where
     subTable :: Parser TOML
     subTable = do
-      (kDiff, k) <- childKeyP key tableNameP
+      (kDiff, k) <- try $ childKeyP key tableNameP
       t <- localTomlP (Just k)
       pure $ toml {tomlTables = single kDiff t}
 
     subArray :: Parser TOML
     subArray = do
-      (kDiff, k) <- childKeyP key tableArrayNameP
+      (kDiff, k) <- try $ childKeyP key tableArrayNameP
       a <- tableArrayP k
       pure $ toml {tomlTableArrays = HashMap.singleton kDiff a}
 

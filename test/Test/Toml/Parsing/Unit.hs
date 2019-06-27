@@ -31,7 +31,6 @@ spec_Parser = do
     keySpecs
     textSpecs
     dateSpecs
-    tableSpecs
     tomlSpecs
 
 arraySpecs :: Spec
@@ -431,7 +430,7 @@ tomlSpecs = do
             parseToml (mconcat $ replicate 1000 "[[array]]\n") array
         it "can parse an inline array of tables" $ do
             let array  = tomlFromArray [(makeKey ["table"], NE.fromList [strT, intT])]
-            parseHasKey "table = [{key1 = \"some string\"}, {key2 = 123}]" array
+            parseToml "table = [{key1 = \"some string\"}, {key2 = 123}]" array
 
     describe "TOML" $ do
         it "can parse TOML files" $
