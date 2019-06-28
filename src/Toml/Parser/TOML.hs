@@ -105,13 +105,13 @@ localTomlP key = mconcat <$> many (subArray <|> subTable <|> hasKeyP key)
   where
     subTable :: Parser TOML
     subTable = do
-      (kDiff, k) <- try $ childKeyP key tableNameP
-      tomlT kDiff <$> localTomlP (Just k)
+        (kDiff, k) <- try $ childKeyP key tableNameP
+        tomlT kDiff <$> localTomlP (Just k)
 
     subArray :: Parser TOML
     subArray = do
-      (kDiff, k) <- try $ childKeyP key tableArrayNameP
-      tomlA kDiff <$> tableArrayP k
+        (kDiff, k) <- try $ childKeyP key tableArrayNameP
+        tomlA kDiff <$> tableArrayP k
 
 -- | @childKeyP (Just key) p@ checks if the result of @p@ if a child key of
 -- @key@ and returns the difference of the keys and the child key.
