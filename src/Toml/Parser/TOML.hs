@@ -4,15 +4,11 @@ parsers from "Toml.Parser.Value".
 
 module Toml.Parser.TOML
        ( keyP
-       , hasKeyP
-       , getToml
-       , tableArrayP
-       , inlineTableP
        , tomlP
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Monad.Combinators (between, eitherP, sepEndBy)
+import Control.Monad.Combinators (between, sepEndBy)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -20,7 +16,7 @@ import Data.Text (Text)
 import Toml.Parser.Core (Parser, alphaNumChar, char, eof, lexeme, sc, text, try)
 import Toml.Parser.String (basicStringP, literalStringP)
 import Toml.Parser.Value (anyValueP)
-import Toml.PrefixTree (Key (..), KeysDiff (..), Piece (..), fromList, keysDiff)
+import Toml.PrefixTree (Key (..), KeysDiff (..), Piece (..), keysDiff, single)
 import Toml.Type (AnyValue, TOML (..))
 
 import qualified Control.Applicative.Combinators.NonEmpty as NC
@@ -56,47 +52,66 @@ tableNameP = between (text "[") (text "]") keyP
 tableArrayNameP :: Parser Key
 tableArrayNameP = between (text "[[") (text "]]") keyP
 
--- | Parser for lines starting with 'key =', either values or inline tables.
-hasKeyP :: Parser (Key, Either AnyValue TOML)
-hasKeyP = (,) <$> keyP <* text "=" <*> eitherP anyValueP inlineTableP
+-- Helper functions for building TOML
+tomlKV :: Key -> AnyValue -> TOML
+tomlKV k v = mempty { tomlPairs = HashMap.singleton k v }
+
+tomlT :: Key -> TOML -> TOML
+tomlT k t = mempty { tomlTables = single k t }
+
+tomlA :: Key -> NonEmpty TOML -> TOML
+tomlA k a = mempty { tomlTableArrays = HashMap.singleton k a }
+
+-- | Parser for lines starting with 'key =', either values, inline tables or
+-- inline arrays of tables.
+hasKeyP :: Maybe Key -> Parser TOML
+hasKeyP key = do
+    k <- keyP <* text "="
+    table k <|> try (tableArray k) <|> (tomlKV k <$> anyValueP)
+  where
+    table :: Key -> Parser TOML
+    table k = do
+        (kDiff, _) <- childKeyP key (pure k)
+        tomlT kDiff <$> inlineTableP
+
+    tableArray :: Key -> Parser TOML
+    tableArray k = do
+        (kDiff, _) <- childKeyP key (pure k)
+        tomlA kDiff <$> inlineTableArrayP
 
 -- | Parser for inline tables.
 inlineTableP :: Parser TOML
-inlineTableP = between
-    (text "{") (text "}")
-    (tomlFromInline <$> hasKeyP `sepEndBy` text ",")
+inlineTableP = between (text "{") (text "}") $
+    mconcat <$>
+    (tomlKV <$> (keyP <* text "=") <*> anyValueP ) `sepEndBy` text ","
+
+-- | Parser for inline arrays of tables.
+inlineTableArrayP :: Parser (NonEmpty TOML)
+inlineTableArrayP = between (text "[") (text "]") $
+    inlineTableP `NC.sepEndBy1` text ","
 
 -- | Parser for an array of tables under a certain key.
 tableArrayP :: Key -> Parser (NonEmpty TOML)
 tableArrayP key =
-    getToml (Just key) `NC.sepBy1` sameKeyP key tableArrayNameP
+    localTomlP (Just key) `NC.sepBy1` sameKeyP key tableArrayNameP
 
 -- | Parser for a '.toml' file
 tomlP :: Parser TOML
-tomlP = sc *> getToml Nothing <* eof
+tomlP = sc *> localTomlP Nothing <* eof
 
--- | Parser for a table under a certain key
-getToml :: Maybe Key -> Parser TOML
-getToml key = do
-    (val, inline)  <- distributeEithers <$> many hasKeyP
-    (table, array) <- distributeEithers <$> many (eitherPairP subTable subArray)
-    pure TOML
-        { tomlPairs       = HashMap.fromList val
-        , tomlTables      = fromList $ inline ++ table
-        , tomlTableArrays = HashMap.fromList array
-        }
+-- | Parser for a toml under a certain key
+localTomlP :: Maybe Key -> Parser TOML
+localTomlP key = mconcat <$> many (subArray <|> subTable <|> hasKeyP key)
   where
-    subTable :: Parser (Key, TOML)
+    subTable :: Parser TOML
     subTable = do
         (kDiff, k) <- try $ childKeyP key tableNameP
-        t <- getToml (Just k)
-        pure (kDiff, t)
+        tomlT kDiff <$> localTomlP (Just k)
 
-    subArray :: Parser (Key, NonEmpty TOML)
+    subArray :: Parser TOML
     subArray = do
         (kDiff, k) <- try $ childKeyP key tableArrayNameP
-        a <- tableArrayP k
-        pure (kDiff, a)
+        tomlA kDiff <$> tableArrayP k
 
 -- | @childKeyP (Just key) p@ checks if the result of @p@ if a child key of
 -- @key@ and returns the difference of the keys and the child key.
@@ -117,23 +132,3 @@ sameKeyP key parser = try $ do
     case keysDiff key k of
         Equal -> pure k
         _     -> fail $ show k ++ " is not the same as " ++ show key
-
--- Helper functions
-
--- | Helper function to create a 'TOML' from a list of key/values or inline tables.
-tomlFromInline :: [(Key, Either AnyValue TOML)] -> TOML
-tomlFromInline kvs =
-    let (lefts, rights) = distributeEithers kvs
-    in TOML (HashMap.fromList lefts) (fromList rights) mempty
-
--- | Helper function to seperate the 'Either'.
-distributeEithers :: [(c, Either a b)] -> ([(c, a)], [(c, b)])
-distributeEithers = foldr distribute ([], [])
-  where
-    distribute :: (c, Either a b) -> ([(c, a)], [(c, b)]) -> ([(c, a)], [(c, b)])
-    distribute (k, Left a) (ls, rs)  = ((k, a) : ls, rs)
-    distribute (k, Right b) (ls, rs) = (ls, (k, b) : rs)
-
--- | Helper function to make an 'Either' parser.
-eitherPairP :: Alternative m => m (c, a) -> m (c, b) -> m (c, Either a b)
-eitherPairP a b = (fmap Left <$> a) <|> (fmap Right <$> b)

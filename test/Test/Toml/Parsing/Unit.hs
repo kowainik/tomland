@@ -208,14 +208,14 @@ keySpecs = describe "keyP" $ do
         it "can parse keys that follow the exact same rules as literal strings" $ do
             parseKey (squote "key2") (makeKey [squote "key2"])
             parseKey (squote "quoted \"value\"") (makeKey [squote "quoted \"value\""])
-    context "when the key is a dotted key" $
+    context "when the key is a dotted key" $ do
         it "can parse a sequence of bare or quoted keys joined with a dot" $ do
             parseKey "name"           (makeKey ["name"])
             parseKey "physical.color" (makeKey ["physical", "color"])
             parseKey "physical.shape" (makeKey ["physical", "shape"])
             parseKey "site.\"google.com\"" (makeKey ["site", dquote "google.com"])
-    -- it "ignores whitespaces around dot-separated parts" $
-    --     parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
+        -- it "ignores whitespaces around dot-separated parts" $ do
+        --     parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
 
 textSpecs :: Spec
 textSpecs = describe "textP" $ do
@@ -428,6 +428,9 @@ tomlSpecs = do
         it "can parse very large arrays" $ do
             let array = tomlFromArray [(makeKey ["array"], NE.fromList $ replicate 1000 mempty)]
             parseToml (mconcat $ replicate 1000 "[[array]]\n") array
+        it "can parse an inline array of tables" $ do
+            let array  = tomlFromArray [(makeKey ["table"], NE.fromList [strT, intT])]
+            parseToml "table = [{key1 = \"some string\"}, {key2 = 123}]" array
 
     describe "TOML" $ do
         it "can parse TOML files" $

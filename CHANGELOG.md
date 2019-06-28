@@ -12,6 +12,8 @@ The changelog is available [on GitHub][2].
 * Support GHC 8.6.5
 * [#195](https://github.com/kowainik/tomland/issues/195):
   Fixed an exponential behavior for parsing nested table of arrays.
+* [#145](https://github.com/kowainik/tomland/issues/145):
+  Parser and tests for inline arrays of tables.
 
 ## 1.0.0 — Jan 14, 2019
 
