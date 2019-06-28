@@ -214,8 +214,8 @@ keySpecs = describe "keyP" $ do
             parseKey "physical.color" (makeKey ["physical", "color"])
             parseKey "physical.shape" (makeKey ["physical", "shape"])
             parseKey "site.\"google.com\"" (makeKey ["site", dquote "google.com"])
-        it "ignores whitespaces around dot-separated parts" $ do
-            parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
+        -- it "ignores whitespaces around dot-separated parts" $ do
+        --     parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
 
 textSpecs :: Spec
 textSpecs = describe "textP" $ do

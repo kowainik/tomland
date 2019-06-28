@@ -42,7 +42,7 @@ keyComponentP = Piece <$>
 
 -- | Parser for 'Key': dot-separated list of 'Piece'.
 keyP :: Parser Key
-keyP = Key <$> keyComponentP `NC.sepBy1` text "."
+keyP = Key <$> keyComponentP `NC.sepBy1` char '.'
 
 -- | Parser for table name: 'Key' inside @[]@.
 tableNameP :: Parser Key
@@ -54,20 +54,20 @@ tableArrayNameP = between (text "[[") (text "]]") keyP
 
 -- Helper functions for building TOML
 tomlKV :: Key -> AnyValue -> TOML
-tomlKV k v = mempty { tomlPairs = HashMap.singleton k v}
+tomlKV k v = mempty { tomlPairs = HashMap.singleton k v }
 
 tomlT :: Key -> TOML -> TOML
-tomlT k t = mempty {tomlTables = single k t}
+tomlT k t = mempty { tomlTables = single k t }
 
 tomlA :: Key -> NonEmpty TOML -> TOML
-tomlA k a = mempty {tomlTableArrays = HashMap.singleton k a}
+tomlA k a = mempty { tomlTableArrays = HashMap.singleton k a }
 
 -- | Parser for lines starting with 'key =', either values, inline tables or
 -- inline arrays of tables.
 hasKeyP :: Maybe Key -> Parser TOML
 hasKeyP key = do
     k <- keyP <* text "="
-    try (tableArray k) <|> try (table k) <|> (tomlKV k <$> anyValueP)
+    table k <|> try (tableArray k) <|> (tomlKV k <$> anyValueP)
   where
     table :: Key -> Parser TOML
     table k = do
@@ -105,20 +105,20 @@ localTomlP key = mconcat <$> many (subArray <|> subTable <|> hasKeyP key)
   where
     subTable :: Parser TOML
     subTable = do
-      (kDiff, k) <- childKeyP key tableNameP
+      (kDiff, k) <- try $ childKeyP key tableNameP
       tomlT kDiff <$> localTomlP (Just k)
 
     subArray :: Parser TOML
     subArray = do
-      (kDiff, k) <- childKeyP key tableArrayNameP
+      (kDiff, k) <- try $ childKeyP key tableArrayNameP
       tomlA kDiff <$> tableArrayP k
 
 -- | @childKeyP (Just key) p@ checks if the result of @p@ if a child key of
 -- @key@ and returns the difference of the keys and the child key.
 -- @childKeyP Nothing p@ is only called from @tomlP@ (no parent key).
 childKeyP :: Maybe Key -> Parser Key -> Parser (Key, Key)
-childKeyP Nothing parser = try $ (\k -> (k, k)) <$> parser
-childKeyP (Just key) parser = try $ do
+childKeyP Nothing parser = (\k -> (k, k)) <$> parser
+childKeyP (Just key) parser = do
     k <- parser
     case keysDiff key k of
         FstIsPref d -> pure (d, k)
