@@ -9,7 +9,92 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- | This module contains implementation of the 'Generic' TOML codec.
+{- | This module contains implementation of the 'Generic' TOML codec. If your
+data types are big and you want to have codecs for them without writing a lot of
+boilerplate code, you can find this module helpful. Below you can find detailed
+explanation on how 'Generic' codecs work.
+
+Consider the following Haskell data types:
+
+@
+__data__ User = User
+    { age     :: Int
+    , address :: Address
+    , socials :: [Social]
+    } __deriving__ ('Generic')
+
+__data__ Address = Address
+    { street :: Text
+    , house  :: Int
+    } __deriving__ ('Generic')
+
+__data__ Social = Social
+    { name :: Text
+    , link :: Text
+    } __deriving__ ('Generic')
+@
+
+Value of the @User@ type represents the following TOML:
+
+@
+age = 27
+
+[address]
+  street = "Miami Beach"
+  house  = 42
+
+[[socials]]
+  name = \"Twitter\"
+  link = "https://twitter.com/foo"
+
+[[socials]]
+  name = \"GitHub\"
+  link = "https://github.com/bar"
+@
+
+Normally you would write 'TomlCodec' for this data type like this:
+
+@
+userCodec :: 'TomlCodec' User
+userCodec = User
+    \<$\> Toml.int "age" .= age
+    \<*\> Toml.table addressCodec "address" .= address
+    \<*\> Toml.list  socialCodec "socials"  .= socials
+
+addressCodec :: 'TomlCodec' Address
+addressCodec = Address
+    \<$\> Toml.text "street" .= street
+    \<*\> Toml.int  "house"  .= house
+
+socialCodec :: 'TomlCodec' Social
+socialCodec = Social
+    \<$\> Toml.text "name" .= name
+    \<*\> Toml.text "link" .= link
+@
+
+However, if you derived 'Generic' for your data types (as we did in the
+example), you can write your codecs simpler.
+
+@
+userCodec :: 'TomlCodec' User
+userCodec = 'genericCodec'
+
+__instance__ 'HasCodec' Address __where__
+    hasCodec = Toml.table 'genericCodec'
+
+__instance__ 'HasItemCodec' Social __where__
+    hasItemCodec = Right 'genericCodec'
+@
+
+Several notes about the interface:
+
+1. Your top-level data types is always implemented as 'genericCodec' (or other
+generic codec).
+2. If you have custom data type as a field of other type, you need to implement
+instance of the 'HasCodec' typeclass.
+3. If data type appears as an element of a list, you need to implement instance
+of the 'HasItemCodec' typeclass.
+-}
 
 module Toml.Generic
        ( genericCodec
@@ -18,7 +103,9 @@ module Toml.Generic
 
          -- * Options
        , TomlOptions (..)
+       , GenericOptions (..)
        , stripTypeNameOptions
+       , stripTypeNamePrefix
 
          -- * Core generic typeclass
        , HasCodec (..)
@@ -50,7 +137,7 @@ import qualified Data.Text.Lazy as L
 import qualified Toml.Bi as Toml
 
 
-{- | Generic codec for arbitrary data types.
+{- | Generic codec for arbitrary data types. Uses field names as keys.
 -}
 genericCodec :: (Generic a, GenericCodec (Rep a)) => TomlCodec a
 genericCodec = Toml.dimap from to $ genericTomlCodec (GenericOptions id)
@@ -87,7 +174,8 @@ data TomlOptions a = TomlOptions
     { tomlOptionsFieldModifier :: Typeable a => Proxy a -> String -> String
     }
 
-{- | Same as 'TomlOptions' but with all data type information erased.
+{- | Same as 'TomlOptions' but with all data type information erased. This data
+type is used internally. Define your options using 'TomlOptions' data type.
 -}
 newtype GenericOptions = GenericOptions
     { genericOptionsFieldModifier :: String -> String
@@ -98,24 +186,32 @@ toGenericOptions TomlOptions{..} = GenericOptions
     { genericOptionsFieldModifier = tomlOptionsFieldModifier (Proxy @a)
     }
 
-{- | Options to strip the prefix.
--}
+-- | Options that use 'stripTypeNamePrefix' as 'tomlOptionsFieldModifier'.
 stripTypeNameOptions :: Typeable a => TomlOptions a
 stripTypeNameOptions = TomlOptions
     { tomlOptionsFieldModifier = stripTypeNamePrefix
     }
 
 {- | Strips name of the type name from field name prefix.
+
+>>> data UserData = UserData { userDataId :: Int, userDataShortInfo :: Text }
+>>> stripTypeNamePrefix (Proxy @UserData) "userDataId"
+"id"
+>>> stripTypeNamePrefix (Proxy @UserData) "userDataShortInfo"
+"shortInfo"
+>>> stripTypeNamePrefix (Proxy @UserData) "udStats"
+"stats"
+>>> stripTypeNamePrefix (Proxy @UserData) "fooBar"
+"bar"
+>>> stripTypeNamePrefix (Proxy @UserData) "name"
+"name"
 -}
 stripTypeNamePrefix :: forall a . Typeable a => Proxy a -> String -> String
-stripTypeNamePrefix proxy fieldName =
-    case stripPrefix (headToLower typeName) fieldName of
+stripTypeNamePrefix _ fieldName =
+    case stripPrefix (headToLower $ typeName @a) fieldName of
         Just rest -> leaveIfEmpty rest
         Nothing   -> leaveIfEmpty (dropWhile isLower fieldName)
   where
-    typeName :: String
-    typeName = show $ typeRep proxy
-
     headToLower :: String -> String
     headToLower = \case
         []   -> error "Cannot use 'headToLower' on empty Text"
@@ -124,6 +220,9 @@ stripTypeNamePrefix proxy fieldName =
     -- if all lower case then leave field as it is
     leaveIfEmpty :: String -> String
     leaveIfEmpty rest = if null rest then fieldName else headToLower rest
+
+typeName :: forall a . Typeable a => String
+typeName = show $ typeRep (Proxy @a)
 
 ----------------------------------------------------------------------------
 -- Generic typeclasses
@@ -175,8 +274,11 @@ instance (Selector s, HasCodec a) => GenericCodec (S1 s (Rec0 a)) where
 -- Helper typeclasses
 ----------------------------------------------------------------------------
 
-{- | This typeclass tells how the data type should be coded as an item of the
-list.
+{- | This typeclass tells how the data type should be coded as an item of a
+list. Lists in TOML can have two types: __primitive__ and __table of arrays__.
+
+* If 'hasItemCodec' returns 'Left': __primitive__ arrays codec is used.
+* If 'hasItemCodec' returns 'Right:' __table of arrays__ codec is used.
 -}
 class HasItemCodec a where
     hasItemCodec :: Either (TomlBiMap a AnyValue) (TomlCodec a)
@@ -196,15 +298,20 @@ instance HasItemCodec Day       where hasItemCodec = Left Toml._Day
 instance HasItemCodec TimeOfDay where hasItemCodec = Left Toml._TimeOfDay
 instance HasItemCodec IntSet    where hasItemCodec = Left Toml._IntSet
 
-instance HasItemCodec a => HasItemCodec [a] where
+{- | If data type @a@ is not primitive then this instance returns codec for list
+under key equal to @a@ type name.
+-}
+instance (HasItemCodec a, Typeable a) => HasItemCodec [a] where
     hasItemCodec = case hasItemCodec @a of
         Left prim   -> Left $ Toml._Array prim
-        Right codec -> Right $ Toml.dilist codec
+        Right codec -> Right $ Toml.list codec (fromString $ typeName @a)
 
-{- | Helper typeclass for generic deriving. You can use this typeclass for
-writing your custom codecs manually but this is less explicit and generally
-not encouraged. Implement instances of this typeclass only if some data types
-are not covered here.
+{- | Helper typeclass for generic deriving. This instance tells how the data
+type should be coded if it's a field of other data type.
+
+__NOTE:__ You can use this typeclass for writing your custom codecs manually but
+this is less explicit and generally not encouraged. Implement instances of this
+typeclass only if some data types are not covered here.
 -}
 class HasCodec a where
     hasCodec :: Key -> TomlCodec a
@@ -237,7 +344,9 @@ instance HasItemCodec a => HasCodec (NonEmpty a) where
         Left prim   -> Toml.arrayNonEmptyOf prim
         Right codec -> Toml.nonEmpty codec
 
-{- TODO: uncomment when higher-kinded roles will be implemented
+{-
+TODO: uncomment when higher-kinded roles will be implemented
+* https://github.com/ghc-proposals/ghc-proposals/pull/233
 
 {- | @newtype@ for generic deriving of 'HasCodec' typeclass for custom data
 types that should we wrapped into separate table. Use it only for data types

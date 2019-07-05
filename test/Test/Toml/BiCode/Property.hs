@@ -31,30 +31,30 @@ test_encodeDecodeProp = prop "decode . encode == id" $ do
     tripping bigType (encode bigTypeCodec) (decode bigTypeCodec)
 
 data BigType = BigType
-    { btBool          :: Bool
-    , btInteger       :: Integer
-    , btNatural       :: Natural
-    , btInt           :: Int
-    , btWord          :: Word
-    , btDouble        :: Batman Double
-    , btFloat         :: Batman Float
-    , btText          :: Text
-    , btString        :: String
-    , btBS            :: ByteString
-    , btLazyBS        :: L.ByteString
-    , btLocalTime     :: LocalTime
-    , btDay           :: Day
-    , btTimeOfDay     :: TimeOfDay
-    , btArray         :: [Int]
-    , btArraySet      :: Set Word
-    , btArrayIntSet   :: IntSet
-    , btArrayHashSet  :: HashSet Natural
-    , btArrayNonEmpty :: NonEmpty Text
-    , btNonEmpty      :: NonEmpty ByteString
-    , btList          :: [Bool]
-    , btNewtype       :: BigTypeNewtype
-    , btSum           :: BigTypeSum
-    , btRecord        :: BigTypeRecord
+    { btBool          :: !Bool
+    , btInteger       :: !Integer
+    , btNatural       :: !Natural
+    , btInt           :: !Int
+    , btWord          :: !Word
+    , btDouble        :: !(Batman Double)
+    , btFloat         :: !(Batman Float)
+    , btText          :: !Text
+    , btString        :: !String
+    , btBS            :: !ByteString
+    , btLazyBS        :: !L.ByteString
+    , btLocalTime     :: !LocalTime
+    , btDay           :: !Day
+    , btTimeOfDay     :: !TimeOfDay
+    , btArray         :: ![Int]
+    , btArraySet      :: !(Set Word)
+    , btArrayIntSet   :: !IntSet
+    , btArrayHashSet  :: !(HashSet Natural)
+    , btArrayNonEmpty :: !(NonEmpty Text)
+    , btNonEmpty      :: !(NonEmpty ByteString)
+    , btList          :: ![Bool]
+    , btNewtype       :: !BigTypeNewtype
+    , btSum           :: !BigTypeSum
+    , btRecord        :: !BigTypeRecord
     } deriving (Show, Eq)
 
 -- | Wrapper over 'Double' and 'Float' to be equal on @NaN@ values.

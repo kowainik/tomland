@@ -5,7 +5,6 @@ module Toml.Bi.Monad
        , BiCodec
        , dimap
        , dioptional
-       , dilist
        , diwrap
        , (<!>)
        , (.=)
@@ -180,25 +179,6 @@ dioptional Codec{..} = Codec
     { codecRead  = optional codecRead
     , codecWrite = traverse codecWrite
     }
-
-dilist
-    :: (Alternative r, Applicative w)
-    => Codec r w c a
-    -> Codec r w [c] [a]
-dilist Codec{..} = Codec
-    { codecRead  = many codecRead
-    , codecWrite = traverse codecWrite
-    }
-
--- -- | Profunctor version of 'traverse'.
--- ditraverse
---     :: (Functor r, Applicative w, Applicative t, Traversable t)
---     => Codec r w c a
---     -> Codec r w (t c) (t a)
--- ditraverse Codec{..} = Codec
---     { codecRead  = pure <$> codecRead
---     , codecWrite = traverse codecWrite
---     }
 
 {- | Combinator used for @newtype@ wrappers. For example, given the data types:
 
