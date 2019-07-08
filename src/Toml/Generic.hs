@@ -72,7 +72,7 @@ socialCodec = Social
     \<*\> Toml.text "link" .= link
 @
 
-However, if you derived 'Generic' for your data types (as we did in the
+However, if you derive 'Generic' instance for your data types (as we do in the
 example), you can write your codecs simpler.
 
 @
