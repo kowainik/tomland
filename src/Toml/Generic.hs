@@ -89,7 +89,7 @@ __instance__ 'HasItemCodec' Social __where__
 Several notes about the interface:
 
 1. Your top-level data types are always implemented as 'genericCodec' (or other
-generic codec).
+generic codecs).
 2. If you have custom data type as a field of other type, you need to implement
 instance of the 'HasCodec' typeclass.
 3. If data type appears as an element of a list, you need to implement instance
