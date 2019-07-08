@@ -309,9 +309,10 @@ instance (HasItemCodec a, Typeable a) => HasItemCodec [a] where
 {- | Helper typeclass for generic deriving. This instance tells how the data
 type should be coded if it's a field of another data type.
 
-__NOTE:__ You can use this typeclass for writing your custom codecs manually but
-this is less explicit and generally not encouraged. Implement instances of this
-typeclass only if some data types are not covered here.
+__NOTE:__ If you implement TOML codecs for your data types manually, prefer more
+explicit @Toml.int@ or @Toml.text@ instead of implicit @Toml.hasCodec@.
+Implement instances of this typeclass only when using 'genericCodec' and when
+your custom data types are not covered here.
 -}
 class HasCodec a where
     hasCodec :: Key -> TomlCodec a
