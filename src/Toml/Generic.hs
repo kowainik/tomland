@@ -73,7 +73,7 @@ socialCodec = Social
 @
 
 However, if you derive 'Generic' instance for your data types (as we do in the
-example), you can write your codecs simpler.
+example), you can write your codecs in a simpler way.
 
 @
 userCodec :: 'TomlCodec' User
