@@ -152,10 +152,10 @@ this AST, benchmarks are also implemented in a way to reflect this difference.
 
 | Library            | parse :: Text -> AST | transform :: AST -> Haskell |
 |--------------------|----------------------|-----------------------------|
-| `tomland`          | `387.5 μs`           | `1.313 μs`                  |
-| `htoml`            | `801.2 μs`           | `32.54 μs`                  |
-| `htoml-megaparsec` | `318.7 μs`           | `34.74 μs`                  |
-| `toml-parser`      | `157.2 μs`           | `1.156 μs`                  |
+| `tomland`          | `305.5 μs`           | `1.280 μs`                  |
+| `htoml`            | `852.8 μs`           | `33.37 μs`                  |
+| `htoml-megaparsec` | `295.0 μs`           | `33.62 μs`                  |
+| `toml-parser`      | `164.6 μs`           | `1.101 μs`                  |
 
 You may see that `tomland` is not the fastest one (though still very fast). But
 performance hasn’t been optimized so far and:
