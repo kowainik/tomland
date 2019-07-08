@@ -92,7 +92,7 @@ Several notes about the interface:
 generic codecs).
 2. If you have a custom data type as a field of another type, you need to implement
 the instance of the 'HasCodec' typeclass.
-3. If data type appears as an element of a list, you need to implement instance
+3. If the data type appears as an element of a list, you need to implement the instance
 of the 'HasItemCodec' typeclass.
 -}
 
