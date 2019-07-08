@@ -307,7 +307,7 @@ instance (HasItemCodec a, Typeable a) => HasItemCodec [a] where
         Right codec -> Right $ Toml.list codec (fromString $ typeName @a)
 
 {- | Helper typeclass for generic deriving. This instance tells how the data
-type should be coded if it's a field of other data type.
+type should be coded if it's a field of another data type.
 
 __NOTE:__ You can use this typeclass for writing your custom codecs manually but
 this is less explicit and generally not encouraged. Implement instances of this
