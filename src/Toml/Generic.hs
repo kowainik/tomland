@@ -59,7 +59,7 @@ userCodec :: 'TomlCodec' User
 userCodec = User
     \<$\> Toml.int "age" .= age
     \<*\> Toml.table addressCodec "address" .= address
-    \<*\> Toml.list  socialCodec "socials"  .= socials
+    \<*\> Toml.list  socialCodec  "socials" .= socials
 
 addressCodec :: 'TomlCodec' Address
 addressCodec = Address
@@ -94,6 +94,8 @@ generic codecs).
 the instance of the 'HasCodec' typeclass.
 3. If the data type appears as an element of a list, you need to implement the instance
 of the 'HasItemCodec' typeclass.
+
+@since 1.1.1.0
 -}
 
 module Toml.Generic

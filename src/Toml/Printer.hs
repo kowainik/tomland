@@ -28,9 +28,14 @@ import qualified Data.Text as Text
 
 {- | Configures the pretty printer. -}
 data PrintOptions = PrintOptions
-    { -- | How table keys should be sorted, if at all.
+    { {- | How table keys should be sorted, if at all.
+
+      @since 1.1.1.0
+      -}
       printOptionsSorting :: !(Maybe (Key -> Key -> Ordering))
-      -- | Number of spaces by which to indent.
+
+      {- | Number of spaces by which to indent.
+      -}
     , printOptionsIndent  :: !Int
     }
 

@@ -3,6 +3,47 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## 1.1.0.0 — Jul 8, 2019
+
+* [#154](https://github.com/kowainik/tomland/issues/154):
+  Implement `Generic` bidirectional codecs
+  (by [@chshersh](https://github.com/chshersh)).
+* [#145](https://github.com/kowainik/tomland/issues/145):
+  Add support for inline table arrays
+  (by [@jiegillet](https://github.com/jiegillet)).
+* [#195](https://github.com/kowainik/tomland/issues/195):
+  Fix an exponential parser behavior for parsing table of arrays
+  (by [@jiegillet](https://github.com/jiegillet)).
+* [#190](https://github.com/kowainik/tomland/issues/190):
+  Add `enumBounded` codec for nullary sum types
+  (by [@mxxo](https://github.com/mxxo)).
+* [#189](https://github.com/kowainik/tomland/issues/189):
+  **Breaking change:** Implement custom table sorting by keys. Also fields of
+  the `PrintOptions` data type were renamed according to style guide
+  (by [@ramanshah](https://github.com/ramanshah)).
+
+  __Before:__
+
+  ```haskell
+  data PrintOptions = PrintOptions
+      { shouldSort :: Bool
+      , indent     :: Int
+      } deriving (Show)
+  ```
+
+  __Now:__
+
+  ```haskell
+  data PrintOptions = PrintOptions
+      { printOptionsSorting :: !(Maybe (Key -> Key -> Ordering))
+      , printOptionsIndent  :: !Int
+      }
+  ```
+
+  __Migration guide:__ If you used `indent` field, use `printOptionsIndent`
+  instead. If you used `shouldSort`, use `printOptionsSorting` instead and pass
+  `Nothing` instead of `False` or `Just compare` instead of `True`.
+
 ## 1.0.1.0 — May 17, 2019
 
 * [#177](https://github.com/kowainik/tomland/issues/177):
@@ -10,10 +51,6 @@ The changelog is available [on GitHub][2].
 * [#187](https://github.com/kowainik/tomland/issues/187):
   Bump up to `hedgehog-1.0`.
 * Support GHC 8.6.5
-* [#195](https://github.com/kowainik/tomland/issues/195):
-  Fixed an exponential behavior for parsing nested table of arrays.
-* [#145](https://github.com/kowainik/tomland/issues/145):
-  Parser and tests for inline arrays of tables.
 
 ## 1.0.0 — Jan 14, 2019
 

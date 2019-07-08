@@ -384,7 +384,10 @@ _BoundedInteger = BiMap (Right . toInteger) eitherBounded
          in Left $ ArbitraryError msg
       | otherwise = Right (fromIntegral n)
 
--- | Helper bimap for 'EnumBounded' and 'Data.Text.Text'.
+{- | Helper bimap for 'EnumBounded' and 'Data.Text.Text'.
+
+@since 1.1.1.0
+-}
 _EnumBoundedText :: forall a. (Show a, Enum a, Bounded a) => TomlBiMap a Text
 _EnumBoundedText = BiMap
     { forward  = Right . tShow
@@ -403,8 +406,11 @@ _EnumBoundedText = BiMap
         options  = fmap tShow enums
         enums = [minBound @a .. maxBound @a]
 
--- | Bimap for nullary sum data types with 'Show', 'Enum' and 'Bounded'
--- instances.  Usually used as 'Toml.Bi.Combinators.enumBounded' combinator.
+{- | Bimap for nullary sum data types with 'Show', 'Enum' and 'Bounded'
+instances.  Usually used as 'Toml.Bi.Combinators.enumBounded' combinator.
+
+@since 1.1.1.0
+-}
 _EnumBounded :: (Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
 _EnumBounded = _EnumBoundedText >>> _Text
 
@@ -489,7 +495,7 @@ _HashSet :: (Eq a, Hashable a) => TomlBiMap a AnyValue -> TomlBiMap (HS.HashSet 
 _HashSet bi = iso HS.toList HS.fromList >>> _Array bi
 
 {- | 'IS.IntSet' bimap for 'AnyValue'. Usually used as
-'Toml.Bi.Combinators.arrayIntSetOf' combinator.
+'Toml.Bi.Combinators.arrayIntSet' combinator.
 -}
 _IntSet :: TomlBiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
