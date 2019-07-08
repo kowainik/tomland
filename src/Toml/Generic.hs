@@ -12,7 +12,7 @@
 {- | This module contains implementation of the 'Generic' TOML codec. If your
 data types are big and nested, and you want to have codecs for them without writing a lot of
 boilerplate code, you can find this module helpful. Below you can find the detailed
-explanation on how 'Generic' codecs work.
+explanation on how the 'Generic' codecs work.
 
 Consider the following Haskell data types:
 
