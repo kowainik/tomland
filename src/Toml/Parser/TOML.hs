@@ -101,7 +101,7 @@ tomlP = sc *> localTomlP Nothing <* eof
 
 -- | Parser for a toml under a certain key
 localTomlP :: Maybe Key -> Parser TOML
-localTomlP key = mconcat <$> many (subArray <|> subTable <|> hasKeyP key)
+localTomlP key = mconcat <$> many (subArray <|> subTable <|> (try $ hasKeyP key))
   where
     subTable :: Parser TOML
     subTable = do
