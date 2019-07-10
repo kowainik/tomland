@@ -3,6 +3,10 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## 1.1.1.0
+* [#206](https://github.com/kowainik/tomland/issues/206):
+  Bug fix in parser and additional tests
+
 ## 1.1.0.0 — Jul 8, 2019
 
 * [#154](https://github.com/kowainik/tomland/issues/154):
