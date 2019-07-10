@@ -395,6 +395,14 @@ tomlSpecs = do
                 (tomlFromTable [(makeKey ["table"], tomlFromKeyVal [str, int])])
         it "can parse an empty inline TOML table" $
             parseToml "table = {}" (tomlFromTable [(makeKey ["table"], mempty)])
+        it "can parse a table followed by an inline table" $
+            parseToml "[table1] \n  key1 = \"some string\" \n table2 = {key2 = 123}"
+                (tomlFromTable [(makeKey ["table1"], tomlFromKeyVal [str])
+                               ,(makeKey ["table2"], tomlFromKeyVal [int])])
+        it "can parse an empty table followed by an inline table" $
+            parseToml "[table1] \n table2 = {key2 = 123}"
+                (tomlFromTable [(makeKey ["table1"], mempty)
+                               ,(makeKey ["table2"], tomlFromKeyVal [int])])
         it "allows the name of the table to be any valid TOML key" $ do
             parseToml "dog.\"tater.man\"={}"
                 (tomlFromTable [(makeKey ["dog", dquote "tater.man"], mempty)])

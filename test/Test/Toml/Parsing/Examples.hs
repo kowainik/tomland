@@ -4,7 +4,6 @@ import Data.Either (isRight)
 import Test.Tasty.Hspec (Spec, describe, it, shouldReturn)
 import Toml.Parser (parse)
 
-import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
 spec_Examples :: Spec
