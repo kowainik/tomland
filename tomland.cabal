@@ -33,6 +33,7 @@ build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
 extra-source-files:  test/golden/*.golden
+                   , test/examples/*.toml
 tested-with:         GHC == 8.2.2
                    , GHC == 8.4.4
                    , GHC == 8.6.5
@@ -132,6 +133,7 @@ test-suite tomland-test
                        Test.Toml.Property
                        Test.Toml.Parsing.Property
                        Test.Toml.Parsing.Unit
+                       Test.Toml.Parsing.Examples
                        Test.Toml.PrefixTree.Property
                        Test.Toml.PrefixTree.Unit
                        Test.Toml.Printer.Golden
@@ -148,6 +150,7 @@ test-suite tomland-test
                      , tasty-hedgehog ^>= 1.0.0.0
                      , tasty-hspec ^>= 1.1.5.1
                      , tasty-silver ^>= 3.1.11
+                     , directory ^>= 1.3
                      , text
                      , time
                      , tomland
