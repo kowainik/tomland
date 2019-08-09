@@ -64,6 +64,7 @@ import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGrego
 import GHC.Exts (fromList)
 import GHC.Stack (HasCallStack)
 import Hedgehog (Gen, GenBase, MonadGen, PropertyT, Range, property)
+import Hedgehog.Gen (constant)
 import Numeric.Natural (Natural)
 import Test.Tasty (TestName, TestTree)
 import Test.Tasty.Hedgehog (testProperty)
@@ -166,13 +167,13 @@ genPrefixTree key = Gen.recursive
         pure $ Branch key prefVal prefMap
 
 makeToml :: [(Key, AnyValue)] -> TOML
-makeToml kv = TOML (fromList kv) mempty mempty
+makeToml kv = TOML (fromList kv) mempty mempty mempty
 
 genToml :: (MonadGen m, GenBase m ~ Identity) => m TOML
 genToml = Gen.recursive
             Gen.choice
             [ makeToml <$> genKeyAnyValueList ]
-            [ TOML <$> keyValues <*> tables <*> arrays ]
+            [ TOML <$> keyValues <*> tables <*> arrays <*> constant Nothing ]
   where
     keyValues = fromList <$> genKeyAnyValueList
     tables = fmap Toml.fromList

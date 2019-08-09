@@ -97,7 +97,11 @@ tableArrayP key =
 
 -- | Parser for a '.toml' file
 tomlP :: Parser TOML
-tomlP = sc *> localTomlP Nothing <* eof
+tomlP = do
+    toml <- sc *> localTomlP Nothing <* eof
+    case failure toml of
+        Nothing  -> pure toml
+        Just err -> fail err
 
 -- | Parser for a toml under a certain key
 localTomlP :: Maybe Key -> Parser TOML

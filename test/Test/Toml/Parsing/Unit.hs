@@ -527,13 +527,13 @@ makeKey :: [Text] -> Key
 makeKey = Key . NE.fromList . map Piece
 
 tomlFromKeyVal :: [(Key, AnyValue)] -> TOML
-tomlFromKeyVal kv = TOML (HashMap.fromList kv) mempty mempty
+tomlFromKeyVal kv = TOML (HashMap.fromList kv) mempty mempty mempty
 
 tomlFromTable :: [(Key, TOML)] -> TOML
-tomlFromTable t = TOML mempty (fromList t) mempty
+tomlFromTable t = TOML mempty (fromList t) mempty mempty
 
 tomlFromArray :: [(Key, NonEmpty TOML)] -> TOML
-tomlFromArray = TOML mempty mempty . HashMap.fromList
+tomlFromArray a = TOML mempty mempty (HashMap.fromList a) mempty
 
 -- Surround given text with quotes.
 quoteWith :: Text -> Text -> Text
