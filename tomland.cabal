@@ -37,13 +37,14 @@ extra-source-files:  test/golden/*.golden
 tested-with:         GHC == 8.2.2
                      GHC == 8.4.4
                      GHC == 8.6.5
+                     GHC == 8.8.1
 
 source-repository head
   type:                git
   location:            https://github.com/kowainik/tomland.git
 
 common common-options
-  build-depends:       base >= 4.10 && < 4.13
+  build-depends:       base >= 4.10 && < 4.14
 
   ghc-options:         -Wall
                        -Wincomplete-uni-patterns
@@ -96,7 +97,7 @@ library
   build-depends:       bytestring ^>= 0.10
                      , containers >= 0.5.7 && < 0.7
                      , deepseq ^>= 1.4
-                     , hashable ^>= 1.2
+                     , hashable >= 1.2 && < 1.4
                      , megaparsec ^>= 7.0.5
                      , mtl ^>= 2.2
                      , parser-combinators >= 1.1.0 && < 1.3
