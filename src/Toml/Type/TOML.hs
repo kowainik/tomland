@@ -86,37 +86,48 @@ TOML
 @
 -}
 data TOML = TOML
-    { tomlPairs       :: HashMap Key AnyValue
-    , tomlTables      :: PrefixMap TOML
-    , tomlTableArrays :: HashMap Key (NonEmpty TOML)
+    { tomlPairs       :: !(HashMap Key AnyValue)
+    , tomlTables      :: !(PrefixMap TOML)
+    , tomlTableArrays :: !(HashMap Key (NonEmpty TOML))
     } deriving (Show, Eq, NFData, Generic)
 
 instance Semigroup TOML where
-    (TOML pairsA tablesA arraysA) <> (TOML pairsB tablesB arraysB) = TOML
+    (<>) :: TOML -> TOML -> TOML
+    TOML pairsA tablesA arraysA <> TOML pairsB tablesB arraysB = TOML
         (pairsA <> pairsB)
         (HashMap.unionWith (<>) tablesA tablesB)
         (arraysA <> arraysB)
+    {-# INLINE (<>) #-}
 
 instance Monoid TOML where
-    mappend = (<>)
+    mempty :: TOML
     mempty = TOML mempty mempty mempty
+    {-# INLINE mempty #-}
+
+    mappend :: TOML -> TOML -> TOML
+    mappend = (<>)
+    {-# INLINE mappend #-}
 
 -- | Inserts given key-value into the 'TOML'.
 insertKeyVal :: Key -> Value a -> TOML -> TOML
 insertKeyVal k v = insertKeyAnyVal k (AnyValue v)
+{-# INLINE insertKeyVal #-}
 
 -- | Inserts given key-value into the 'TOML'.
 insertKeyAnyVal :: Key -> AnyValue -> TOML -> TOML
-insertKeyAnyVal k av toml =toml { tomlPairs = HashMap.insert k av (tomlPairs toml) }
+insertKeyAnyVal k av toml = toml { tomlPairs = HashMap.insert k av (tomlPairs toml) }
+{-# INLINE insertKeyAnyVal #-}
 
 -- | Inserts given table into the 'TOML'.
 insertTable :: Key -> TOML -> TOML -> TOML
 insertTable k inToml toml = toml
     { tomlTables = Prefix.insert k inToml (tomlTables toml)
     }
+{-# INLINE insertTable #-}
 
 -- | Inserts given array of tables into the 'TOML'.
 insertTableArrays :: Key -> NonEmpty TOML -> TOML -> TOML
 insertTableArrays k arr toml = toml
     { tomlTableArrays = HashMap.insert k arr (tomlTableArrays toml)
     }
+{-# INLINE insertTableArrays #-}
