@@ -13,7 +13,7 @@ import Control.Monad.Combinators (between)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 
-import Toml.Parser.Core (Parser, alphaNumChar, char, lexeme, text)
+import Toml.Parser.Core (Parser, alphaNumChar, char, lexeme, sc, text)
 import Toml.Parser.String (basicStringP, literalStringP)
 import Toml.PrefixTree (Key (..), Piece (..))
 
@@ -42,7 +42,7 @@ keyP = Key <$> keyComponentP `sepBy1` char '.'
 
 -- | Parser for table name: 'Key' inside @[]@.
 tableNameP :: Parser Key
-tableNameP = between (text "[") (text "]") keyP
+tableNameP = between (text "[") (text "]") keyP <* sc
 
 -- | Parser for array of tables name: 'Key' inside @[[]]@.
 tableArrayNameP :: Parser Key
