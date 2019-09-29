@@ -9,6 +9,3 @@ extra-deps:
   - composition-prelude-2.0.2.1  # needed for htoml-megaparsec
 
 allow-newer: true
-
-ghc-options:
-  "$locals": -Wmissing-deriving-strategies
