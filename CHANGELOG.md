@@ -3,6 +3,12 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## Unreleased: 1.2.0.0
+
+* [#216](https://github.com/kowainik/tomland/issues/216):
+  Refactor TOML parser significantly. Check for some validation errors.
+  (by [@chshersh](https://github.com/chshersh))
+
 ## 1.1.0.1 — Jul 10, 2019
 
 * [#206](https://github.com/kowainik/tomland/issues/206):

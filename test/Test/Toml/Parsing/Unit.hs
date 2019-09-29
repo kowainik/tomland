@@ -12,8 +12,10 @@ import Test.Tasty.Hspec (Expectation, Spec, context, describe, it)
 import Text.Megaparsec (Parsec, ShowErrorComponent, Stream, parse)
 
 import Toml.Edsl (mkToml, table, tableArray, (=:))
+import Toml.Parser.Item (tomlP)
+import Toml.Parser.Key (keyP)
 import Toml.Parser.String (textP)
-import Toml.Parser.TOML (keyP, tomlP)
+import Toml.Parser.Validate (validateItems)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
 import Toml.PrefixTree (Key (..), Piece (..), fromList)
 import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
@@ -397,12 +399,21 @@ tomlSpecs = do
             parseToml "table = {}" (tomlFromTable [(makeKey ["table"], mempty)])
         it "can parse a table followed by an inline table" $
             parseToml "[table1] \n  key1 = \"some string\" \n table2 = {key2 = 123}"
-                (tomlFromTable [(makeKey ["table1"], tomlFromKeyVal [str])
-                               ,(makeKey ["table2"], tomlFromKeyVal [int])])
+                (tomlFromTable
+                    [ ( "table1"
+                      , tomlFromKeyVal [str]
+                        <> tomlFromTable [ ("table2", tomlFromKeyVal [int]) ]
+                      )
+                    ]
+                )
         it "can parse an empty table followed by an inline table" $
             parseToml "[table1] \n table2 = {key2 = 123}"
-                (tomlFromTable [(makeKey ["table1"], mempty)
-                               ,(makeKey ["table2"], tomlFromKeyVal [int])])
+                (tomlFromTable
+                    [ ( "table1"
+                      , tomlFromTable [ ("table2", tomlFromKeyVal [int]) ]
+                      )
+                    ]
+                )
         it "allows the name of the table to be any valid TOML key" $ do
             parseToml "dog.\"tater.man\"={}"
                 (tomlFromTable [(makeKey ["dog", dquote "tater.man"], mempty)])
@@ -481,8 +492,9 @@ tomlSpecs = do
 -- Utilities
 ----------------------------------------------------------------------------
 
-parseX :: (ShowErrorComponent e, Stream s, Show a, Eq a)
-       => Parsec e s a -> s -> a -> Expectation
+parseX
+    :: (ShowErrorComponent e, Stream s, Show a, Eq a)
+    => Parsec e s a -> s -> a -> Expectation
 parseX p given expected = parse p "" given `shouldParse` expected
 
 failOn :: Show a => Parsec e s a -> s -> Expectation
@@ -490,23 +502,35 @@ failOn p given = parse p "" `shouldFailOn` given
 
 parseArray :: Text -> [UValue] -> Expectation
 parseArray = parseX arrayP
+
 parseBool :: Text -> Bool -> Expectation
 parseBool = parseX boolP
+
 parseDateTime :: Text -> UValue -> Expectation
 parseDateTime = parseX dateTimeP
+
 parseDouble :: Text -> Double -> Expectation
 parseDouble = parseX doubleP
+
 parseInteger :: Text -> Integer -> Expectation
 parseInteger = parseX integerP
+
 parseKey :: Text -> Key -> Expectation
 parseKey = parseX keyP
+
 parseText :: Text -> Text -> Expectation
 parseText = parseX textP
 
 parseToml :: Text -> TOML -> Expectation
-parseToml = parseX tomlP
+parseToml test toml = parseX (validateItems <$> tomlP) test (Right toml)
 
-arrayFailOn, boolFailOn, dateTimeFailOn, doubleFailOn, integerFailOn, textFailOn, tomlFailOn :: Text -> Expectation
+arrayFailOn
+  , boolFailOn
+  , dateTimeFailOn
+  , doubleFailOn
+  , integerFailOn
+  , textFailOn
+  , tomlFailOn :: Text -> Expectation
 arrayFailOn     = failOn arrayP
 boolFailOn      = failOn boolP
 dateTimeFailOn  = failOn dateTimeP
