@@ -175,7 +175,10 @@ _Client = Toml.'prism' Client $ \\__case__
     other    -> Toml.'wrongConstructor' \"Client\" other
 @
 -}
-prism :: (field -> object) -> (object -> Either error field) -> BiMap error object field
+prism
+    :: (field -> object)
+    -> (object -> Either error field)
+    -> BiMap error object field
 prism review preview = BiMap preview (Right . review)
 
 ----------------------------------------------------------------------------
@@ -190,13 +193,14 @@ data TomlBiMapError
     = WrongConstructor -- ^ Error for cases with wrong constructors. For
                        -- example, you're trying to convert 'Left' but
                        -- bidirectional converter expects 'Right'.
-        Text           -- ^ Expected constructor name
-        Text           -- ^ Actual value
+        !Text          -- ^ Expected constructor name
+        !Text          -- ^ Actual value
     | WrongValue       -- ^ Error for cases with wrong values
-        MatchError     -- ^ Information about failed matching
+        !MatchError    -- ^ Information about failed matching
     | ArbitraryError   -- ^ Arbitrary textual error
-        Text           -- ^ Error message
-    deriving (Eq, Show, Generic, NFData)
+        !Text          -- ^ Error message
+    deriving stock (Eq, Show, Generic)
+    deriving anyclass (NFData)
 
 -- | Converts 'TomlBiMapError' into pretty human-readable text.
 prettyBiMapError :: TomlBiMapError -> Text

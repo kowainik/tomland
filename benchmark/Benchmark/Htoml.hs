@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE PackageImports     #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
@@ -38,8 +37,8 @@ parse = parseTomlDoc ""
 convert :: Table -> Either String HaskellType
 convert = parseEither parseJSON . toJSON
 
-deriving instance NFData Node
-deriving instance Generic Node
+deriving anyclass instance NFData Node
+deriving stock instance Generic Node
 
 instance NFData ParseError where
     rnf = rwhnf

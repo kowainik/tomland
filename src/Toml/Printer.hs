@@ -26,6 +26,7 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
 
+
 {- | Configures the pretty printer. -}
 data PrintOptions = PrintOptions
     { {- | How table keys should be sorted, if at all.

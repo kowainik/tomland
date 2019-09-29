@@ -74,9 +74,9 @@ data Mail = Mail
     }
 
 data User
-    = Admin  Integer  -- id of admin
-    | Client Text     -- name of the client
-    deriving (Show)
+    = Admin  !Integer  -- id of admin
+    | Client !Text     -- name of the client
+    deriving stock (Show)
 
 newtype Port = Port Int
 newtype Host = Host Text

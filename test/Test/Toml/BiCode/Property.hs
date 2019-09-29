@@ -25,6 +25,7 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import qualified Toml
 
+
 test_encodeDecodeProp :: PropertyTest
 test_encodeDecodeProp = prop "decode . encode == id" $ do
     bigType <- forAll genBigType
@@ -55,11 +56,12 @@ data BigType = BigType
     , btNewtype       :: !BigTypeNewtype
     , btSum           :: !BigTypeSum
     , btRecord        :: !BigTypeRecord
-    } deriving (Show, Eq)
+    } deriving stock (Show, Eq)
 
 -- | Wrapper over 'Double' and 'Float' to be equal on @NaN@ values.
-newtype Batman a = Batman a
-    deriving (Show)
+newtype Batman a = Batman
+    { unBatman :: a
+    } deriving stock (Show)
 
 instance RealFloat a => Eq (Batman a) where
     Batman a == Batman b =
@@ -67,19 +69,22 @@ instance RealFloat a => Eq (Batman a) where
             then isNaN b
             else a == b
 
-newtype BigTypeNewtype = BigTypeNewtype ZonedTime
-    deriving (Show)
+newtype BigTypeNewtype = BigTypeNewtype
+    { unBigTypeNewtype :: ZonedTime
+    } deriving stock (Show)
 
 instance Eq BigTypeNewtype where
     (BigTypeNewtype a) == (BigTypeNewtype b) = zonedTimeToUTC a == zonedTimeToUTC b
 
-data BigTypeSum = BigTypeSumA Integer | BigTypeSumB Text
-    deriving (Show, Eq)
+data BigTypeSum
+    = BigTypeSumA !Integer
+    | BigTypeSumB !Text
+    deriving stock (Show, Eq)
 
 data BigTypeRecord = BigTypeRecord
-    { btrBoolSet     :: Set Bool
-    , btrNewtypeList :: [BigTypeSum]
-    } deriving (Show, Eq)
+    { btrBoolSet     :: !(Set Bool)
+    , btrNewtypeList :: ![BigTypeSum]
+    } deriving stock (Show, Eq)
 
 bigTypeCodec :: TomlCodec BigType
 bigTypeCodec = BigType

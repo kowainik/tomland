@@ -1,7 +1,5 @@
-{-# LANGUAGE DeriveAnyClass             #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE PatternSynonyms            #-}
+{-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 -- | Implementation of prefix tree for TOML AST.
 
@@ -53,9 +51,10 @@ import qualified Data.Text as Text
 
 
 -- | Represents the key piece of some layer.
-newtype Piece = Piece { unPiece :: Text }
-    deriving stock (Generic)
-    deriving newtype (Show, Eq, Ord, Hashable, IsString, NFData)
+newtype Piece = Piece
+    { unPiece :: Text
+    } deriving stock (Generic)
+      deriving newtype (Show, Eq, Ord, Hashable, IsString, NFData)
 
 {- | Key of value in @key = val@ pair. Represents as non-empty list of key
 components — 'Piece's. Key like
@@ -70,9 +69,10 @@ is represented like
 Key (Piece "site" :| [Piece "\\"google.com\\""])
 @
 -}
-newtype Key = Key { unKey :: NonEmpty Piece }
-    deriving stock (Generic)
-    deriving newtype (Show, Eq, Ord, Hashable, NFData, Semigroup)
+newtype Key = Key
+    { unKey :: NonEmpty Piece
+    } deriving stock (Generic)
+      deriving newtype (Show, Eq, Ord, Hashable, NFData, Semigroup)
 
 {- | Split a dot-separated string into 'Key'. Empty string turns into a 'Key'
 with single element — empty 'Piece'.
@@ -113,7 +113,8 @@ data PrefixTree a
         !Prefix        -- ^ Greatest common key prefix.
         !(Maybe a)     -- ^ Possible value at that point.
         !(PrefixMap a) -- ^ Values at suffixes of the prefix.
-    deriving (Show, Eq, NFData, Generic)
+    deriving stock (Show, Eq, Generic)
+    deriving anyclass (NFData)
 
 instance Semigroup (PrefixTree a) where
     a <> b = foldl' (\tree (k, v) -> insertT k v tree) a (toListT b)
@@ -130,7 +131,7 @@ data KeysDiff
         !Key     -- ^ Common prefix.
         !Key     -- ^ Rest of the first key.
         !Key     -- ^ Rest of the second key.
-    deriving (Show, Eq)
+    deriving stock (Show, Eq)
 
 -- | Compares two keys
 keysDiff :: Key -> Key -> KeysDiff

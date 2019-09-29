@@ -89,7 +89,8 @@ data TOML = TOML
     { tomlPairs       :: !(HashMap Key AnyValue)
     , tomlTables      :: !(PrefixMap TOML)
     , tomlTableArrays :: !(HashMap Key (NonEmpty TOML))
-    } deriving (Show, Eq, NFData, Generic)
+    } deriving stock (Show, Eq, Generic)
+      deriving anyclass (NFData)
 
 instance Semigroup TOML where
     (<>) :: TOML -> TOML -> TOML
