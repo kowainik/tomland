@@ -88,9 +88,7 @@ groupWithParent parent (item:items) = case item of
     TableName name      -> groupTable item name
     TableArrayName name -> groupTable item name
   where
-    -- prepend to the first list
-    -- just to remove some code noise,
-    -- but not sure whether it keeps code readable
+    -- prepend to the first list, just to remove some code noise
     (<:>) :: a -> ([a], b) -> ([a], b)
     a <:> tup = first (a :) tup
 

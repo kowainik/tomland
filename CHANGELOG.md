@@ -5,7 +5,7 @@ The changelog is available [on GitHub][2].
 
 ## Unreleased: 1.2.0.0
 
-* [#211](https://github.com/kowainik/tomland/issues/206):
+* [#216](https://github.com/kowainik/tomland/issues/216):
   Refactor TOML parser significantly. Check for some validation errors.
   (by [@chshersh](https://github.com/chshersh))
 
