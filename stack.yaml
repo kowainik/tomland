@@ -2,7 +2,7 @@ resolver: nightly-2019-09-29
 
 extra-deps:
   - tasty-silver-3.1.13
-  - regex-tdfa-1.2.3.2  # for tasty-silver
+  - regex-tdfa-1.3.0  # for tasty-silver
   - toml-parser-0.1.0.0
 
   - htoml-megaparsec-2.1.0.3
