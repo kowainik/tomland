@@ -20,8 +20,8 @@ insideCodec :: TomlCodec TestInside
 insideCodec = Toml.dimap unInside TestInside $ Toml.text "inside"
 
 data User = User
-    { userName :: Text
-    , userAge  :: Int
+    { userName :: !Text
+    , userAge  :: !Int
     }
 
 userCodec :: TomlCodec User
@@ -29,27 +29,30 @@ userCodec = User
     <$> Toml.text "name" .= userName
     <*> Toml.int  "age"  .= userAge
 
-newtype N = N Text
+newtype N = N
+    { unN :: Text
+    }
 
-data ColorScheme = Light
-                 | Dark
-                 | HighContrast
-                 deriving (Show, Enum, Bounded)
+data ColorScheme
+    = Light
+    | Dark
+    | HighContrast
+    deriving stock (Show, Enum, Bounded)
 
 data Test = Test
-    { testB  :: Bool
-    , testI  :: Int
-    , testF  :: Double
-    , testS  :: Text
-    , testA  :: [Text]
-    , testM  :: Maybe Bool
-    , testX  :: TestInside
-    , testY  :: Maybe TestInside
-    , testN  :: N
-    , testC  :: ColorScheme
-    , testE1 :: Either Integer String
-    , testE2 :: Either String Double
-    , users  :: [User]
+    { testB  :: !Bool
+    , testI  :: !Int
+    , testF  :: !Double
+    , testS  :: !Text
+    , testA  :: ![Text]
+    , testM  :: !(Maybe Bool)
+    , testX  :: !TestInside
+    , testY  :: !(Maybe TestInside)
+    , testN  :: !N
+    , testC  :: !ColorScheme
+    , testE1 :: !(Either Integer String)
+    , testE2 :: !(Either String Double)
+    , users  :: ![User]
     }
 
 

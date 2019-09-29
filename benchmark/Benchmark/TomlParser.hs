@@ -1,9 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-{-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving  #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Benchmark.TomlParser
        ( decode
@@ -84,8 +82,8 @@ matchDouble :: TOML.Value -> Maybe Double
 matchDouble (TOML.Double d) = Just d
 matchDouble _               = Nothing
 
-deriving instance Generic TOML.Value
-deriving instance NFData  TOML.Value
+deriving stock instance Generic TOML.Value
+deriving anyclass instance NFData  TOML.Value
 
 instance NFData TOML.TOMLError where
   rnf = rwhnf

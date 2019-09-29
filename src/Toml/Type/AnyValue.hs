@@ -52,9 +52,10 @@ instance NFData AnyValue where
 
 -- | Value type mismatch error.
 data MatchError = MatchError
-    { valueExpected :: TValue
-    , valueActual   :: AnyValue
-    } deriving (Eq, Show, Generic, NFData)
+    { valueExpected :: !TValue
+    , valueActual   :: !AnyValue
+    } deriving stock (Eq, Show, Generic)
+      deriving anyclass (NFData)
 
 -- | Helper function to create 'MatchError'.
 mkMatchError :: TValue -> Value t -> Either MatchError a

@@ -11,6 +11,7 @@ import Toml (DecodeException, TOML, TomlCodec, parse, (.=))
 
 import qualified Toml
 
+
 decode :: Text -> Either DecodeException HaskellType
 decode = Toml.decode codec
 

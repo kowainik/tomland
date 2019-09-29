@@ -45,15 +45,17 @@ import Toml.Type (TOML (..), TValue, showType)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TIO
 
+
 -- | Type of exception for converting from TOML to user custom data type.
 data DecodeException
     = TrivialError
-    | BiMapError TomlBiMapError
-    | KeyNotFound Key  -- ^ No such key
-    | TableNotFound Key  -- ^ No such table
-    | TypeMismatch Key Text TValue  -- ^ Expected type vs actual type
-    | ParseError ParseException  -- ^ Exception during parsing
-    deriving (Eq, Generic, NFData)
+    | BiMapError !TomlBiMapError
+    | KeyNotFound !Key  -- ^ No such key
+    | TableNotFound !Key  -- ^ No such table
+    | TypeMismatch !Key !Text !TValue  -- ^ Expected type vs actual type
+    | ParseError !ParseException  -- ^ Exception during parsing
+    deriving stock (Eq, Generic)
+    deriving anyclass (NFData)
 
 instance Show DecodeException where
     show = Text.unpack . prettyException
@@ -120,7 +122,7 @@ execTomlCodec :: TomlCodec a -> a -> TOML
 execTomlCodec codec obj = execState (runMaybeT $ codecWrite codec obj) mempty
 
 -- | File loading error data type.
-data LoadTomlException = LoadTomlException FilePath Text
+data LoadTomlException = LoadTomlException !FilePath !Text
 
 instance Show LoadTomlException where
     show (LoadTomlException filePath msg) = "Couldnt parse file " ++ filePath ++ ": " ++ show msg

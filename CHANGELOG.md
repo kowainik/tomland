@@ -8,6 +8,8 @@ The changelog is available [on GitHub][2].
 * [#216](https://github.com/kowainik/tomland/issues/216):
   Refactor TOML parser significantly. Check for some validation errors.
   (by [@chshersh](https://github.com/chshersh))
+* [#213](https://github.com/kowainik/tomland/issues/213):
+  Support GHC-8.8.1.
 
 ## 1.1.0.1 — Jul 10, 2019
 

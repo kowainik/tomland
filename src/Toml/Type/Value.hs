@@ -30,9 +30,20 @@ import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 import Data.Type.Equality ((:~:) (..))
 import GHC.Generics (Generic)
 
+
 -- | Needed for GADT parameterization
-data TValue = TBool | TInteger | TDouble | TText | TZoned | TLocal | TDay | THours | TArray
-    deriving (Eq, Show, Read, NFData, Generic)
+data TValue
+    = TBool
+    | TInteger
+    | TDouble
+    | TText
+    | TZoned
+    | TLocal
+    | TDay
+    | THours
+    | TArray
+    deriving stock (Eq, Show, Read, Generic)
+    deriving anyclass (NFData)
 
 -- | Convert 'TValue' constructors to 'String' without @T@ prefix.
 showType :: TValue -> String
@@ -167,7 +178,7 @@ arr6 = [ 1, 2.0 ] # INVALID
     -}
     Array  :: [Value t] -> Value 'TArray
 
-deriving instance Show (Value t)
+deriving stock instance Show (Value t)
 
 instance NFData (Value t) where
     rnf (Bool n)    = rnf n
@@ -231,9 +242,9 @@ valueType (Array _)   = TArray
 
 -- | Data type that holds expected vs. actual type.
 data TypeMismatchError = TypeMismatchError
-  { typeExpected :: TValue
-  , typeActual   :: TValue
-  } deriving (Eq)
+  { typeExpected :: !TValue
+  , typeActual   :: !TValue
+  } deriving stock (Eq)
 
 instance Show TypeMismatchError where
     show TypeMismatchError{..} = "Expected type '" ++ showType typeExpected

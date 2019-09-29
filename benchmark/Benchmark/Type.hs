@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
 
 module Benchmark.Type
        ( HaskellType (..)
@@ -16,16 +15,17 @@ import GHC.Generics (Generic)
 
 -- | Haskell type to convert to.
 data HaskellType = HaskellType
-    { htTitle   :: Text
-    , htAtom    :: Double
-    , htCash    :: Bool
-    , htWords   :: [Text]
-    , htBool    :: [Bool]
-    , htToday   :: ZonedTime
-    , htInteger :: [Integer]
-    , htFruit   :: FruitInside
-    , htSize    :: SizeInside
-    } deriving (Show, NFData, Generic)
+    { htTitle   :: !Text
+    , htAtom    :: !Double
+    , htCash    :: !Bool
+    , htWords   :: ![Text]
+    , htBool    :: ![Bool]
+    , htToday   :: !ZonedTime
+    , htInteger :: ![Integer]
+    , htFruit   :: !FruitInside
+    , htSize    :: !SizeInside
+    } deriving stock (Show, Generic)
+      deriving anyclass (NFData)
 
 instance FromJSON HaskellType where
     parseJSON = withObject "HaskellType" $ \o -> HaskellType
@@ -40,9 +40,10 @@ instance FromJSON HaskellType where
         <*> o .: "size"
 
 data FruitInside = FruitInside
-    { fiName        :: Text
-    , fiDescription :: Text
-    } deriving (Show, NFData, Generic)
+    { fiName        :: !Text
+    , fiDescription :: !Text
+    } deriving stock (Show, Generic)
+      deriving anyclass (NFData)
 
 instance FromJSON FruitInside where
     parseJSON = withObject "FruitInside" $ \o -> FruitInside
@@ -51,7 +52,8 @@ instance FromJSON FruitInside where
 
 newtype SizeInside = SizeInside
     { unSize :: [[Double]]
-    } deriving (Show, NFData, Generic)
+    } deriving stock (Show, Generic)
+      deriving anyclass (NFData)
 
 instance FromJSON SizeInside where
     parseJSON = withObject "SizeInside" $ \o -> SizeInside <$> o .: "dimensions"

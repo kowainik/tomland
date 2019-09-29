@@ -16,6 +16,7 @@ import "htoml-megaparsec" Text.Toml (Node (..), Table, TomlError, parseTomlDoc)
 
 import Benchmark.Type (HaskellType)
 
+
 -- | Decode toml file to Haskell type.
 decode :: Text -> Either String HaskellType
 decode txt = case parseTomlDoc "log" txt of

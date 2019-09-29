@@ -14,6 +14,7 @@ import Data.Type.Equality ((:~:) (..))
 import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Value (TypeMismatchError, Value (..), sameValue)
 
+
 -- | Untyped value of @TOML@. You shouldn't use this type in your code. Use
 -- 'Value' instead.
 data UValue
@@ -26,7 +27,7 @@ data UValue
     | UDay !Day
     | UHours !TimeOfDay
     | UArray ![UValue]
-    deriving (Show)
+    deriving stock (Show)
 
 instance Eq UValue where
     (UBool b1)    == (UBool b2)    = b1 == b2
