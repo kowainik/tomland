@@ -46,4 +46,4 @@ tableNameP = between (text "[") (text "]") keyP <* sc
 
 -- | Parser for array of tables name: 'Key' inside @[[]]@.
 tableArrayNameP :: Parser Key
-tableArrayNameP = between (text "[[") (text "]]") keyP
+tableArrayNameP = between (text "[[") (text "]]") keyP <* sc
