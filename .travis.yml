@@ -46,7 +46,7 @@ script:
     if [ -z "$STACK_YAML" ]; then
       cabal test --enable-tests
     else
-      stack test --no-terminal
+      stack test --no-terminal --system-ghc
     fi
 
 notifications:
