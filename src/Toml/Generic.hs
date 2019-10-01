@@ -125,7 +125,6 @@ import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Typeable (Typeable, typeRep)
-import Data.Word (Word)
 import GHC.Generics ((:*:) (..), (:+:), C1, D1, Generic (..), K1 (..), M1 (..), Rec0, S1,
                      Selector (..))
 import GHC.TypeLits (ErrorMessage (..), TypeError)

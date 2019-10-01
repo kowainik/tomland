@@ -13,7 +13,7 @@ module Toml.Printer
 import Data.Bifunctor (first)
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
-import Data.List (sortBy, splitAt)
+import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid ((<>))
 import Data.Text (Text)
