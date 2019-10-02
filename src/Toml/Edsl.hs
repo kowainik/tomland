@@ -58,19 +58,24 @@ type TDSL = State TOML ()
 -- | Creates 'TOML' from the 'TDSL'.
 mkToml :: TDSL -> TOML
 mkToml env = execState env mempty
+{-# INLINE mkToml #-}
 
 -- | Creates an empty 'TDSL'.
 empty :: TDSL
 empty = put mempty
+{-# INLINE empty #-}
 
 -- | Adds key-value pair to the 'TDSL'.
 (=:) :: Key -> Value a -> TDSL
 (=:) k v = modify $ insertKeyVal k v
+{-# INLINE (=:) #-}
 
 -- | Adds table to the 'TDSL'.
 table :: Key -> TDSL -> TDSL
 table k = modify . insertTable k . mkToml
+{-# INLINE table #-}
 
 -- | Adds array of tables to the 'TDSL'.
 tableArray :: Key -> NonEmpty TDSL -> TDSL
 tableArray k = modify . insertTableArrays k . fmap mkToml
+{-# INLINE tableArray #-}

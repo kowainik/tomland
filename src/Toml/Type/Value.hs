@@ -201,6 +201,7 @@ instance (t ~ 'TInteger) => Num (Value t) where
 
 instance (t ~ 'TText) => IsString (Value t) where
     fromString = Text . fromString @Text
+    {-# INLINE fromString #-}
 
 instance Eq (Value t) where
     (Bool b1)    == (Bool b2)    = b1 == b2

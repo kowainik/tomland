@@ -1,9 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
--- {-# LANGUAGE RankNTypes          #-}
--- {-# LANGUAGE LambdaCase          #-}
--- {-# LANGUAGE RecordWildCards          #-}
 
 -- | Contains TOML-specific combinators for converting between TOML and user data types.
 

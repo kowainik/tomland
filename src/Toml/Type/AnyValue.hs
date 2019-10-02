@@ -69,46 +69,55 @@ mkMatchError t = Left . MatchError t . AnyValue
 matchBool :: Value t -> Either MatchError Bool
 matchBool (Bool b) = Right b
 matchBool value    = mkMatchError TBool value
+{-# INLINE matchBool #-}
 
 -- | Extract 'Prelude.Integer' from 'Value'.
 matchInteger :: Value t -> Either MatchError Integer
 matchInteger (Integer n) = Right n
 matchInteger value       = mkMatchError TInteger value
+{-# INLINE matchInteger #-}
 
 -- | Extract 'Prelude.Double' from 'Value'.
 matchDouble :: Value t -> Either MatchError Double
 matchDouble (Double f) = Right f
 matchDouble value      = mkMatchError TDouble value
+{-# INLINE matchDouble #-}
 
 -- | Extract 'Data.Text.Text' from 'Value'.
 matchText :: Value t -> Either MatchError Text
 matchText (Text s) = Right s
 matchText value    = mkMatchError TText value
+{-# INLINE matchText #-}
 
 -- | Extract 'Data.Time.ZonedTime' from 'Value'.
 matchZoned :: Value t -> Either MatchError ZonedTime
 matchZoned (Zoned d) = Right d
 matchZoned value     = mkMatchError TZoned value
+{-# INLINE matchZoned #-}
 
 -- | Extract 'Data.Time.LocalTime' from 'Value'.
 matchLocal :: Value t -> Either MatchError LocalTime
 matchLocal (Local d) = Right d
 matchLocal value     = mkMatchError TLocal value
+{-# INLINE matchLocal #-}
 
 -- | Extract 'Data.Time.Day' from 'Value'.
 matchDay :: Value t -> Either MatchError Day
 matchDay (Day d) = Right d
 matchDay value   = mkMatchError TDay value
+{-# INLINE matchDay #-}
 
 -- | Extract 'Data.Time.TimeOfDay' from 'Value'.
 matchHours :: Value t -> Either MatchError TimeOfDay
 matchHours (Hours d) = Right d
 matchHours value     = mkMatchError THours value
+{-# INLINE matchHours #-}
 
 -- | Extract list of elements of type @a@ from array.
 matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError [a]
 matchArray matchValue (Array a) = mapM (applyAsToAny matchValue) a
 matchArray _          value     = mkMatchError TArray value
+{-# INLINE matchArray #-}
 
 -- | Make function that works with 'AnyValue' also work with specific 'Value'.
 applyAsToAny :: (AnyValue -> r) -> (Value t -> r)
