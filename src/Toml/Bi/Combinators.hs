@@ -1,6 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
+-- {-# LANGUAGE RankNTypes          #-}
+-- {-# LANGUAGE LambdaCase          #-}
+-- {-# LANGUAGE RecordWildCards          #-}
 
 -- | Contains TOML-specific combinators for converting between TOML and user data types.
 
@@ -118,50 +121,62 @@ match BiMap{..} key = Codec input output
 -- | Codec for boolean values.
 bool :: Key -> TomlCodec Bool
 bool = match _Bool
+{-# INLINE bool #-}
 
 -- | Codec for integer values.
 integer :: Key -> TomlCodec Integer
 integer = match _Integer
+{-# INLINE integer #-}
 
 -- | Codec for integer values.
 int :: Key -> TomlCodec Int
 int = match _Int
+{-# INLINE int #-}
 
 -- | Codec for natural values.
 natural :: Key -> TomlCodec Natural
 natural = match _Natural
+{-# INLINE natural #-}
 
 -- | Codec for word values.
 word :: Key -> TomlCodec Word
 word = match _Word
+{-# INLINE word #-}
 
 -- | Codec for floating point values with double precision.
 double :: Key -> TomlCodec Double
 double = match _Double
+{-# INLINE double #-}
 
 -- | Codec for floating point values.
 float :: Key -> TomlCodec Float
 float = match _Float
+{-# INLINE float #-}
 
 -- | Codec for text values.
 text :: Key -> TomlCodec Text
 text = match _Text
+{-# INLINE text #-}
 
 -- | Codec for lazy text values.
 lazyText :: Key -> TomlCodec L.Text
 lazyText = match _LText
+{-# INLINE lazyText #-}
 
 -- | Codec for text values with custom error messages for parsing.
 textBy :: (a -> Text) -> (Text -> Either Text a) -> Key -> TomlCodec a
 textBy to from = match (_TextBy to from)
+{-# INLINE textBy #-}
 
 -- | Codec for string values.
 string :: Key -> TomlCodec String
 string = match _String
+{-# INLINE string #-}
 
 -- | Codec for values with a 'Read' and 'Show' instance.
 read :: (Show a, Read a) => Key -> TomlCodec a
 read = match _Read
+{-# INLINE read #-}
 
 {- | Codec for general nullary sum data types with a 'Bounded', 'Enum', and
 'Show' instance. This codec provides much better error messages than 'read' for
@@ -171,45 +186,55 @@ nullary sum types.
 -}
 enumBounded :: (Bounded a, Enum a, Show a) => Key -> TomlCodec a
 enumBounded = match _EnumBounded
+{-# INLINE enumBounded #-}
 
 -- | Codec for text values as 'ByteString'.
 byteString :: Key -> TomlCodec ByteString
 byteString = match _ByteString
+{-# INLINE byteString #-}
 
 -- | Codec for text values as 'BL.ByteString'.
 lazyByteString :: Key -> TomlCodec BL.ByteString
 lazyByteString = match _LByteString
+{-# INLINE lazyByteString #-}
 
 -- | Codec for zoned time values.
 zonedTime :: Key -> TomlCodec ZonedTime
 zonedTime = match _ZonedTime
+{-# INLINE zonedTime #-}
 
 -- | Codec for local time values.
 localTime :: Key -> TomlCodec LocalTime
 localTime = match _LocalTime
+{-# INLINE localTime #-}
 
 -- | Codec for day values.
 day :: Key -> TomlCodec Day
 day = match _Day
+{-# INLINE day #-}
 
 -- | Codec for time of day values.
 timeOfDay :: Key -> TomlCodec TimeOfDay
 timeOfDay = match _TimeOfDay
+{-# INLINE timeOfDay #-}
 
 -- | Codec for list of values. Takes converter for single value and
 -- returns a list of values.
 arrayOf :: TomlBiMap a AnyValue -> Key -> TomlCodec [a]
 arrayOf = match . _Array
+{-# INLINE arrayOf #-}
 
 -- | Codec for sets. Takes converter for single value and
 -- returns a set of values.
 arraySetOf :: Ord a => TomlBiMap a AnyValue -> Key -> TomlCodec (Set a)
 arraySetOf = match . _Set
+{-# INLINE arraySetOf #-}
 
 -- | Codec for sets of ints. Takes converter for single value and
 -- returns a set of ints.
 arrayIntSet :: Key -> TomlCodec IntSet
 arrayIntSet = match _IntSet
+{-# INLINE arrayIntSet #-}
 
 -- | Codec for hash sets. Takes converter for single hashable value and
 -- returns a set of hashable values.
@@ -219,11 +244,13 @@ arrayHashSetOf
     -> Key
     -> TomlCodec (HashSet a)
 arrayHashSetOf = match . _HashSet
+{-# INLINE arrayHashSetOf #-}
 
 -- | Codec for non- empty lists of values. Takes converter for single value and
 -- returns a non-empty list of values.
 arrayNonEmptyOf :: TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
+{-# INLINE arrayNonEmptyOf #-}
 
 {- | Prepends given key to all errors that contain key. This function is used to
 give better error messages. So when error happens we know all pieces of table

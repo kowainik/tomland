@@ -66,6 +66,7 @@ empty = put mempty
 -- | Adds key-value pair to the 'TDSL'.
 (=:) :: Key -> Value a -> TDSL
 (=:) k v = modify $ insertKeyVal k v
+{-# INLINE (=:) #-}
 
 -- | Adds table to the 'TDSL'.
 table :: Key -> TDSL -> TDSL
