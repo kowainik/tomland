@@ -124,17 +124,18 @@ data BiMap e a b = BiMap
 instance Cat.Category (BiMap e) where
     id :: BiMap e a a
     id = BiMap Right Right
+    {-# INLINE id #-}
 
     (.) :: BiMap e b c -> BiMap e a b -> BiMap e a c
     bc . ab = BiMap
         { forward  =  forward ab >=>  forward bc
         , backward = backward bc >=> backward ab
         }
+    {-# INLINE (.) #-}
 
 -- | Inverts bidirectional mapping.
 invert :: BiMap e a b -> BiMap e b a
 invert (BiMap f g) = BiMap g f
-{-# INLINE invert #-}
 
 {- | Creates 'BiMap' from isomorphism. Can be used in the following way:
 
