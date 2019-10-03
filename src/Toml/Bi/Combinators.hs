@@ -44,6 +44,8 @@ module Toml.Bi.Combinators
        , table
        , nonEmpty
        , list
+       , set
+       , hashSet
 
          -- * General construction of codecs
        , match
@@ -63,7 +65,7 @@ import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty (..), toList)
 import Data.Maybe (fromMaybe)
 import Data.Semigroup ((<>))
-import Data.Set (Set)
+import Data.Set (Set, fromList)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Word (Word)
@@ -74,7 +76,7 @@ import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Do
                     _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString, _LText, _LocalTime,
                     _Natural, _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word,
                     _ZonedTime)
-import Toml.Bi.Monad (Codec (..))
+import Toml.Bi.Monad (Codec (..), dimap)
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
@@ -82,7 +84,9 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text.Lazy as L
 import qualified Toml.PrefixTree as Prefix
-
+import qualified Data.Set as S
+import qualified Data.HashSet as HS
+import qualified Data.List.NonEmpty as NE
 
 {- | General function to create bidirectional converters for key-value pairs. In
 order to use this function you need to create 'TomlBiMap' for your type and
@@ -298,3 +302,15 @@ list codec key = Codec
   where
     nonEmptyCodec :: TomlCodec (NonEmpty a)
     nonEmptyCodec = nonEmpty codec key
+
+set :: forall a . Ord a => TomlCodec a -> Key -> TomlCodec (Set a)
+set codec key = dimap (NE.fromList . S.toList) (S.fromList . NE.toList) nonEmptyCodec
+            where
+              nonEmptyCodec :: TomlCodec (NonEmpty a)
+              nonEmptyCodec = nonEmpty codec key
+
+hashSet :: forall a . (Hashable a, Eq a) => TomlCodec a -> Key -> TomlCodec (HashSet a)
+hashSet codec key = dimap (NE.fromList . HS.toList) (HS.fromList . NE.toList) nonEmptyCodec
+            where
+              nonEmptyCodec :: TomlCodec (NonEmpty a)
+              nonEmptyCodec = nonEmpty codec key
