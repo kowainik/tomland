@@ -305,7 +305,9 @@ list codec key = Codec
 -- | 'Codec' for set of values. Represented in TOML as array of tables.
 set :: forall a . Ord a => TomlCodec a -> Key -> TomlCodec (Set a)
 set codec key = dimap S.toList S.fromList (list codec key)
+{-# INLINE set #-}
 
 -- | 'Codec' for HashSet of values. Represented in TOML as array of tables.
 hashSet :: forall a . (Hashable a, Eq a) => TomlCodec a -> Key -> TomlCodec (HashSet a)
 hashSet codec key = dimap HS.toList HS.fromList (list codec key)
+{-# INLINE hashSet #-}
