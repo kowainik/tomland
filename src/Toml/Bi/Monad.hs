@@ -54,6 +54,7 @@ instance (Functor r, Functor w) => Functor (Codec r w c) where
         { codecRead  = f <$> codecRead codec
         , codecWrite = fmap f . codecWrite codec
         }
+    {-# INLINE fmap #-}
 
 instance (Applicative r, Applicative w) => Applicative (Codec r w c) where
     pure :: a -> Codec r w c a
@@ -61,12 +62,14 @@ instance (Applicative r, Applicative w) => Applicative (Codec r w c) where
         { codecRead  = pure a
         , codecWrite = \_ -> pure a
         }
+    {-# INLINE pure #-}
 
     (<*>) :: Codec r w c (a -> b) -> Codec r w c a -> Codec r w c b
     codecf <*> codeca = Codec
         { codecRead  = codecRead codecf <*> codecRead codeca
         , codecWrite = \c -> codecWrite codecf c <*> codecWrite codeca c
         }
+    {-# INLINE (<*>) #-}
 
 instance (Monad r, Monad w) => Monad (Codec r w c) where
     (>>=) :: Codec r w c a -> (a -> Codec r w c b) -> Codec r w c b
@@ -74,6 +77,7 @@ instance (Monad r, Monad w) => Monad (Codec r w c) where
         { codecRead  = codecRead codec >>= \a -> codecRead (f a)
         , codecWrite = \c -> codecWrite codec c >>= \a -> codecWrite (f a) c
         }
+    {-# INLINE (>>=) #-}
 
 instance (Alternative r, Alternative w) => Alternative (Codec r w c) where
     empty :: Codec r w c a
@@ -81,21 +85,26 @@ instance (Alternative r, Alternative w) => Alternative (Codec r w c) where
         { codecRead  = empty
         , codecWrite = \_ -> empty
         }
+    {-# INLINE empty #-}
 
     (<|>) :: Codec r w c a -> Codec r w c a -> Codec r w c a
     codec1 <|> codec2 = Codec
         { codecRead  = codecRead codec1 <|> codecRead codec2
         , codecWrite = \c -> codecWrite codec1 c <|> codecWrite codec2 c
         }
+    {-# INLINE (<|>) #-}
 
 instance (MonadPlus r, MonadPlus w) => MonadPlus (Codec r w c) where
     mzero = empty
+    {-# INLINE mzero #-}
     mplus = (<|>)
+    {-# INLINE mplus #-}
 
 -- | Alternative instance for function arrow but without 'empty'.
 infixl 3 <!>
 (<!>) :: Alternative f => (a -> f x) -> (a -> f x) -> (a -> f x)
 f <!> g = \a -> f a <|> g a
+{-# INLINE (<!>) #-}
 
 {- | This is an instance of @Profunctor@ for 'Codec'. But since there's no
 @Profunctor@ type class in @base@ or package with no dependencies (and we don't
@@ -151,6 +160,7 @@ dimap f g codec = Codec
     { codecRead  = g <$> codecRead codec
     , codecWrite = fmap g . codecWrite codec . f
     }
+{-# INLINE dimap #-}
 
 {- | Bidirectional converter for @Maybe a@ values. For example, given the data
 type:
@@ -179,6 +189,7 @@ dioptional Codec{..} = Codec
     { codecRead  = optional codecRead
     , codecWrite = traverse codecWrite
     }
+{-# INLINE dioptional #-}
 
 {- | Combinator used for @newtype@ wrappers. For example, given the data types:
 
@@ -206,6 +217,7 @@ diwrap
     => BiCodec r w a
     -> BiCodec r w b
 diwrap = dimap coerce coerce
+{-# INLINE diwrap #-}
 
 {- | Operator to connect two operations:
 
@@ -229,3 +241,4 @@ fooCodec = Foo
 infixl 5 .=
 (.=) :: Codec r w field a -> (object -> field) -> Codec r w object a
 codec .= getter = codec { codecWrite = codecWrite codec . getter }
+{-# INLINE (.=) #-}

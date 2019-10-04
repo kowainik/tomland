@@ -151,10 +151,12 @@ keysDiff (x :|| xs) (y :|| ys)
 -- | Prepends 'Piece' to the beginning of the 'Key'.
 (<|) :: Piece -> Key -> Key
 (<|) p k = Key (p NonEmpty.<| unKey k)
+{-# INLINE (<|) #-}
 
 -- | Creates a 'PrefixTree' of one key-value element.
 singleT :: Key -> a -> PrefixTree a
 singleT = Leaf
+{-# INLINE singleT #-}
 
 -- | Creates a 'PrefixMap' of one key-value element.
 single :: Key -> a -> PrefixMap a
