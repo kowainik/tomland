@@ -1,11 +1,16 @@
 {-# OPTIONS -Wno-unused-top-binds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Main (main) where
 
 import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
+import Data.Hashable (Hashable)
+import Data.HashSet (HashSet)
+import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (fromGregorian)
+import GHC.Generics (Generic)
 
 import Toml (ParseException (..), TomlCodec, pretty, (.=), (<!>))
 import Toml.Edsl (mkToml, table, (=:))
@@ -22,7 +27,8 @@ insideCodec = Toml.dimap unInside TestInside $ Toml.text "inside"
 data User = User
     { userName :: !Text
     , userAge  :: !Int
-    }
+    } deriving stock (Eq, Ord, Generic)
+      deriving anyclass (Hashable)
 
 userCodec :: TomlCodec User
 userCodec = User
@@ -53,6 +59,8 @@ data Test = Test
     , testE1 :: !(Either Integer String)
     , testE2 :: !(Either String Double)
     , users  :: ![User]
+    , susers :: !(Set User)
+    , husers :: !(HashSet User)
     }
 
 
@@ -71,6 +79,8 @@ testT = Test
     <*> eitherT1 .= testE1
     <*> eitherT2 .= testE2
     <*> Toml.list userCodec "user" .= users
+    <*> Toml.set userCodec "suser" .= susers
+    <*> Toml.hashSet userCodec "huser" .= husers
   where
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)

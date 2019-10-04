@@ -44,6 +44,8 @@ module Toml.Bi.Combinators
        , table
        , nonEmpty
        , list
+       , set
+       , hashSet
 
          -- * General construction of codecs
        , match
@@ -74,7 +76,7 @@ import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Do
                     _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString, _LText, _LocalTime,
                     _Natural, _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word,
                     _ZonedTime)
-import Toml.Bi.Monad (Codec (..))
+import Toml.Bi.Monad (Codec (..), dimap)
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
@@ -82,7 +84,8 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text.Lazy as L
 import qualified Toml.PrefixTree as Prefix
-
+import qualified Data.Set as S
+import qualified Data.HashSet as HS
 
 {- | General function to create bidirectional converters for key-value pairs. In
 order to use this function you need to create 'TomlBiMap' for your type and
@@ -298,3 +301,13 @@ list codec key = Codec
   where
     nonEmptyCodec :: TomlCodec (NonEmpty a)
     nonEmptyCodec = nonEmpty codec key
+
+-- | 'Codec' for set of values. Represented in TOML as array of tables.
+set :: forall a . Ord a => TomlCodec a -> Key -> TomlCodec (Set a)
+set codec key = dimap S.toList S.fromList (list codec key)
+{-# INLINE set #-}
+
+-- | 'Codec' for HashSet of values. Represented in TOML as array of tables.
+hashSet :: forall a . (Hashable a, Eq a) => TomlCodec a -> Key -> TomlCodec (HashSet a)
+hashSet codec key = dimap HS.toList HS.fromList (list codec key)
+{-# INLINE hashSet #-}

@@ -116,11 +116,14 @@ module Toml.Generic
        ) where
 
 import Data.Char (isLower, toLower)
+import Data.Hashable (Hashable)
+import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.Kind (Type)
 import Data.List (stripPrefix)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Proxy (Proxy (..))
+import Data.Set (Set)
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
@@ -346,6 +349,16 @@ instance HasItemCodec a => HasCodec (NonEmpty a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arrayNonEmptyOf prim
         Right codec -> Toml.nonEmpty codec
+
+instance (Ord a, HasItemCodec a) => HasCodec (Set a) where
+    hasCodec = case hasItemCodec @a of
+        Left prim   -> Toml.arraySetOf prim
+        Right codec -> Toml.set codec
+
+instance (Hashable a, Eq a, HasItemCodec a) => HasCodec (HashSet a) where
+    hasCodec = case hasItemCodec @a of
+        Left prim   -> Toml.arrayHashSetOf prim
+        Right codec -> Toml.hashSet codec
 
 {-
 TODO: uncomment when higher-kinded roles will be implemented
