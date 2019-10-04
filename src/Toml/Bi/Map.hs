@@ -30,6 +30,8 @@ module Toml.Bi.Map
        , _ReadString
        , _BoundedInteger
        , _EnumBoundedText
+       , _ByteStringArray
+       , _LByteStringArray
        , _ByteStringText
        , _LByteStringText
 
@@ -70,12 +72,13 @@ import Control.Arrow ((>>>))
 import Control.DeepSeq (NFData)
 import Control.Monad ((>=>))
 import Data.Bifunctor (bimap, first)
-import Data.ByteString (ByteString)
+import Data.ByteString (ByteString, pack, unpack)
 import Data.Hashable (Hashable)
 import Data.Map (Map)
 import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
+import Data.Word (Word8)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import Text.Read (readEither)
@@ -486,6 +489,29 @@ _LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) eitherText
 _LByteString :: TomlBiMap BL.ByteString AnyValue
 _LByteString = _LByteStringText >>> _Text
 {-# INLINE _LByteString #-}
+
+-- | Helper bimap between a Word8 lists and Int lists
+_Word8ArrIntArr :: TomlBiMap [Word8] [Int]
+_Word8ArrIntArr = BiMap
+    { forward  = Right . map fromIntegral
+    , backward = eitherNonNeg
+    }
+  where
+    eitherNonNeg :: [Int] -> Either TomlBiMapError [Word8]
+    eitherNonNeg xs
+      | all (>= 0) xs = Right $ map fromIntegral xs
+      | otherwise     = Left $
+          ArbitraryError ("Negative numbers not allowed when converting "
+              <> tShow xs
+              <> " to a ByteString")
+
+-- | Helper bimap for a 'Integer' list and strict 'ByteString'
+_ByteStringArray :: TomlBiMap ByteString [Int]
+_ByteStringArray = iso unpack pack >>> _Word8ArrIntArr
+
+-- | Helper bimap for a 'Integer' list and lazy 'ByteString'
+_LByteStringArray :: TomlBiMap BL.ByteString [Int]
+_LByteStringArray = iso BL.unpack BL.pack >>> _Word8ArrIntArr
 
 -- | Takes a bimap of a value and returns a bimap between a list of values and 'AnyValue'
 -- as an array. Usually used as 'Toml.Bi.Combinators.arrayOf' combinator.
