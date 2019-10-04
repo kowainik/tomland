@@ -50,6 +50,7 @@ module Toml.Bi.Map
        , _Read
        , _Natural
        , _Word
+       , _Word8
        , _Int
        , _Float
        , _ByteString
@@ -72,7 +73,7 @@ import Control.Arrow ((>>>))
 import Control.DeepSeq (NFData)
 import Control.Monad ((>=>))
 import Data.Bifunctor (bimap, first)
-import Data.ByteString (ByteString, pack, unpack)
+import Data.ByteString (ByteString)
 import Data.Hashable (Hashable)
 import Data.Map (Map)
 import Data.Semigroup (Semigroup (..))
@@ -88,6 +89,7 @@ import Toml.Type (AnyValue (..), MatchError (..), TValue (..), Value (..), apply
                   matchZoned, mkMatchError, toMArray)
 
 import qualified Control.Category as Cat
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashSet as HS
 import qualified Data.IntSet as IS
@@ -448,6 +450,12 @@ _Word :: TomlBiMap Word AnyValue
 _Word = _BoundedInteger >>> _Integer
 {-# INLINE _Word #-}
 
+{- | 'Word8' bimap for 'AnyValue'. Usually used as
+'Toml.Bi.Combinators.word8' combinator.
+-}
+_Word8 :: TomlBiMap Word8 AnyValue
+_Word8 = _BoundedInteger >>> _Integer
+
 {- | 'Int' bimap for 'AnyValue'. Usually used as
 'Toml.Bi.Combinators.int' combinator.
 -}
@@ -490,28 +498,13 @@ _LByteString :: TomlBiMap BL.ByteString AnyValue
 _LByteString = _LByteStringText >>> _Text
 {-# INLINE _LByteString #-}
 
--- | Helper bimap between a Word8 lists and Int lists
-_Word8ArrIntArr :: TomlBiMap [Word8] [Int]
-_Word8ArrIntArr = BiMap
-    { forward  = Right . map fromIntegral
-    , backward = eitherNonNeg
-    }
-  where
-    eitherNonNeg :: [Int] -> Either TomlBiMapError [Word8]
-    eitherNonNeg xs
-      | all (>= 0) xs = Right $ map fromIntegral xs
-      | otherwise     = Left $
-          ArbitraryError ("Negative numbers not allowed when converting "
-              <> tShow xs
-              <> " to a ByteString")
+-- | 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
+_ByteStringArray :: TomlBiMap ByteString AnyValue
+_ByteStringArray = iso BS.unpack BS.pack >>> _Array _Word8
 
--- | Helper bimap for a 'Integer' list and strict 'ByteString'
-_ByteStringArray :: TomlBiMap ByteString [Int]
-_ByteStringArray = iso unpack pack >>> _Word8ArrIntArr
-
--- | Helper bimap for a 'Integer' list and lazy 'ByteString'
-_LByteStringArray :: TomlBiMap BL.ByteString [Int]
-_LByteStringArray = iso BL.unpack BL.pack >>> _Word8ArrIntArr
+-- | Lazy 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
+_LByteStringArray :: TomlBiMap BL.ByteString AnyValue
+_LByteStringArray = iso BL.unpack BL.pack >>>  _Array _Word8
 
 -- | Takes a bimap of a value and returns a bimap between a list of values and 'AnyValue'
 -- as an array. Usually used as 'Toml.Bi.Combinators.arrayOf' combinator.

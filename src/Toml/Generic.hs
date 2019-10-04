@@ -128,6 +128,7 @@ import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Typeable (Typeable, typeRep)
+import Data.Word (Word8)
 import GHC.Generics ((:*:) (..), (:+:), C1, D1, Generic (..), K1 (..), M1 (..), Rec0, S1,
                      Selector (..))
 import GHC.TypeLits (ErrorMessage (..), TypeError)
@@ -290,6 +291,7 @@ class HasItemCodec a where
 instance HasItemCodec Bool      where hasItemCodec = Left Toml._Bool
 instance HasItemCodec Int       where hasItemCodec = Left Toml._Int
 instance HasItemCodec Word      where hasItemCodec = Left Toml._Word
+instance HasItemCodec Word8     where hasItemCodec = Left Toml._Word8
 instance HasItemCodec Integer   where hasItemCodec = Left Toml._Integer
 instance HasItemCodec Natural   where hasItemCodec = Left Toml._Natural
 instance HasItemCodec Double    where hasItemCodec = Left Toml._Double
