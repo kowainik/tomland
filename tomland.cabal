@@ -122,6 +122,8 @@ executable play-tomland
   import:              common-options
   main-is:             Playground.hs
   build-depends:       tomland
+                     , containers
+                     , hashable
                      , text
                      , time
                      , unordered-containers

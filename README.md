@@ -95,7 +95,9 @@ using the following guidelines and helper functions:
    represented as array of tables in TOML. If you have lists of primitive types
    like `Int`, `Bool`, `Double`, `Text` or time types, that you can use
    `Toml.arrayOf` and parse arrays of values.
-5. `tomland` separates conversion between Haskell types and TOML values from
+5. If you have sets of custom data types, use `Toml.set` or `Toml.HashSet`. Such
+   sets are represented as array of tables in TOML.
+6. `tomland` separates conversion between Haskell types and TOML values from
    matching values by keys. Converters between types and values have type
    `TomlBiMap` and are named with capital letter started with underscore. Main
    type for TOML codecs is called `TomlCodec`. To lift `TomlBiMap` to
