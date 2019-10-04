@@ -149,6 +149,7 @@ word = match _Word
 -- | Codec for word8 values.
 word8 :: Key -> TomlCodec Word8
 word8 = match _Word8
+{-# INLINE word8 #-}
 
 -- | Codec for floating point values with double precision.
 double :: Key -> TomlCodec Double
@@ -208,10 +209,12 @@ lazyByteString = match _LByteString
 -- | Codec for positive integer array values as 'ByteString'.
 byteStringArray :: Key -> TomlCodec ByteString
 byteStringArray = match _ByteStringArray
+{-# INLINE byteStringArray #-}
 
 -- | Codec for positive integer array values as lazy 'ByteString'.
 lazyByteStringArray :: Key -> TomlCodec BL.ByteString
 lazyByteStringArray = match _LByteStringArray
+{-# INLINE lazyByteStringArray #-}
 
 -- | Codec for zoned time values.
 zonedTime :: Key -> TomlCodec ZonedTime

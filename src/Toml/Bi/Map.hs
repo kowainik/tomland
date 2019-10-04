@@ -455,6 +455,7 @@ _Word = _BoundedInteger >>> _Integer
 -}
 _Word8 :: TomlBiMap Word8 AnyValue
 _Word8 = _BoundedInteger >>> _Integer
+{-# INLINE _Word8 #-}
 
 {- | 'Int' bimap for 'AnyValue'. Usually used as
 'Toml.Bi.Combinators.int' combinator.
@@ -501,10 +502,12 @@ _LByteString = _LByteStringText >>> _Text
 -- | 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
 _ByteStringArray :: TomlBiMap ByteString AnyValue
 _ByteStringArray = iso BS.unpack BS.pack >>> _Array _Word8
+{-# INLINE _ByteStringArray #-}
 
 -- | Lazy 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
 _LByteStringArray :: TomlBiMap BL.ByteString AnyValue
 _LByteStringArray = iso BL.unpack BL.pack >>>  _Array _Word8
+{-# INLINE _LByteStringArray #-}
 
 -- | Takes a bimap of a value and returns a bimap between a list of values and 'AnyValue'
 -- as an array. Usually used as 'Toml.Bi.Combinators.arrayOf' combinator.
