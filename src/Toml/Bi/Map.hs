@@ -515,6 +515,7 @@ _NonEmptyArray = BiMap
     { forward  = Right . NE.toList
     , backward = maybe (Left $ ArbitraryError "Empty array list, but expected NonEmpty") Right . NE.nonEmpty
     }
+{-# INLINE _NonEmptyArray #-}
 
 -- | Takes a bimap of a value and returns a bimap between a set of values and 'AnyValue'
 -- as an array. Usually used as 'Toml.Bi.Combinators.arraySetOf' combinator.
