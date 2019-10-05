@@ -353,6 +353,7 @@ validText = validString . Text.unpack
     validString ('\\':'r':s) = validString s
     validString ('\\':'"':s) = validString s
     validString ('\\':'\'':t) = validString t
+    validString ('\\':'\\':t) = validString t
     validString ('\\':'u':n1:n2:n3:n4:t) = (all Char.isHexDigit [n1, n2, n3, n4]) && validString t
     validString ('\\':'U':n1:n2:n3:n4:n5:n6:n7:n8:t) = (all Char.isHexDigit [n1, n2, n3, n4, n5, n6, n7, n8]) && validString t
     validString (_:t) = validString t
