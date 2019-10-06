@@ -113,8 +113,8 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     alphadashes :: m Char
     alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
 
-    validChar :: m Char
-    validChar = Gen.filter (not . Char.isControl) Gen.unicode
+    notControl :: m Char
+    notControl = Gen.filter (not . Char.isControl) Gen.unicode
 
     bare :: m Text
     bare = Gen.text (Range.constant 1 10) alphadashes
@@ -123,10 +123,10 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
 
     quotedWith :: Char -> m Text
-    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) validChar)
+    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) notControl)
 
     quoted :: m Text
-    quoted = Gen.filter validText $ Gen.choice [quotedWith '"', quotedWith '\'']
+    quoted = Gen.filter invalidEscape $ Gen.choice [quotedWith '"', quotedWith '\'']
 
 genKey :: (MonadGen m, GenBase m ~ Identity) => m Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
@@ -286,7 +286,7 @@ genUniHex8Color = do
 
 -- | Generates text from different symbols.
 genText :: (MonadGen m, GenBase m ~ Identity) => m Text
-genText = Gen.filter validText $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
+genText = Gen.filter invalidEscape $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
     [ Text.singleton <$> Gen.alphaNum
     , genEscapeSequence
     , genPunctuation
@@ -339,21 +339,8 @@ genArray = Gen.recursive Gen.choice
 
 -- filters
 
--- | True if Text is valid based on TOML syntax (https://github.com/toml-lang/toml#string)
-validText :: Text -> Bool
-validText = validString . Text.unpack
-  where
-    validString :: String -> Bool
-    validString [] = True
-    validString ['\\'] = False
-    validString ('\\':'b':s) = validString s
-    validString ('\\':'t':s) = validString s
-    validString ('\\':'n':s) = validString s
-    validString ('\\':'f':s) = validString s
-    validString ('\\':'r':s) = validString s
-    validString ('\\':'"':s) = validString s
-    validString ('\\':'\'':t) = validString t
-    validString ('\\':'\\':t) = validString t
-    validString ('\\':'u':n1:n2:n3:n4:t) = (all Char.isHexDigit [n1, n2, n3, n4]) && validString t
-    validString ('\\':'U':n1:n2:n3:n4:n5:n6:n7:n8:t) = (all Char.isHexDigit [n1, n2, n3, n4, n5, n6, n7, n8]) && validString t
-    validString (_:t) = validString t
+invalidEscape :: Text -> Bool
+invalidEscape t
+    | t == Text.empty = True
+    | Text.last t == '\\' = False
+    | otherwise = True
