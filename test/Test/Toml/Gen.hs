@@ -126,7 +126,7 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) notControl)
 
     quoted :: m Text
-    quoted = Gen.filter invalidEscape $ Gen.choice [quotedWith '"', quotedWith '\'']
+    quoted = Gen.filter (not . endsWithEscape) $ Gen.choice [quotedWith '"', quotedWith '\'']
 
 genKey :: (MonadGen m, GenBase m ~ Identity) => m Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
@@ -286,7 +286,7 @@ genUniHex8Color = do
 
 -- | Generates text from different symbols.
 genText :: (MonadGen m, GenBase m ~ Identity) => m Text
-genText = Gen.filter invalidEscape $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
+genText = Gen.filter (not . endsWithEscape) $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
     [ Text.singleton <$> Gen.alphaNum
     , genEscapeSequence
     , genPunctuation
@@ -339,8 +339,9 @@ genArray = Gen.recursive Gen.choice
 
 -- filters
 
-invalidEscape :: Text -> Bool
-invalidEscape t
-    | t == Text.empty = True
-    | Text.last t == '\\' = False
-    | otherwise = True
+-- | True if Text ends with an escape character
+endsWithEscape :: Text -> Bool
+endsWithEscape t
+    | t == Text.empty = False
+    | Text.last t == '\\' = True
+    | otherwise = False
