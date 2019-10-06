@@ -102,7 +102,7 @@ genVal :: MonadGen m => m V
 genVal = Gen.int (Range.constant 0 256)
 
 -- | Generates random value of 'AnyValue' type.
-genAnyValue :: MonadGen m => m AnyValue
+genAnyValue :: (MonadGen m, GenBase m ~ Identity) => m AnyValue
 genAnyValue = Gen.choice $
     (AnyValue <$> genArray) : noneArrayList
 
@@ -126,7 +126,7 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) notControl)
 
     quoted :: m Text
-    quoted = Gen.choice [quotedWith '"', quotedWith '\'']
+    quoted = Gen.filter (not . endsWithEscape) $ Gen.choice [quotedWith '"', quotedWith '\'']
 
 genKey :: (MonadGen m, GenBase m ~ Identity) => m Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
@@ -285,8 +285,8 @@ genUniHex8Color = do
     pure . Text.pack $ "\\U" ++ hex
 
 -- | Generates text from different symbols.
-genText :: MonadGen m => m Text
-genText =  fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
+genText :: (MonadGen m, GenBase m ~ Identity) => m Text
+genText = Gen.filter (not . endsWithEscape) $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
     [ Text.singleton <$> Gen.alphaNum
     , genEscapeSequence
     , genPunctuation
@@ -307,7 +307,7 @@ genLText :: Gen L.Text
 genLText = L.fromStrict <$> genText
 
 -- | List of AnyValue generators.
-noneArrayList :: MonadGen m => [m AnyValue]
+noneArrayList :: (MonadGen m, GenBase m ~ Identity) => [m AnyValue]
 noneArrayList =
     [ AnyValue . Bool    <$> genBool
     , AnyValue . Integer <$> genInteger
@@ -332,7 +332,16 @@ Array [Double (-563397.0197456297),Double (-308866.62837749254),Double (-29555.3
 Nested array of AnyValue:
 Array [Array [Text "ACyz38VcLz0hxwdFkHTU6PYK8h8CeaiEpI2xAaiZTKBQ3zC1W717cZY35lk8EAK6pPw3WvwIdNktxIV2LrvFSpU8ee6zkXvpvePitW9aspAeeOCF9Q9ry20y7skFZ2qShi7CSx8888zWIqyc8iBkoLNvq4fONLtuUqSw2SlNee4hDIwrnx5O4RuHW1dQfJcnC34h9S0DlIGYP08qq6QHxO4E0HE74cNmiViGm3xpDC8Ro5D8Y6p0FLSN1ELq9Lwm",Text "HhNv0LKICdlKxN"],Array [Integer 986479839551009895,Integer 8636972066308796678,Integer (-3464941350081979804),Integer (-6560688879547055621),Integer (-4749037439349044738)],Array []]
 -}
-genArray :: MonadGen m => m (Value 'TArray)
+genArray :: (MonadGen m, GenBase m ~ Identity) => m (Value 'TArray)
 genArray = Gen.recursive Gen.choice
     [Gen.choice $ map genArrayFrom noneArrayList]
     [Array <$> Gen.list (Range.constant 0 5) genArray]
+
+-- filters
+
+-- | True if Text ends with an escape character
+endsWithEscape :: Text -> Bool
+endsWithEscape t
+    | t == Text.empty = False
+    | Text.last t == '\\' = True
+    | otherwise = False
