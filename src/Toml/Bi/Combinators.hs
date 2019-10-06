@@ -13,6 +13,7 @@ module Toml.Bi.Combinators
        , natural
        , int
        , word
+       , word8
          -- ** Floating point numbers
        , double
        , float
