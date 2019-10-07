@@ -39,6 +39,7 @@ test_BiMaps = pure $ testGroup "BiMap roundtrip tests" $ concat
     , prop "Natural" (testBiMap B._Natural G.genNatural)
     , prop "Int" (testBiMap B._Int G.genInt)
     , prop "Word" (testBiMap B._Word G.genWord)
+    , prop "Word8" (testBiMap B._Word8 G.genWord8)
     , prop "Double" testDouble
     , prop "Float" (testBiMap B._Float G.genFloat)
     , prop "Text" (testBiMap B._Text G.genText)
@@ -47,6 +48,8 @@ test_BiMaps = pure $ testGroup "BiMap roundtrip tests" $ concat
     , prop "Read (Integer)" (testBiMap B._Read G.genInteger)
     , prop "ByteString" (testBiMap B._ByteString G.genByteString)
     , prop "Lazy ByteString" (testBiMap B._LByteString G.genLByteString)
+    , prop "ByteStringArray" (testBiMap B._ByteStringArray G.genByteString)
+    , prop "Lazy ByteStringArray" (testBiMap B._LByteStringArray G.genLByteString)
     , prop "ZonedTime" (testBiMap B._ZonedTime G.genZoned)
     , prop "LocalTime" (testBiMap B._LocalTime G.genLocal)
     , prop "TimeOfDay" (testBiMap B._TimeOfDay G.genHours)

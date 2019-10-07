@@ -30,6 +30,8 @@ module Toml.Bi.Map
        , _ReadString
        , _BoundedInteger
        , _EnumBoundedText
+       , _ByteStringArray
+       , _LByteStringArray
        , _ByteStringText
        , _LByteStringText
 
@@ -48,6 +50,7 @@ module Toml.Bi.Map
        , _Read
        , _Natural
        , _Word
+       , _Word8
        , _Int
        , _Float
        , _ByteString
@@ -76,6 +79,7 @@ import Data.Map (Map)
 import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
+import Data.Word (Word8)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import Text.Read (readEither)
@@ -85,6 +89,7 @@ import Toml.Type (AnyValue (..), MatchError (..), TValue (..), Value (..), apply
                   matchZoned, mkMatchError, toMArray)
 
 import qualified Control.Category as Cat
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashSet as HS
 import qualified Data.IntSet as IS
@@ -445,6 +450,13 @@ _Word :: TomlBiMap Word AnyValue
 _Word = _BoundedInteger >>> _Integer
 {-# INLINE _Word #-}
 
+{- | 'Word8' bimap for 'AnyValue'. Usually used as
+'Toml.Bi.Combinators.word8' combinator.
+-}
+_Word8 :: TomlBiMap Word8 AnyValue
+_Word8 = _BoundedInteger >>> _Integer
+{-# INLINE _Word8 #-}
+
 {- | 'Int' bimap for 'AnyValue'. Usually used as
 'Toml.Bi.Combinators.int' combinator.
 -}
@@ -486,6 +498,16 @@ _LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) eitherText
 _LByteString :: TomlBiMap BL.ByteString AnyValue
 _LByteString = _LByteStringText >>> _Text
 {-# INLINE _LByteString #-}
+
+-- | 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
+_ByteStringArray :: TomlBiMap ByteString AnyValue
+_ByteStringArray = iso BS.unpack BS.pack >>> _Array _Word8
+{-# INLINE _ByteStringArray #-}
+
+-- | Lazy 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
+_LByteStringArray :: TomlBiMap BL.ByteString AnyValue
+_LByteStringArray = iso BL.unpack BL.pack >>>  _Array _Word8
+{-# INLINE _LByteStringArray #-}
 
 -- | Takes a bimap of a value and returns a bimap between a list of values and 'AnyValue'
 -- as an array. Usually used as 'Toml.Bi.Combinators.arrayOf' combinator.

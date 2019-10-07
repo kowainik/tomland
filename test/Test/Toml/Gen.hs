@@ -17,6 +17,7 @@ module Test.Toml.Gen
        , genInteger
        , genDouble
        , genWord
+       , genWord8
        , genNatural
        , genFloat
 
@@ -61,6 +62,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian,
                   minutesToTimeZone)
+import Data.Word (Word8)
 import GHC.Exts (fromList)
 import GHC.Stack (HasCallStack)
 import Hedgehog (Gen, GenBase, MonadGen, PropertyT, Range, property)
@@ -233,6 +235,9 @@ genDouble = Gen.frequency
 
 genWord :: MonadGen m => m Word
 genWord = Gen.word Range.constantBounded
+
+genWord8 :: MonadGen m => m Word8
+genWord8 = Gen.word8 Range.constantBounded
 
 genNatural :: MonadGen m => m Natural
 genNatural = fromIntegral <$> genWord

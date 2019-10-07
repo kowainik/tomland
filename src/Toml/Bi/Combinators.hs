@@ -13,6 +13,7 @@ module Toml.Bi.Combinators
        , natural
        , int
        , word
+       , word8
          -- ** Floating point numbers
        , double
        , float
@@ -21,6 +22,8 @@ module Toml.Bi.Combinators
        , lazyText
        , byteString
        , lazyByteString
+       , byteStringArray
+       , lazyByteStringArray
        , string
          -- ** Time types
        , zonedTime
@@ -68,23 +71,24 @@ import Data.Semigroup ((<>))
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
+import Data.Word (Word8)
 import Numeric.Natural (Natural)
 
 import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec, execTomlCodec)
-import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _Day, _Double, _EnumBounded,
-                    _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString, _LText, _LocalTime,
-                    _Natural, _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word,
-                    _ZonedTime)
+import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _ByteStringArray, _Day,
+                    _Double, _EnumBounded, _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString,
+                    _LByteStringArray, _LText, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
+                    _String, _Text, _TextBy, _TimeOfDay, _Word, _Word8, _ZonedTime)
 import Toml.Bi.Monad (Codec (..), dimap)
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.HashSet as HS
+import qualified Data.Set as S
 import qualified Data.Text.Lazy as L
 import qualified Toml.PrefixTree as Prefix
-import qualified Data.Set as S
-import qualified Data.HashSet as HS
 
 {- | General function to create bidirectional converters for key-value pairs. In
 order to use this function you need to create 'TomlBiMap' for your type and
@@ -143,6 +147,11 @@ word :: Key -> TomlCodec Word
 word = match _Word
 {-# INLINE word #-}
 
+-- | Codec for word8 values.
+word8 :: Key -> TomlCodec Word8
+word8 = match _Word8
+{-# INLINE word8 #-}
+
 -- | Codec for floating point values with double precision.
 double :: Key -> TomlCodec Double
 double = match _Double
@@ -197,6 +206,16 @@ byteString = match _ByteString
 lazyByteString :: Key -> TomlCodec BL.ByteString
 lazyByteString = match _LByteString
 {-# INLINE lazyByteString #-}
+
+-- | Codec for positive integer array values as 'ByteString'.
+byteStringArray :: Key -> TomlCodec ByteString
+byteStringArray = match _ByteStringArray
+{-# INLINE byteStringArray #-}
+
+-- | Codec for positive integer array values as lazy 'ByteString'.
+lazyByteStringArray :: Key -> TomlCodec BL.ByteString
+lazyByteStringArray = match _LByteStringArray
+{-# INLINE lazyByteStringArray #-}
 
 -- | Codec for zoned time values.
 zonedTime :: Key -> TomlCodec ZonedTime
