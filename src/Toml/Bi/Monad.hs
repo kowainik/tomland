@@ -225,8 +225,8 @@ type:
 
 @
 __data__ Example
-    = Foo Bool
-    | Bar Int Bool
+    = Foo Int
+    | Bar Bool Int
 @
 
 the TOML codec will look like

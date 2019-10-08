@@ -45,22 +45,45 @@ data ColorScheme
     | HighContrast
     deriving stock (Show, Enum, Bounded)
 
+data UserStatus
+    = Registered Text Text
+    | Anonymous Text
+
+matchRegistered :: UserStatus -> Maybe (Text, Text)
+matchRegistered (Registered username password) = Just (username, password)
+matchRegistered _                              = Nothing
+
+matchAnonymous :: UserStatus -> Maybe Text
+matchAnonymous (Anonymous username) = Just username
+matchAnonymous _                    = Nothing
+
+userPassCodec :: TomlCodec (Text, Text)
+userPassCodec = (,)
+    <$> Toml.text "username" .= fst
+    <*> Toml.text "password" .= snd
+
+userStatusCodec :: TomlCodec UserStatus
+userStatusCodec =
+    Toml.disum matchRegistered (uncurry Registered) (Toml.table userPassCodec "testStatus")
+    <|> Toml.disum matchAnonymous Anonymous (Toml.text "testStatus")
+
 data Test = Test
-    { testB  :: !Bool
-    , testI  :: !Int
-    , testF  :: !Double
-    , testS  :: !Text
-    , testA  :: ![Text]
-    , testM  :: !(Maybe Bool)
-    , testX  :: !TestInside
-    , testY  :: !(Maybe TestInside)
-    , testN  :: !N
-    , testC  :: !ColorScheme
-    , testE1 :: !(Either Integer String)
-    , testE2 :: !(Either String Double)
-    , users  :: ![User]
-    , susers :: !(Set User)
-    , husers :: !(HashSet User)
+    { testB      :: !Bool
+    , testI      :: !Int
+    , testF      :: !Double
+    , testS      :: !Text
+    , testA      :: ![Text]
+    , testM      :: !(Maybe Bool)
+    , testX      :: !TestInside
+    , testY      :: !(Maybe TestInside)
+    , testN      :: !N
+    , testC      :: !ColorScheme
+    , testE1     :: !(Either Integer String)
+    , testE2     :: !(Either String Double)
+    , testStatus :: !UserStatus
+    , users      :: ![User]
+    , susers     :: !(Set User)
+    , husers     :: !(HashSet User)
     }
 
 
@@ -78,6 +101,7 @@ testT = Test
     <*> Toml.enumBounded "testC" .= testC
     <*> eitherT1 .= testE1
     <*> eitherT2 .= testE2
+    <*> userStatusCodec .= testStatus
     <*> Toml.list userCodec "user" .= users
     <*> Toml.set userCodec "suser" .= susers
     <*> Toml.hashSet userCodec "huser" .= husers
