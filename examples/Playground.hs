@@ -64,8 +64,8 @@ userPassCodec = (,)
 
 userStatusCodec :: TomlCodec UserStatus
 userStatusCodec =
-    Toml.disum matchRegistered (uncurry Registered) (Toml.table userPassCodec "testStatus")
-    <|> Toml.disum matchAnonymous Anonymous (Toml.text "testStatus")
+    Toml.dimatch matchRegistered (uncurry Registered) (Toml.table userPassCodec "testStatus")
+    <|> Toml.dimatch matchAnonymous Anonymous (Toml.text "testStatus")
 
 data Test = Test
     { testB      :: !Bool

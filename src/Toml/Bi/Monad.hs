@@ -6,7 +6,7 @@ module Toml.Bi.Monad
        , dimap
        , dioptional
        , diwrap
-       , disum
+       , dimatch
        , (<!>)
        , (.=)
        ) where
@@ -247,23 +247,23 @@ barCodec = (,)
 
 exampleCodec :: TomlCodec Example
 exampleCodec =
-    disum matchFoo Foo (Toml.int "foo")
-    \<|\> disum matchBar (uncurry Bar) (Toml.table barCodec "bar")
+    dimatch matchFoo Foo (Toml.int "foo")
+    \<|\> dimatch matchBar (uncurry Bar) (Toml.table barCodec "bar")
 @
 -}
-disum
+dimatch
     :: (Functor r, Alternative w)
     => (c -> Maybe d) -- ^ Mapper for consumer
     -> (a -> b)       -- ^ Mapper for producer
     -> Codec r w d a  -- ^ Source 'Codec' object
     -> Codec r w c b  -- ^ Target 'Codec' object
-disum match ctor codec = Codec
+dimatch match ctor codec = Codec
     { codecRead = ctor <$> codecRead codec
     , codecWrite = \c -> case match c of
         Nothing -> empty
         Just d  -> ctor <$> codecWrite codec d
     }
-{-# INLINE disum #-}
+{-# INLINE dimatch #-}
 
 {- | Operator to connect two operations:
 
