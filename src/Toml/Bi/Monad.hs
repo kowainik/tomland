@@ -6,6 +6,7 @@ module Toml.Bi.Monad
        , dimap
        , dioptional
        , diwrap
+       , dimatch
        , (<!>)
        , (.=)
        ) where
@@ -218,6 +219,51 @@ diwrap
     -> BiCodec r w b
 diwrap = dimap coerce coerce
 {-# INLINE diwrap #-}
+
+{- | Bidirectional converter for @sum types@. For example, given the data
+type:
+
+@
+__data__ Example
+    = Foo Int
+    | Bar Bool Int
+@
+
+the TOML codec will look like
+
+@
+matchFoo :: Example -> Maybe Int
+matchFoo (Foo num) = Just num
+matchFoo _         = Nothing
+
+matchBar :: Example -> Maybe (Bool, Int)
+matchBar (Bar b num) = Just (b, num)
+matchBar _           = Nothing
+
+barCodec :: TomlCodec (Bool, Int)
+barCodec = (,)
+    \<$\> Toml.bool "a" '.=' fst
+    \<*\> Toml.int "b" '.=' snd
+
+exampleCodec :: TomlCodec Example
+exampleCodec =
+    dimatch matchFoo Foo (Toml.int "foo")
+    \<|\> dimatch matchBar (uncurry Bar) (Toml.table barCodec "bar")
+@
+-}
+dimatch
+    :: (Functor r, Alternative w)
+    => (c -> Maybe d) -- ^ Mapper for consumer
+    -> (a -> b)       -- ^ Mapper for producer
+    -> Codec r w d a  -- ^ Source 'Codec' object
+    -> Codec r w c b  -- ^ Target 'Codec' object
+dimatch match ctor codec = Codec
+    { codecRead = ctor <$> codecRead codec
+    , codecWrite = \c -> case match c of
+        Nothing -> empty
+        Just d  -> ctor <$> codecWrite codec d
+    }
+{-# INLINE dimatch #-}
 
 {- | Operator to connect two operations:
 
