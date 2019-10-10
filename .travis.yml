@@ -8,22 +8,21 @@ cabal: "3.0"
 
 cache:
   directories:
-  - "$HOME/.cabal/store"
-  - "$HOME/.stack"
-  - "$TRAVIS_BUILD_DIR/.stack-work"
+    - "$HOME/.cabal/store"
+    - "$HOME/.stack"
+    - "$TRAVIS_BUILD_DIR/.stack-work"
 
 matrix:
   include:
+    # Cabal
+    - ghc: 8.2.2
+    - ghc: 8.4.4
+    - ghc: 8.6.5
+    - ghc: 8.8.1
 
-  # Cabal
-  - ghc: 8.2.2
-  - ghc: 8.4.4
-  - ghc: 8.6.5
-  - ghc: 8.8.1
-
-  # stack
-  - ghc: 8.8.1
-    env: STACK_YAML="$TRAVIS_BUILD_DIR/stack.yaml"
+    # stack
+    - ghc: 8.8.1
+      env: STACK_YAML="$TRAVIS_BUILD_DIR/stack.yaml"
 
 install:
   - |
@@ -31,7 +30,7 @@ install:
       ghc --version
       cabal --version
       cabal update
-      cabal build --enable-tests --enable-benchmarks
+      cabal build --enable-tests
     else
       # install stack
       curl -sSL https://get.haskellstack.org/ | sh

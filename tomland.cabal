@@ -167,31 +167,3 @@ test-suite tomland-test
                      , unordered-containers
 
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-
-benchmark tomland-benchmark
-  import:             common-options
-  type:               exitcode-stdio-1.0
-  main-is:            Main.hs
-  hs-source-dirs:     benchmark
-
-  other-modules:      Benchmark.Type
-                      Benchmark.Htoml
-                      Benchmark.HtomlMegaparsec
-                      Benchmark.Tomland
-                      Benchmark.TomlParser
-
-  ghc-options:        -threaded
-                      -rtsopts
-                      -with-rtsopts=-N
-                      -O2
-
-  build-depends:      aeson
-                    , deepseq ^>= 1.4
-                    , gauge ^>= 0.2.4
-                    , htoml ^>= 1.0.0.3
-                    , htoml-megaparsec ^>= 2.1.0.3
-                    , parsec
-                    , text
-                    , time
-                    , toml-parser ^>= 0.1.0.0
-                    , tomland

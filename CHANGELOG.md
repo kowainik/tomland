@@ -5,6 +5,8 @@ The changelog is available [on GitHub][2].
 
 ## Unreleased: 1.2.0.0
 
+* [#215](https://github.com/kowainik/tomland/issues/215):
+  Move benchmarks to separate repository [toml-benchmarks](https://github.com/kowainik/toml-benchmarks) (by [@kutyel](https://github.com/kutyel))
 * [#216](https://github.com/kowainik/tomland/issues/216):
   Refactor TOML parser significantly. Check for some validation errors.
   (by [@chshersh](https://github.com/chshersh))
