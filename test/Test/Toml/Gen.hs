@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
@@ -128,7 +129,7 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) notControl)
 
     quoted :: m Text
-    quoted = Gen.filter (not . endsWithEscape) $ Gen.choice [quotedWith '"', quotedWith '\'']
+    quoted = genNotEscape $ Gen.choice [quotedWith '"', quotedWith '\'']
 
 genKey :: (MonadGen m, GenBase m ~ Identity) => m Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
@@ -290,8 +291,8 @@ genUniHex8Color = do
     pure . Text.pack $ "\\U" ++ hex
 
 -- | Generates text from different symbols.
-genText :: (MonadGen m, GenBase m ~ Identity) => m Text
-genText = Gen.filter (not . endsWithEscape) $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
+genText :: MonadGen m => m Text
+genText = genNotEscape $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
     [ Text.singleton <$> Gen.alphaNum
     , genEscapeSequence
     , genPunctuation
@@ -312,7 +313,7 @@ genLText :: Gen L.Text
 genLText = L.fromStrict <$> genText
 
 -- | List of AnyValue generators.
-noneArrayList :: (MonadGen m, GenBase m ~ Identity) => [m AnyValue]
+noneArrayList :: MonadGen m => [m AnyValue]
 noneArrayList =
     [ AnyValue . Bool    <$> genBool
     , AnyValue . Integer <$> genInteger
@@ -344,9 +345,9 @@ genArray = Gen.recursive Gen.choice
 
 -- filters
 
--- | True if Text ends with an escape character
-endsWithEscape :: Text -> Bool
-endsWithEscape t
-    | t == Text.empty = False
-    | Text.last t == '\\' = True
-    | otherwise = False
+-- | Discards strings that end with \
+genNotEscape :: MonadGen m => m Text -> m Text
+genNotEscape gen = gen >>= \t ->
+    if | Text.null t -> pure t
+       | Text.last t == '\\' -> Gen.discard
+       | otherwise -> pure t
