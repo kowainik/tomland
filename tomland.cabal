@@ -111,7 +111,10 @@ library
 
 executable readme
   import:              common-options
-  main-is:             Main.lhs
+  -- doesn't work on windows for unknown reasons
+  if os(windows)
+    buildable: False
+  main-is:             README.lhs
   build-depends:       text
                      , tomland
 
