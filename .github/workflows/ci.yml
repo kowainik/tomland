@@ -1,4 +1,4 @@
-name: "tomland: nix + cachix"
+name: "CI"
 on:
   pull_request:
   push:
