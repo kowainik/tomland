@@ -111,7 +111,7 @@ library
 
 executable readme
   import:              common-options
-  main-is:             README.lhs
+  main-is:             Main.lhs
   build-depends:       text
                      , tomland
 
