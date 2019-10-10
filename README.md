@@ -1,6 +1,7 @@
 # tomland
 
 ![palm](https://user-images.githubusercontent.com/4276606/51088259-7a777000-176e-11e9-9d76-6be4023c0ac3.png)
+[![GitHub actions](https://github.com/actions/kowainik/tomland/.github/workflows/build.yml/badge.svg)](https://github.com/kowainik/tomland/actions)
 [![Build status](https://img.shields.io/travis/kowainik/tomland.svg?logo=travis)](https://travis-ci.org/kowainik/tomland)
 [![Hackage](https://img.shields.io/hackage/v/tomland.svg?logo=haskell)](https://hackage.haskell.org/package/tomland)
 [![Stackage LTS](http://stackage.org/package/tomland/badge/lts)](http://stackage.org/lts/package/tomland)
