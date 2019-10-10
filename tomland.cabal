@@ -111,6 +111,9 @@ library
 
 executable readme
   import:              common-options
+  -- doesn't work on windows for unknown reasons
+  if os(windows)
+    buildable: False
   main-is:             README.lhs
   build-depends:       text
                      , tomland
@@ -120,7 +123,7 @@ executable readme
 
 executable play-tomland
   import:              common-options
-  main-is:             Playground.hs
+  main-is:             Main.hs
   build-depends:       tomland
                      , containers
                      , hashable
