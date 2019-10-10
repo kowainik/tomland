@@ -150,7 +150,7 @@ main = do
 
 ## Benchmarks and comparison with other libraries
 
-`tomland` is compared with other libraries. Since it uses 2-step approach with
+`tomland` is [compared](https://github.com/kowainik/toml-benchmarks) with other libraries. Since it uses 2-step approach with
 converting text to intermediate AST and only then decoding Haskell type from
 this AST, benchmarks are also implemented in a way to reflect this difference.
 
