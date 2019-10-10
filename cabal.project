@@ -1,4 +1,0 @@
-packages: .
-
-allow-newer: htoml-megaparsec:unordered-containers
-allow-newer: toml-parser:base
