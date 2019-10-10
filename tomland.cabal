@@ -120,7 +120,7 @@ executable readme
 
 executable play-tomland
   import:              common-options
-  main-is:             Playground.hs
+  main-is:             Main.hs
   build-depends:       tomland
                      , containers
                      , hashable
