@@ -21,20 +21,6 @@ module Toml.Bi.Map
        , wrongConstructor
        , prettyBiMapError
 
-         -- * Helpers for BiMap and AnyValue
-       , mkAnyValueBiMap
-       , _TextBy
-       , _LTextText
-       , _NaturalInteger
-       , _StringText
-       , _ReadString
-       , _BoundedInteger
-       , _EnumBoundedText
-       , _ByteStringArray
-       , _LByteStringArray
-       , _ByteStringText
-       , _LByteStringText
-
          -- * Some predefined bi mappings
        , _Array
        , _Bool
@@ -55,11 +41,24 @@ module Toml.Bi.Map
        , _Float
        , _ByteString
        , _LByteString
+       , _ByteStringArray
+       , _LByteStringArray
+       , _NonEmpty
        , _Set
        , _IntSet
        , _HashSet
-       , _NonEmpty
 
+         -- * Helpers for BiMap and AnyValue
+       , mkAnyValueBiMap
+       , _TextBy
+       , _LTextText
+       , _NaturalInteger
+       , _StringText
+       , _ReadString
+       , _BoundedInteger
+       , _EnumBoundedText
+       , _ByteStringText
+       , _LByteStringText
        , _Left
        , _Right
        , _EnumBounded
@@ -412,7 +411,7 @@ _BoundedInteger = BiMap (Right . toInteger) eitherBounded
          in Left $ ArbitraryError msg
       | otherwise = Right (fromIntegral n)
 
-{- | Helper bimap for 'EnumBounded' and 'Data.Text.Text'.
+{- | Helper bimap for '_EnumBounded' and 'Data.Text.Text'.
 
 @since 1.1.1.0
 -}
@@ -452,6 +451,8 @@ _Word = _BoundedInteger >>> _Integer
 
 {- | 'Word8' bimap for 'AnyValue'. Usually used as
 'Toml.Bi.Combinators.word8' combinator.
+
+@since 1.2.0.0
 -}
 _Word8 :: TomlBiMap Word8 AnyValue
 _Word8 = _BoundedInteger >>> _Integer
@@ -499,12 +500,20 @@ _LByteString :: TomlBiMap BL.ByteString AnyValue
 _LByteString = _LByteStringText >>> _Text
 {-# INLINE _LByteString #-}
 
--- | 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
+{- | 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
+Usually used as 'Toml.Bi.Combinators.byteStringArray' combinator.
+
+@since 1.2.0.0
+-}
 _ByteStringArray :: TomlBiMap ByteString AnyValue
 _ByteStringArray = iso BS.unpack BS.pack >>> _Array _Word8
 {-# INLINE _ByteStringArray #-}
 
--- | Lazy 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
+{- | Lazy 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
+Usually used as 'Toml.Bi.Combinators.lazyByteStringArray' combinator.
+
+@since 1.2.0.0
+-}
 _LByteStringArray :: TomlBiMap BL.ByteString AnyValue
 _LByteStringArray = iso BL.unpack BL.pack >>>  _Array _Word8
 {-# INLINE _LByteStringArray #-}

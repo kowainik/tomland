@@ -2,6 +2,8 @@
 represents either key-value pair or table name. This data type serves the
 purpose to be the intermediate representation of parsing a TOML file which will
 be assembled to TOML AST later.
+
+@since 1.2.0.0
 -}
 
 module Toml.Parser.Item
@@ -33,8 +35,8 @@ import Toml.Type (AnyValue)
 * Inline table
 * Inline array of tables
 
-Knowing a list of 'TomlItem's, it's possible to construct 'TOML' from this
-information.
+Knowing a list of 'TomlItem's, it's possible to construct 'Toml.Type.TOML.TOML'
+from this information.
 -}
 data TomlItem
     = TableName !Key

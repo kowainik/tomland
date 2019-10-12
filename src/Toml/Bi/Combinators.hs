@@ -147,7 +147,10 @@ word :: Key -> TomlCodec Word
 word = match _Word
 {-# INLINE word #-}
 
--- | Codec for word8 values.
+{- | Codec for word8 values.
+
+@since 1.2.0.0
+-}
 word8 :: Key -> TomlCodec Word8
 word8 = match _Word8
 {-# INLINE word8 #-}
@@ -207,12 +210,18 @@ lazyByteString :: Key -> TomlCodec BL.ByteString
 lazyByteString = match _LByteString
 {-# INLINE lazyByteString #-}
 
--- | Codec for positive integer array values as 'ByteString'.
+{- | Codec for positive integer array values as 'ByteString'.
+
+@since 1.2.0.0
+-}
 byteStringArray :: Key -> TomlCodec ByteString
 byteStringArray = match _ByteStringArray
 {-# INLINE byteStringArray #-}
 
--- | Codec for positive integer array values as lazy 'ByteString'.
+{- | Codec for positive integer array values as lazy 'ByteString'.
+
+@since 1.2.0.0
+-}
 lazyByteStringArray :: Key -> TomlCodec BL.ByteString
 lazyByteStringArray = match _LByteStringArray
 {-# INLINE lazyByteStringArray #-}
@@ -344,12 +353,19 @@ list codec key = Codec
     nonEmptyCodec :: TomlCodec (NonEmpty a)
     nonEmptyCodec = nonEmpty codec key
 
--- | 'Codec' for set of values. Represented in TOML as array of tables.
+{- | 'Codec' for set of values. Represented in TOML as array of tables.
+
+@since 1.2.0.0
+-}
 set :: forall a . Ord a => TomlCodec a -> Key -> TomlCodec (Set a)
 set codec key = dimap S.toList S.fromList (list codec key)
 {-# INLINE set #-}
 
--- | 'Codec' for HashSet of values. Represented in TOML as array of tables.
+{- | 'Codec' for HashSet of values. Represented in TOML as array of tables.
+
+@since 1.2.0.0
+-}
+
 hashSet :: forall a . (Hashable a, Eq a) => TomlCodec a -> Key -> TomlCodec (HashSet a)
 hashSet codec key = dimap HS.toList HS.fromList (list codec key)
 {-# INLINE hashSet #-}

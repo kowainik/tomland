@@ -3,15 +3,38 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
-## Unreleased: 1.2.0.0
+## 1.2.0.0 — Oct 12, 2019
 
-* [#215](https://github.com/kowainik/tomland/issues/215):
-  Move benchmarks to separate repository [toml-benchmarks](https://github.com/kowainik/toml-benchmarks) (by [@kutyel](https://github.com/kutyel))
 * [#216](https://github.com/kowainik/tomland/issues/216):
   Refactor TOML parser significantly. Check for some validation errors.
   (by [@chshersh](https://github.com/chshersh))
 * [#213](https://github.com/kowainik/tomland/issues/213):
   Support GHC-8.8.1.
+  (by [@vrom911](https://github.com/vrom911))
+* [#226](https://github.com/kowainik/tomland/issues/226):
+  Add `dimatch` combinator for better support of sum types.
+  (by [@Nimor111](https://github.com/Nimor111))
+* [#219](https://github.com/kowainik/tomland/issues/219):
+  Add INLINE pragmas to code.
+  (by [@willbasky](https://github.com/willbasky))
+* [#204](https://github.com/kowainik/tomland/issues/204):
+  Implement bidirectional codecs to work with `ByteString` as array of bytes.
+  (by [@crtschin](https://github.com/crtschin))
+* [#201](https://github.com/kowainik/tomland/issues/201):
+  Implement `set` and `hashSet` combinators for array of tables.
+  (by [@SanchayanMaity](https://github.com/SanchayanMaity))
+* [#215](https://github.com/kowainik/tomland/issues/215):
+  Move benchmarks to separate repository
+  [toml-benchmarks](https://github.com/kowainik/toml-benchmarks).
+  (by [@kutyel](https://github.com/kutyel))
+* [#209](https://github.com/kowainik/tomland/issues/209):
+  Bump up `parser-combinators` to `1.2.0`.
+  (by [@vrom911](https://github.com/vrom911))
+* [#198](https://github.com/kowainik/tomland/issues/198):
+  Improve test generators.
+  (by [@gabrielelana](https://github.com/gabrielelana)
+  , [@chshersh](https://github.com/chshersh)
+  )
 
 ## 1.1.0.1 — Jul 10, 2019
 

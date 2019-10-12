@@ -250,6 +250,8 @@ exampleCodec =
     dimatch matchFoo Foo (Toml.int "foo")
     \<|\> dimatch matchBar (uncurry Bar) (Toml.table barCodec "bar")
 @
+
+@since 1.2.0.0
 -}
 dimatch
     :: (Functor r, Alternative w)
