@@ -233,6 +233,8 @@ typeName = show $ typeRep (Proxy @a)
 -- Generic typeclasses
 ----------------------------------------------------------------------------
 
+{- | Helper class to derive TOML codecs generically.
+-}
 class GenericCodec (f :: k -> Type) where
     genericTomlCodec :: GenericOptions -> TomlCodec (f p)
 
@@ -291,6 +293,7 @@ class HasItemCodec a where
 instance HasItemCodec Bool      where hasItemCodec = Left Toml._Bool
 instance HasItemCodec Int       where hasItemCodec = Left Toml._Int
 instance HasItemCodec Word      where hasItemCodec = Left Toml._Word
+-- | @since 1.2.0.0
 instance HasItemCodec Word8     where hasItemCodec = Left Toml._Word8
 instance HasItemCodec Integer   where hasItemCodec = Left Toml._Integer
 instance HasItemCodec Natural   where hasItemCodec = Left Toml._Natural
@@ -326,6 +329,8 @@ class HasCodec a where
 instance HasCodec Bool      where hasCodec = Toml.bool
 instance HasCodec Int       where hasCodec = Toml.int
 instance HasCodec Word      where hasCodec = Toml.word
+-- | @since 1.2.0.0
+instance HasCodec Word8     where hasCodec = Toml.word8
 instance HasCodec Integer   where hasCodec = Toml.integer
 instance HasCodec Natural   where hasCodec = Toml.natural
 instance HasCodec Double    where hasCodec = Toml.double
@@ -351,11 +356,13 @@ instance HasItemCodec a => HasCodec (NonEmpty a) where
         Left prim   -> Toml.arrayNonEmptyOf prim
         Right codec -> Toml.nonEmpty codec
 
+-- | @since 1.2.0.0
 instance (Ord a, HasItemCodec a) => HasCodec (Set a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arraySetOf prim
         Right codec -> Toml.set codec
 
+-- | @since 1.2.0.0
 instance (Hashable a, Eq a, HasItemCodec a) => HasCodec (HashSet a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arrayHashSetOf prim

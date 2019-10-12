@@ -1,4 +1,6 @@
 {- | Parsers for keys and table names.
+
+@since 1.2.0.0
 -}
 
 module Toml.Parser.Key

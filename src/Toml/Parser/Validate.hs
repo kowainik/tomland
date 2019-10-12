@@ -2,6 +2,8 @@
 'Toml.Parser.Item.tomlP' parser into 'TOML'. This approach allows to keep parser
 fast and simple and delegate the process of creating tree structure to a
 separate function.
+
+@since 1.2.0.0
 -}
 
 module Toml.Parser.Validate
