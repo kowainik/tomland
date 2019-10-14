@@ -146,6 +146,15 @@ test-suite tomland-test
                        Test.Toml.Property
                        Test.Toml.Parsing.Property
                        Test.Toml.Parsing.Unit
+                       Test.Toml.Parsing.Unit.Array
+                       Test.Toml.Parsing.Unit.Bool
+                       Test.Toml.Parsing.Unit.Common
+                       Test.Toml.Parsing.Unit.Date
+                       Test.Toml.Parsing.Unit.Double
+                       Test.Toml.Parsing.Unit.Integer
+                       Test.Toml.Parsing.Unit.Key
+                       Test.Toml.Parsing.Unit.Text
+                       Test.Toml.Parsing.Unit.Toml
                        Test.Toml.Parsing.Examples
                        Test.Toml.PrefixTree.Property
                        Test.Toml.PrefixTree.Unit
