@@ -22,25 +22,25 @@ tomlSpecs :: Spec
 tomlSpecs = do
     describe "Key/values" $ do
         it "can parse key/value pairs" $ do
-            parseToml "x = 'abcdef'" $ mkToml ("x" =: Text "abcdef")
-            parseToml "x = 1"  $ mkToml ("x" =: Integer 1)
-            parseToml "x = 5.2" $ mkToml ("x" =: Double 5.2)
+            parseToml "x='abcdef'" $ mkToml ("x" =: "abcdef")
+            parseToml "x= 1"  $ mkToml ("x" =: 1)
+            parseToml "x =5.2" $ mkToml ("x" =: Double 5.2)
             parseToml "x = true" $ mkToml ("x" =: Bool True)
-            parseToml "x = [1, 2, 3]" $ mkToml ("x" =: Array [Integer 1, Integer 2, Integer 3])
-            parseToml "x = 1920-12-10" $ mkToml ("x" =: Day day2)
+            parseToml "x= [1, 2, 3]" $ mkToml ("x" =: Array [1, 2, 3])
+            parseToml "x =1920-12-10" $ mkToml ("x" =: Day day2)
         it "ignores white spaces around key names and values" $ do
-            let toml = mkToml ("x" =: Integer 1)
+            let toml = mkToml ("x" =: 1)
             parseToml "x=1    "   toml
             parseToml "x=    1"   toml
             parseToml "x    =1"   toml
             parseToml "x\t= 1 "   toml
-            parseToml "\"x\" = 1" $ mkToml ("\"x\"" =: Integer 1)
+            parseToml "\"x\" = 1" $ mkToml ("\"x\"" =: 1)
         --xit "fails if the key, equals sign, and value are not on the same line" $ do
         --  keyValFailOn "x\n=\n1"
         --  keyValFailOn "x=\n1"
         --  keyValFailOn "\"x\"\n=\n1"
         it "works if the value is broken over multiple lines" $
-            parseToml "x=[1, \n2\n]" $ mkToml ("x" =: Array [Integer 1, Integer 2])
+            parseToml "x=[1, \n2\n]" $ mkToml ("x" =: Array [1, 2])
         it "fails if the value is not specified" $
             tomlFailOn "x="
 
@@ -48,8 +48,8 @@ tomlSpecs = do
         it "can parse a TOML table" $ do
             let t  = mkToml $
                         table "table" $ do
-                            "key1" =: Text "some string"
-                            "key2" =: Integer 123
+                            "key1" =: "some string"
+                            "key2" =: 123
 
             parseToml "[table] \n key1 = \"some string\"\nkey2 = 123" t
         it "can parse an empty TOML table" $
@@ -57,7 +57,7 @@ tomlSpecs = do
         it "can parse a table with subarrays" $ do
             let t = mkToml $
                         table "table" $
-                            tableArray "array" ("key1" =: Text "some string" :| ["key2" =: Integer 123])
+                            tableArray "array" ("key1" =: "some string" :| ["key2" =: 123])
 
             parseToml "[table] \n [[table.array]] \nkey1 = \"some string\"\n \
                                   \[[table.array]] \nkey2 = 123" t
@@ -65,22 +65,22 @@ tomlSpecs = do
             parseToml "table={key1 = \"some string\", key2 = 123}" $
                 mkToml $
                     table "table" $ do
-                        "key1" =: Text "some string"
-                        "key2" =: Integer 123
+                        "key1" =: "some string"
+                        "key2" =: 123
         it "can parse an empty inline TOML table" $
             parseToml "table = {}" $ mkToml (table "table" empty)
         it "can parse a table followed by an inline table" $
             parseToml "[table1] \n  key1 = \"some string\" \n table2 = {key2 = 123}" $
                 mkToml $
                     table "table1" $ do
-                        "key1" =: Text "some string"
-                        table "table2" $ "key2" =: Integer 123
+                        "key1" =: "some string"
+                        table "table2" $ "key2" =: 123
         it "can parse an empty table followed by an inline table" $
             parseToml "[table1] \n table2 = {key2 = 123}" $
                 mkToml $
                     table "table1" $
                         table "table2" $
-                            "key2" =: Integer 123
+                            "key2" =: 123
         it "allows the name of the table to be any valid TOML key" $ do
             parseToml "dog.\"tater.man\"={}" $ mkToml $ table ("dog" :|| ["\"tater.man\""]) empty
             parseToml "j.\"ʞ\".'l'={}" $ mkToml $ table "j.\"ʞ\".'l'" empty
@@ -91,20 +91,20 @@ tomlSpecs = do
         it "can parse an array of key/values" $ do
             let array = mkToml $
                         tableArray "array" $
-                            "key1" =: Text "some string" :|
-                            ["key2" =: Integer 123]
+                            "key1" =: "some string" :|
+                            ["key2" =: 123]
 
             parseToml "[[array]]\n key1 = \"some string\"\n \
                        \[[array]]\n key2 = 123" array
         it "can parse an array of tables" $ do
-            let table1 = table "table1" ("key1" =: Text "some string")
-                table2 = table "table2" ("key2" =: Integer 123)
+            let table1 = table "table1" ("key1" =: "some string")
+                table2 = table "table2" ("key2" =: 123)
                 array = mkToml $ tableArray "array" $ table1 :| [table2]
 
             parseToml "[[array]]\n[array.table1] \n key1 = \"some string\"\n \
                        \[[array]]\n[array.table2] \n key2 = 123" array
         it "can parse an array of array" $ do
-            let arr = tableArray "subarray" ("key1" =: Text "some string" :| ["key2" =: Integer 123])
+            let arr = tableArray "subarray" ("key1" =: "some string" :| ["key2" =: 123])
                 array = mkToml $ tableArray "array" (arr :| [])
 
             parseToml "[[array]] \n [[array.subarray]] \nkey1 = \"some string\"\n \
@@ -122,7 +122,7 @@ tomlSpecs = do
             let array = mkToml $ tableArray "array" $ NE.fromList $ replicate 1000 empty
             parseToml (mconcat $ replicate 1000 "[[array]]\n") array
         it "can parse an inline array of tables" $ do
-            let array = mkToml $ tableArray "table" $ NE.fromList ["key1" =: Text "some string", "key2" =: Integer 123]
+            let array = mkToml $ tableArray "table" $ NE.fromList ["key1" =: "some string", "key2" =: 123]
             parseToml "table = [{key1 = \"some string\"}, {key2 = 123}]" array
 
     describe "TOML" $ do
