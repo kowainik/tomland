@@ -109,15 +109,14 @@ tomlSpecs = do
 
             parseToml "[[array]] \n [[array.subarray]] \nkey1 = \"some string\"\n \
                        \[[array.subarray]] \nkey2 = 123" array
-        -- TODO this does not work currently, Edsl does not seem to be able to generate arrays of tables with more than one different property
-        --it "can parse an array of arrays" $ do
-            --let
-                --arr1 = tableArray "table-1" ("key1" =: Text "some string" :| [])
-                --arr2 = tableArray "table-2" ("key2" =: Integer 123 :| [])
-                --array = mkToml $ tableArray "array" $ arr1 :| [arr2]
+        it "can parse an array of arrays" $ do
+            let
+                arr1 = tableArray "table-1" ("key1" =: Text "some string" :| [])
+                arr2 = tableArray "table-2" ("key2" =: Integer 123 :| [])
+                array = mkToml $ tableArray "array" $ (arr1 >> arr2) :| []
 
-            --parseToml "[[array]]\n [[array.table-1]] \nkey1 = \"some string\"\n \
-                                    -- \[[array.table-2]] \nkey2 = 123" array
+            parseToml "[[array]]\n [[array.table-1]] \nkey1 = \"some string\"\n \
+                                     \[[array.table-2]] \nkey2 = 123" array
         it "can parse very large arrays" $ do
             let array = mkToml $ tableArray "array" $ NE.fromList $ replicate 1000 empty
             parseToml (mconcat $ replicate 1000 "[[array]]\n") array
