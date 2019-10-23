@@ -23,7 +23,6 @@ module Test.Toml.Parsing.Unit.Common
        , dquote
        , squote3
        , dquote3
-       , makeKey
        , makeOffset
        , makeZoned
        , int1
@@ -50,10 +49,8 @@ import Toml.Parser.Key (keyP)
 import Toml.Parser.String (textP)
 import Toml.Parser.Validate (validateItems)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
-import Toml.PrefixTree (Key (..), Piece (..))
+import Toml.PrefixTree (Key (..))
 import Toml.Type (TOML (..), UValue (..))
-
-import qualified Data.List.NonEmpty as NE
 
 ----------------------------------------------------------------------------
 -- Utilities
@@ -122,9 +119,6 @@ makeZoned d h offset = UZoned $ ZonedTime (LocalTime d h) offset
 
 makeOffset :: Int -> Int -> TimeZone
 makeOffset hours mins = minutesToTimeZone (hours * 60 + mins * signum hours)
-
-makeKey :: [Text] -> Key
-makeKey = Key . NE.fromList . map Piece
 
 -- Test Data
 
