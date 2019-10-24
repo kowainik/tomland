@@ -1,8 +1,41 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Test.Toml.Parsing.Unit.Common where
+module Test.Toml.Parsing.Unit.Common
+       ( parseX
+       , failOn
+       , parseArray
+       , parseBool
+       , parseDouble
+       , parseInteger
+       , parseKey
+       , parseText
+       , parseToml
+       , parseDateTime
+       , arrayFailOn
+       , boolFailOn
+       , integerFailOn
+       , dateTimeFailOn
+       , doubleFailOn
+       , textFailOn
+       , tomlFailOn
+       , quoteWith
+       , squote
+       , dquote
+       , squote3
+       , dquote3
+       , makeOffset
+       , makeZoned
+       , int1
+       , int2
+       , int3
+       , int4
+       , offset710
+       , offset0
+       , day1
+       , day2
+       , hours1
+       ) where
 
-import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), TimeZone, ZonedTime (..), fromGregorian,
@@ -16,11 +49,8 @@ import Toml.Parser.Key (keyP)
 import Toml.Parser.String (textP)
 import Toml.Parser.Validate (validateItems)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
-import Toml.PrefixTree (Key (..), Piece (..), fromList)
-import Toml.Type (AnyValue (..), TOML (..), UValue (..), Value (..))
-
-import qualified Data.HashMap.Lazy as HashMap
-import qualified Data.List.NonEmpty as NE
+import Toml.PrefixTree (Key (..))
+import Toml.Type (TOML (..), UValue (..))
 
 ----------------------------------------------------------------------------
 -- Utilities
@@ -90,28 +120,7 @@ makeZoned d h offset = UZoned $ ZonedTime (LocalTime d h) offset
 makeOffset :: Int -> Int -> TimeZone
 makeOffset hours mins = minutesToTimeZone (hours * 60 + mins * signum hours)
 
-makeKey :: [Text] -> Key
-makeKey = Key . NE.fromList . map Piece
-
-tomlFromKeyVal :: [(Key, AnyValue)] -> TOML
-tomlFromKeyVal kv = TOML (HashMap.fromList kv) mempty mempty
-
-tomlFromTable :: [(Key, TOML)] -> TOML
-tomlFromTable t = TOML mempty (fromList t) mempty
-
-tomlFromArray :: [(Key, NonEmpty TOML)] -> TOML
-tomlFromArray = TOML mempty mempty . HashMap.fromList
-
 -- Test Data
-
--- Key-Value pairs
-str, int :: (Key, AnyValue)
-str = (makeKey ["key1"], AnyValue (Text "some string"))
-int = (makeKey ["key2"], AnyValue (Integer 123))
-
-strT, intT :: TOML
-strT = tomlFromKeyVal [str]
-intT = tomlFromKeyVal [int]
 
 int1, int2, int3, int4 :: UValue
 int1 = UInteger 1
