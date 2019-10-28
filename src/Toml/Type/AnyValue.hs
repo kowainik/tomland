@@ -5,7 +5,13 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
 
--- | Existential wrapper over 'Value' type and matching functions.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Existential wrapper over 'Value' type and matching functions.
+-}
 
 module Toml.Type.AnyValue
        ( AnyValue (..)

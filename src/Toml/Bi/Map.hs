@@ -5,7 +5,12 @@
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE TypeFamilies        #-}
 
-{- | Implementation of tagged partial bidirectional isomorphism.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Implementation of tagged partial bidirectional isomorphism.
 -}
 
 module Toml.Bi.Map

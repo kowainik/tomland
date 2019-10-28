@@ -1,4 +1,9 @@
-{- | This module reexports all functionality of @tomland@ package. It's
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+This module reexports all functionality of @tomland@ package. It's
 recommended to import this module qualified, like this:
 
 @

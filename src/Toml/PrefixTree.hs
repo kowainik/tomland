@@ -1,7 +1,13 @@
 {-# LANGUAGE DeriveAnyClass  #-}
 {-# LANGUAGE PatternSynonyms #-}
 
--- | Implementation of prefix tree for TOML AST.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Implementation of prefix tree for TOML AST.
+-}
 
 module Toml.PrefixTree
        ( -- * Core types

@@ -1,4 +1,9 @@
-{-| This module contains the definition of the 'TomlItem' data type which
+{-|
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+This module contains the definition of the 'TomlItem' data type which
 represents either key-value pair or table name. This data type serves the
 purpose to be the intermediate representation of parsing a TOML file which will
 be assembled to TOML AST later.

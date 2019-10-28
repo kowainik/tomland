@@ -1,6 +1,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
--- | Type of TOML AST. This is intermediate representation of TOML parsed from text.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Type of TOML AST. This is intermediate representation of TOML parsed from text.
+-}
 
 module Toml.Type.TOML
        ( TOML (..)

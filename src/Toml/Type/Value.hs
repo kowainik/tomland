@@ -6,7 +6,13 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators      #-}
 
--- | GADT value for TOML.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+GADT value for TOML.
+-}
 
 module Toml.Type.Value
        ( -- * Type of value
