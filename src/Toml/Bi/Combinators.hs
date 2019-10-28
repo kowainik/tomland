@@ -2,7 +2,13 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE GADTs               #-}
 
--- | Contains TOML-specific combinators for converting between TOML and user data types.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Contains TOML-specific combinators for converting between TOML and user data types.
+-}
 
 module Toml.Bi.Combinators
        ( -- * Basic codecs for primitive values

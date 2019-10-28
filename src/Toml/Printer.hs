@@ -1,6 +1,12 @@
 {-# LANGUAGE TypeFamilies #-}
 
-{- | Contains functions for pretty printing @toml@ types. -}
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Contains functions for pretty printing @toml@ types.
+-}
 
 module Toml.Printer
        ( PrintOptions(..)

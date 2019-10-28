@@ -1,4 +1,9 @@
-{- | This module contains functions that aggregate the result of
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+This module contains functions that aggregate the result of
 'Toml.Parser.Item.tomlP' parser into 'TOML'. This approach allows to keep parser
 fast and simple and delegate the process of creating tree structure to a
 separate function.

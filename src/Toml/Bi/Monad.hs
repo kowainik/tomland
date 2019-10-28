@@ -1,4 +1,10 @@
--- | Contains general underlying monad for bidirectional conversion.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Contains general underlying monad for bidirectional conversion.
+-}
 
 module Toml.Bi.Monad
        ( Codec (..)

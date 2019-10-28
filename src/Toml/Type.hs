@@ -1,4 +1,10 @@
--- | Core types for TOML AST.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Core types for TOML AST.
+-}
 
 module Toml.Type
        ( module Toml.Type.AnyValue

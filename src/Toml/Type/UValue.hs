@@ -1,6 +1,12 @@
 {-# LANGUAGE GADTs #-}
 
--- | Intermediate untype value representation used for parsing.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Intermediate untype value representation used for parsing.
+-}
 
 module Toml.Type.UValue
        ( UValue (..)

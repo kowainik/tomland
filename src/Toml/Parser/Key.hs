@@ -1,4 +1,9 @@
-{- | Parsers for keys and table names.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+Parsers for keys and table names.
 
 @since 1.2.0.0
 -}

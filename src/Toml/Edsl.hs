@@ -1,4 +1,9 @@
-{- | This module introduces EDSL for manually specifying 'TOML' data types.
+{- |
+Copyright: (c) 2018-2019 Kowainik
+SPDX-License-Identifier: MPL-2.0
+Maintainer: Kowainik <xrom.xkov@gmail.com>
+
+This module introduces EDSL for manually specifying 'TOML' data types.
 
 Consider the following raw TOML:
 
