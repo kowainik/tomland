@@ -3,6 +3,12 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## 1.2.1.0 — Nov 3, 2019
+
+* [#203](https://github.com/kowainik/tomland/issues/203):
+  Implement codecs for `Map`-like data structures.
+  (by [@chshersh](https://github.com/chshersh))
+
 ## 1.2.0.0 — Oct 12, 2019
 
 * [#216](https://github.com/kowainik/tomland/issues/216):

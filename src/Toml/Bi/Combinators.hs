@@ -56,11 +56,14 @@ module Toml.Bi.Combinators
        , set
        , hashSet
 
+         -- * Combinators for Maps
+       , map
+
          -- * General construction of codecs
        , match
        ) where
 
-import Prelude hiding (read)
+import Prelude hiding (map, read)
 
 import Control.Monad (forM)
 import Control.Monad.Except (catchError, throwError)
@@ -72,6 +75,7 @@ import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty (..), toList)
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Semigroup ((<>))
 import Data.Set (Set)
@@ -92,9 +96,12 @@ import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insert
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.HashSet as HS
+import qualified Data.List.NonEmpty as NE
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import qualified Data.Text.Lazy as L
 import qualified Toml.PrefixTree as Prefix
+
 
 {- | General function to create bidirectional converters for key-value pairs. In
 order to use this function you need to create 'TomlBiMap' for your type and
@@ -286,6 +293,10 @@ arrayNonEmptyOf :: TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 {-# INLINE arrayNonEmptyOf #-}
 
+----------------------------------------------------------------------------
+-- Tables and arrays of tables
+----------------------------------------------------------------------------
+
 {- | Prepends given key to all errors that contain key. This function is used to
 give better error messages. So when error happens we know all pieces of table
 key, not only the last one.
@@ -375,3 +386,64 @@ set codec key = dimap S.toList S.fromList (list codec key)
 hashSet :: forall a . (Hashable a, Eq a) => TomlCodec a -> Key -> TomlCodec (HashSet a)
 hashSet codec key = dimap HS.toList HS.fromList (list codec key)
 {-# INLINE hashSet #-}
+
+----------------------------------------------------------------------------
+-- Map-like combinators
+----------------------------------------------------------------------------
+
+{- | Bidirectional codec for 'Map'. It takes birectional converter for keys and
+values and produces bidirectional codec for 'Map'. Currently it works only with array
+of tables, so you need to specify 'Map's in TOML files like this:
+
+@
+myMap =
+    [ { name = "foo", payload = 42 }
+    , { name = "bar", payload = 69 }
+    ]
+@
+
+'TomlCodec' for such TOML field can look like this:
+
+@
+Toml.'map' (Toml.'text' "name") (Toml.'int' "payload") "myMap"
+@
+
+If there's no key with the name @"myMap"@ then empty 'Map' is returned.
+
+@since 1.2.1.0
+-}
+map :: forall k v .
+       Ord k
+    => TomlCodec k  -- ^ Codec for 'Map' keys
+    -> TomlCodec v  -- ^ Codec for 'Map' values
+    -> Key          -- ^ TOML key where 'Map' is stored
+    -> TomlCodec (Map k v)  -- ^ Codec for the 'Map'
+map keyCodec valCodec key = Codec input output
+  where
+    input :: Env (Map k v)
+    input = do
+        mTables <- asks $ HashMap.lookup key . tomlTableArrays
+        case mTables of
+            Nothing -> pure Map.empty
+            Just tomls -> fmap Map.fromList $ forM (NE.toList tomls) $ \toml -> do
+                k <- codecReadTOML toml keyCodec
+                v <- codecReadTOML toml valCodec
+                pure (k, v)
+
+    output :: Map k v -> St (Map k v)
+    output dict = do
+        let tomls = fmap
+                (\(k, v) -> execTomlCodec keyCodec k <> execTomlCodec valCodec v)
+                (Map.toList dict)
+
+        mTables <- gets $ HashMap.lookup key . tomlTableArrays
+
+        let updateAction :: TOML -> TOML
+            updateAction = case mTables of
+                Nothing -> case tomls of
+                    []   -> id
+                    t:ts -> insertTableArrays key (t :| ts)
+                Just (t :| ts) ->
+                    insertTableArrays key $ t :| (ts ++ tomls)
+
+        dict <$ modify updateAction

@@ -17,6 +17,11 @@ either = 3.5
 # Also works!
 # either = "fo  o"
 
+payloads =
+    [ { name = "foo", payload = 42 }
+    , { name = "bar", payload = 69 }
+    ]
+
 [testX]
   inside = "xxx"
 
