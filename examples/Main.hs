@@ -7,6 +7,7 @@ import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
 import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
+import Data.Map.Strict (Map)
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (fromGregorian)
@@ -84,6 +85,7 @@ data Test = Test
     , users      :: ![User]
     , susers     :: !(Set User)
     , husers     :: !(HashSet User)
+    , payloads   :: !(Map Text Int)
     }
 
 
@@ -105,6 +107,7 @@ testT = Test
     <*> Toml.list userCodec "user" .= users
     <*> Toml.set userCodec "suser" .= susers
     <*> Toml.hashSet userCodec "huser" .= husers
+    <*> Toml.map (Toml.text "name") (Toml.int "payload") "payloads" .= payloads
   where
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)

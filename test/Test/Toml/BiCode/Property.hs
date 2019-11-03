@@ -1,11 +1,12 @@
 module Test.Toml.BiCode.Property where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (liftA2, (<|>))
 import Control.Category ((>>>))
 import Data.ByteString (ByteString)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map.Strict (Map)
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
@@ -56,6 +57,7 @@ data BigType = BigType
     , btNewtype       :: !BigTypeNewtype
     , btSum           :: !BigTypeSum
     , btRecord        :: !BigTypeRecord
+    , btMap           :: !(Map Int Bool)
     } deriving stock (Show, Eq)
 
 -- | Wrapper over 'Double' and 'Float' to be equal on @NaN@ values.
@@ -112,6 +114,7 @@ bigTypeCodec = BigType
     <*> Toml.diwrap (Toml.zonedTime "nt.zonedTime")                .= btNewtype
     <*> bigTypeSumCodec                                            .= btSum
     <*> Toml.table bigTypeRecordCodec        "table-record"        .= btRecord
+    <*> Toml.map (Toml.int "key") (Toml.bool "val") "map"          .= btMap
 
 _BigTypeSumA :: TomlBiMap BigTypeSum Integer
 _BigTypeSumA = Toml.prism BigTypeSumA $ \case
@@ -163,6 +166,7 @@ genBigType = do
     btNewtype       <- genNewType
     btSum           <- genSum
     btRecord        <- genRec
+    btMap           <- Gen.map (Range.constant 0 10) (liftA2 (,) genInt genBool)
     pure BigType {..}
 
 -- Custom generators

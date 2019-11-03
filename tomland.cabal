@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                tomland
-version:             1.2.0.0
+version:             1.2.1.0
 synopsis:            Bidirectional TOML serialization
 description:
     Implementation of bidirectional TOML serialization. Simple codecs look like this:
