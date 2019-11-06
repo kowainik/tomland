@@ -310,14 +310,16 @@ arrayNonEmptyOf = match . _NonEmpty
 ----------------------------------------------------------------------------
 
 {- | Codec for 'All' wrapper for boolean values.
+Returns @'All' 'True'@ on missing fields.
 
 @since 1.2.1.0
 -}
 all :: Key -> TomlCodec All
-all = dimap (Just . getAll) (All . fromMaybe False) . dioptional . bool
+all = dimap (Just . getAll) (All . fromMaybe True) . dioptional . bool
 {-# INLINE all #-}
 
 {- | Codec for 'Any' wrapper for boolean values.
+Returns @'Any' 'False'@ on missing fields.
 
 @since 1.2.1.0
 -}
