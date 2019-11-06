@@ -11,6 +11,7 @@ The changelog is available [on GitHub][2].
 * [#241](https://github.com/kowainik/tomland/issues/241):
   Implement codecs for `Monoid` wrappers:
   `all`, `any`, `sum`, `product`, `first`, `last`.
+  (by [@vrom911](https://github.com/vrom911))
 
 ## 1.2.0.0 — Oct 12, 2019
 
