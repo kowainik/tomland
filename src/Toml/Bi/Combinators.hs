@@ -44,6 +44,17 @@ module Toml.Bi.Combinators
        , arrayHashSetOf
        , arrayNonEmptyOf
 
+         -- * Codecs for 'Monoid's
+         -- ** Bool wrappers
+       , all
+       , any
+         -- ** 'Num' wrappers
+       , sum
+       , product
+         -- ** 'Maybe' wrappers
+       , first
+       , last
+
          -- * Additional codecs for custom types
        , textBy
        , read
@@ -63,7 +74,7 @@ module Toml.Bi.Combinators
        , match
        ) where
 
-import Prelude hiding (map, read)
+import Prelude hiding (all, any, last, map, product, read, sum)
 
 import Control.Monad (forM)
 import Control.Monad.Except (catchError, throwError)
@@ -77,6 +88,7 @@ import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty (..), toList)
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
+import Data.Monoid (All (..), Any (..), First (..), Last (..), Product (..), Sum (..))
 import Data.Semigroup ((<>))
 import Data.Set (Set)
 import Data.Text (Text)
@@ -89,7 +101,7 @@ import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _ByteStri
                     _Double, _EnumBounded, _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString,
                     _LByteStringArray, _LText, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
                     _String, _Text, _TextBy, _TimeOfDay, _Word, _Word8, _ZonedTime)
-import Toml.Bi.Monad (Codec (..), dimap)
+import Toml.Bi.Monad (Codec (..), dimap, dioptional)
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
@@ -292,6 +304,60 @@ arrayHashSetOf = match . _HashSet
 arrayNonEmptyOf :: TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 {-# INLINE arrayNonEmptyOf #-}
+
+----------------------------------------------------------------------------
+-- Monoid codecs
+----------------------------------------------------------------------------
+
+{- | Codec for 'All' wrapper for boolean values.
+Returns @'All' 'True'@ on missing fields.
+
+@since 1.2.1.0
+-}
+all :: Key -> TomlCodec All
+all = dimap (Just . getAll) (All . fromMaybe True) . dioptional . bool
+{-# INLINE all #-}
+
+{- | Codec for 'Any' wrapper for boolean values.
+Returns @'Any' 'False'@ on missing fields.
+
+@since 1.2.1.0
+-}
+any :: Key -> TomlCodec Any
+any = dimap (Just . getAny) (Any . fromMaybe False) . dioptional . bool
+{-# INLINE any #-}
+
+{- | Codec for 'Sum' wrapper for given converter's values.
+
+@since 1.2.1.0
+-}
+sum :: (Key -> TomlCodec a) -> Key -> TomlCodec (Sum a)
+sum codec = dimap getSum Sum . codec
+{-# INLINE sum #-}
+
+{- | Codec for 'Product' wrapper for given converter's values.
+
+@since 1.2.1.0
+-}
+product :: (Key -> TomlCodec a) -> Key -> TomlCodec (Product a)
+product codec = dimap getProduct Product . codec
+{-# INLINE product #-}
+
+{- | Codec for 'First' wrapper for given converter's values.
+
+@since 1.2.1.0
+-}
+first :: (Key -> TomlCodec a) -> Key -> TomlCodec (First a)
+first codec = dimap getFirst First . dioptional . codec
+{-# INLINE first #-}
+
+{- | Codec for 'Last' wrapper for given converter's values.
+
+@since 1.2.1.0
+-}
+last :: (Key -> TomlCodec a) -> Key -> TomlCodec (Last a)
+last codec = dimap getLast Last . dioptional . codec
+{-# INLINE last #-}
 
 ----------------------------------------------------------------------------
 -- Tables and arrays of tables

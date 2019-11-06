@@ -7,6 +7,7 @@ import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
+import Data.Monoid (All (..), Any (..), First (..), Last (..), Product (..), Sum (..))
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
@@ -55,9 +56,15 @@ data BigType = BigType
     , btNonEmpty      :: !(NonEmpty ByteString)
     , btList          :: ![Bool]
     , btNewtype       :: !BigTypeNewtype
-    , btSum           :: !BigTypeSum
+    , btSumType       :: !BigTypeSum
     , btRecord        :: !BigTypeRecord
     , btMap           :: !(Map Int Bool)
+    , btAll           :: !All
+    , btAny           :: !Any
+    , btSum           :: !(Sum Int)
+    , btProduct       :: !(Product Int)
+    , btFirst         :: !(First Int)
+    , btLast          :: !(Last Int)
     } deriving stock (Show, Eq)
 
 -- | Wrapper over 'Double' and 'Float' to be equal on @NaN@ values.
@@ -112,9 +119,15 @@ bigTypeCodec = BigType
     <*> Toml.nonEmpty (Toml.byteString "bs") "nonEmptyBS"          .= btNonEmpty
     <*> Toml.list (Toml.bool "bool")         "listBool"            .= btList
     <*> Toml.diwrap (Toml.zonedTime "nt.zonedTime")                .= btNewtype
-    <*> bigTypeSumCodec                                            .= btSum
+    <*> bigTypeSumCodec                                            .= btSumType
     <*> Toml.table bigTypeRecordCodec        "table-record"        .= btRecord
     <*> Toml.map (Toml.int "key") (Toml.bool "val") "map"          .= btMap
+    <*> Toml.all                             "all"                 .= btAll
+    <*> Toml.any                             "any"                 .= btAny
+    <*> Toml.sum Toml.int                    "sum"                 .= btSum
+    <*> Toml.product Toml.int                "product"             .= btProduct
+    <*> Toml.first Toml.int                  "first"               .= btFirst
+    <*> Toml.last Toml.int                   "last"                .= btLast
 
 _BigTypeSumA :: TomlBiMap BigTypeSum Integer
 _BigTypeSumA = Toml.prism BigTypeSumA $ \case
@@ -164,9 +177,15 @@ genBigType = do
     btNonEmpty      <- genNonEmpty genByteString
     btList          <- Gen.list (Range.constant 0 5) genBool
     btNewtype       <- genNewType
-    btSum           <- genSum
+    btSumType       <- genSum
     btRecord        <- genRec
     btMap           <- Gen.map (Range.constant 0 10) (liftA2 (,) genInt genBool)
+    btAll           <- All <$> genBool
+    btAny           <- Any <$> genBool
+    btSum           <- Sum <$> genInt
+    btProduct       <- Product <$> genInt
+    btFirst         <- First <$> Gen.maybe genInt
+    btLast          <- Last <$> Gen.maybe genInt
     pure BigType {..}
 
 -- Custom generators
