@@ -3,11 +3,14 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
-## 1.2.1.0 — Nov 3, 2019
+## 1.2.1.0 — Nov 6, 2019
 
 * [#203](https://github.com/kowainik/tomland/issues/203):
   Implement codecs for `Map`-like data structures.
   (by [@chshersh](https://github.com/chshersh))
+* [#241](https://github.com/kowainik/tomland/issues/241):
+  Implement codecs for `Monoid` wrappers:
+  `all`, `any`, `sum`, `product`, `first`, `last`.
 
 ## 1.2.0.0 — Oct 12, 2019
 
