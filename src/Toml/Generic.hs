@@ -127,6 +127,7 @@ import Data.IntSet (IntSet)
 import Data.Kind (Type)
 import Data.List (stripPrefix)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Monoid (All (..), Any (..), First (..), Last (..), Product (..), Sum (..))
 import Data.Proxy (Proxy (..))
 import Data.Set (Set)
 import Data.String (IsString (..))
@@ -372,6 +373,30 @@ instance (Hashable a, Eq a, HasItemCodec a) => HasCodec (HashSet a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arrayHashSetOf prim
         Right codec -> Toml.hashSet codec
+
+-- | @since 1.x.x.x
+instance HasCodec All where
+    hasCodec = Toml.diwrap . hasCodec @Bool
+
+-- | @since 1.x.x.x
+instance HasCodec Any where
+    hasCodec = Toml.diwrap . hasCodec @Bool
+
+-- | @since 1.x.x.x
+instance HasCodec a => HasCodec (Sum a) where
+    hasCodec = Toml.diwrap . hasCodec @a
+
+-- | @since 1.x.x.x
+instance HasCodec a => HasCodec (Product a) where
+    hasCodec = Toml.diwrap . hasCodec @a
+
+-- | @since 1.x.x.x
+instance HasCodec a => HasCodec (First a) where
+    hasCodec = Toml.diwrap . hasCodec @(Maybe a)
+
+-- | @since 1.x.x.x
+instance HasCodec a => HasCodec (Last a) where
+    hasCodec = Toml.diwrap . hasCodec @(Maybe a)
 
 {-
 TODO: uncomment when higher-kinded roles will be implemented

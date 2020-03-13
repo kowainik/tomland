@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances  #-}
+
 module Test.Toml.BiCode.Property where
 
 import Control.Applicative (liftA2, (<|>))
@@ -8,14 +10,17 @@ import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.Monoid (All (..), Any (..), First (..), Last (..), Product (..), Sum (..))
+import Data.Semigroup ((<>))
 import Data.Set (Set)
 import Data.Text (Text)
+import Data.Char (chr, ord)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 import GHC.Exts (fromList)
-import Hedgehog (Gen, forAll, tripping)
+import GHC.Generics (Generic)
+import Hedgehog (Gen, forAll, tripping, (===))
 import Numeric.Natural (Natural)
 
-import Toml (TomlBiMap, TomlCodec, (.=))
+import Toml (TomlBiMap, TomlCodec, (.=), genericCodec, HasCodec, hasCodec, HasItemCodec, BiMap, AnyValue, iso, _Int, Key)
 import Toml.Bi.Code (decode, encode)
 
 import Test.Toml.Gen (PropertyTest, genBool, genByteString, genDay, genDouble, genFloat, genHashSet,
@@ -32,6 +37,17 @@ test_encodeDecodeProp :: PropertyTest
 test_encodeDecodeProp = prop "decode . encode == id" $ do
     bigType <- forAll genBigType
     tripping bigType (encode bigTypeCodec) (decode bigTypeCodec)
+
+test_genericCodecRoundtripProp :: PropertyTest
+test_genericCodecRoundtripProp = prop "genericCodecDecode . genericCodecEncode == id" $ do
+    bigType <- forAll genBigType
+    tripping bigType (encode bigTypeGenericCodec) (decode bigTypeGenericCodec)
+
+test_genericCustomCodecEncodeDecodeProp :: PropertyTest
+test_genericCustomCodecEncodeDecodeProp =
+    prop "(decode . encode) genericCodec == (decode . encode) customCodec" $ do
+        bigType <- forAll genBigType
+        decode bigTypeGenericCodec (encode bigTypeGenericCodec bigType) === decode bigTypeCodec (encode bigTypeCodec bigType)
 
 data BigType = BigType
     { btBool          :: !Bool
@@ -65,12 +81,15 @@ data BigType = BigType
     , btProduct       :: !(Product Int)
     , btFirst         :: !(First Int)
     , btLast          :: !(Last Int)
-    } deriving stock (Show, Eq)
+    } deriving stock (Show, Eq, Generic)
 
 -- | Wrapper over 'Double' and 'Float' to be equal on @NaN@ values.
 newtype Batman a = Batman
     { unBatman :: a
     } deriving stock (Show)
+
+instance HasCodec a => HasCodec (Batman a) where
+    hasCodec = Toml.diwrap . hasCodec @a
 
 instance RealFloat a => Eq (Batman a) where
     Batman a == Batman b =
@@ -82,6 +101,9 @@ newtype BigTypeNewtype = BigTypeNewtype
     { unBigTypeNewtype :: ZonedTime
     } deriving stock (Show)
 
+instance HasCodec BigTypeNewtype where
+    hasCodec = Toml.diwrap . hasCodec @ZonedTime
+
 instance Eq BigTypeNewtype where
     (BigTypeNewtype a) == (BigTypeNewtype b) = zonedTimeToUTC a == zonedTimeToUTC b
 
@@ -90,10 +112,22 @@ data BigTypeSum
     | BigTypeSumB !Text
     deriving stock (Show, Eq)
 
+instance HasItemCodec BigTypeSum where
+    hasItemCodec = Right $ bigTypeSumCodec "sum"
+
+instance HasCodec BigTypeSum where
+    hasCodec = bigTypeSumCodec
+
 data BigTypeRecord = BigTypeRecord
     { btrBoolSet     :: !(Set Bool)
     , btrNewtypeList :: ![BigTypeSum]
-    } deriving stock (Show, Eq)
+    } deriving stock (Show, Eq, Generic)
+
+instance HasCodec BigTypeRecord where
+    hasCodec = Toml.table bigTypeRecordCodec
+
+bigTypeGenericCodec :: TomlCodec BigType
+bigTypeGenericCodec = genericCodec
 
 bigTypeCodec :: TomlCodec BigType
 bigTypeCodec = BigType
@@ -119,7 +153,7 @@ bigTypeCodec = BigType
     <*> Toml.nonEmpty (Toml.byteString "bs") "nonEmptyBS"          .= btNonEmpty
     <*> Toml.list (Toml.bool "bool")         "listBool"            .= btList
     <*> Toml.diwrap (Toml.zonedTime "nt.zonedTime")                .= btNewtype
-    <*> bigTypeSumCodec                                            .= btSumType
+    <*> bigTypeSumCodec "sum"                                      .= btSumType
     <*> Toml.table bigTypeRecordCodec        "table-record"        .= btRecord
     <*> Toml.map (Toml.int "key") (Toml.bool "val") "map"          .= btMap
     <*> Toml.all                             "all"                 .= btAll
@@ -139,15 +173,15 @@ _BigTypeSumB = Toml.prism BigTypeSumB $ \case
     BigTypeSumB n -> Right n
     other    -> Toml.wrongConstructor "BigTypeSumB" other
 
-bigTypeSumCodec :: TomlCodec BigTypeSum
-bigTypeSumCodec =
-        Toml.match (_BigTypeSumA >>> Toml._Integer) "sum.integer"
-    <|> Toml.match (_BigTypeSumB >>> Toml._Text)    "sum.text"
+bigTypeSumCodec :: Key -> TomlCodec BigTypeSum
+bigTypeSumCodec key =
+        Toml.match (_BigTypeSumA >>> Toml._Integer) (key <> "integer")
+    <|> Toml.match (_BigTypeSumB >>> Toml._Text) (key <> "text")
 
 bigTypeRecordCodec :: TomlCodec BigTypeRecord
 bigTypeRecordCodec = BigTypeRecord
     <$> Toml.arraySetOf Toml._Bool "rboolSet" .= btrBoolSet
-    <*> Toml.list bigTypeSumCodec "rnewtype" .= btrNewtypeList
+    <*> Toml.list (bigTypeSumCodec "sum") "rnewtype" .= btrNewtypeList
 
 ----------------------------------------------------------------------------
 -- Generator
@@ -204,3 +238,33 @@ genRec = do
     btrBoolSet <- fromList <$> Gen.list (Range.constant 0 5) genBool
     btrNewtypeList <- Gen.list (Range.constant 0 5) genSum
     pure BigTypeRecord{..}
+
+----------------------------------------------------------------------------
+-- Orphan Instances
+----------------------------------------------------------------------------
+
+-- TODO figure out how to get rid of this, since String causes problems
+instance HasItemCodec Char where
+    hasItemCodec = Left _Char
+      where
+        _Char :: TomlBiMap Char AnyValue
+        _Char = _CharInt >>> _Int
+
+        _CharInt :: BiMap e Char Int
+        _CharInt = iso ord chr
+
+-- TODO: remove once this issue is implemented:
+-- https://github.com/kowainik/tomland/issues/251
+instance HasItemCodec ByteString where
+    hasItemCodec = Left Toml._ByteString
+
+instance HasCodec ByteString where
+    hasCodec = Toml.byteString
+
+instance HasCodec L.ByteString where
+    hasCodec = Toml.lazyByteString
+
+-- TODO: remove once this issue is implemented:
+-- https://github.com/kowainik/tomland/issues/243
+instance HasCodec (Map Int Bool) where
+    hasCodec = Toml.map (Toml.int "key") (Toml.bool "val")
