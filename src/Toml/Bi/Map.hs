@@ -52,6 +52,8 @@ module Toml.Bi.Map
        , _Set
        , _IntSet
        , _HashSet
+       , _KeyText
+       , _KeyString
 
          -- * Helpers for BiMap and AnyValue
        , mkAnyValueBiMap
@@ -578,11 +580,23 @@ _IntSet = iso IS.toList IS.fromList >>> _Array _Int
 
 _KeyText :: TomlBiMap Key Text
 _KeyText = BiMap
-    { forward = Right . (T.intercalate ".") . (map unPiece) . toList . unKey
-    , backward = (\t -> case P.parse keyP "" t of
-        Left err  -> Left $ ArbitraryError $ T.pack $ P.errorBundlePretty err
-        Right key -> Right key)
+    { forward = Right . keyToText
+    , backward = textToKey
     }
+
+_KeyString :: TomlBiMap Key String
+_KeyString = BiMap
+    { forward = Right . T.unpack . keyToText
+    , backward = textToKey . T.pack
+    }
+
+keyToText :: Key -> Text
+keyToText = (T.intercalate ".") . (map unPiece) . toList . unKey
+
+textToKey :: Text -> Either TomlBiMapError Key
+textToKey t = case P.parse keyP "" t of
+    Left err  -> Left $ ArbitraryError $ T.pack $ P.errorBundlePretty err
+    Right key -> Right key
 
 tShow :: Show a => a -> Text
 tShow = T.pack . show
