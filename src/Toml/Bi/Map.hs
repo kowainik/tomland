@@ -79,6 +79,7 @@ import Control.Monad ((>=>))
 import Data.Bifunctor (bimap, first)
 import Data.ByteString (ByteString)
 import Data.Hashable (Hashable)
+import Data.List.NonEmpty (toList)
 import Data.Map (Map)
 import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
@@ -88,6 +89,9 @@ import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import Text.Read (readEither)
 
+import qualified Toml.Parser.Core as P (errorBundlePretty, parse)
+import Toml.Parser.Key (keyP)
+import Toml.PrefixTree (Key (..), Piece (..))
 import Toml.Type (AnyValue (..), MatchError (..), TValue (..), Value (..), applyAsToAny, matchBool,
                   matchDay, matchDouble, matchHours, matchInteger, matchLocal, matchText,
                   matchZoned, mkMatchError, toMArray)
@@ -571,6 +575,14 @@ _HashSet bi = iso HS.toList HS.fromList >>> _Array bi
 _IntSet :: TomlBiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
 {-# INLINE _IntSet #-}
+
+_KeyText :: TomlBiMap Key Text
+_KeyText = BiMap
+    { forward = Right . (T.intercalate ".") . (map unPiece) . toList . unKey
+    , backward = (\t -> case P.parse keyP "" t of
+        Left err  -> Left $ ArbitraryError $ T.pack $ P.errorBundlePretty err
+        Right key -> Right key)
+    }
 
 tShow :: Show a => a -> Text
 tShow = T.pack . show
