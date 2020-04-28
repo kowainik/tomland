@@ -52,6 +52,8 @@ module Toml.Bi.Map
        , _Set
        , _IntSet
        , _HashSet
+
+         -- * Bidirectional mappings for 'Key'
        , _KeyText
        , _KeyString
 
