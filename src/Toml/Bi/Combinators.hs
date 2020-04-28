@@ -513,7 +513,7 @@ map keyCodec valCodec key = Codec input output
                     insertTableArrays key $ t :| (ts ++ tomls)
 
         dict <$ modify updateAction
-
+-- TODO: add docs and tests
 tableMapCodec
     :: forall key val . Ord key
     => TomlBiMap Key key  -- ^ Bidirectional converter between TOML and Map keys
