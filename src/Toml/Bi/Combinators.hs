@@ -69,6 +69,7 @@ module Toml.Bi.Combinators
 
          -- * Combinators for Maps
        , map
+       , tableMapCodec
 
          -- * General construction of codecs
        , match

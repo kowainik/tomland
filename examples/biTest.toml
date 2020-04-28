@@ -39,3 +39,7 @@ age = 777
 [testStatus]
 username = "username"
 password = "password"
+
+[depends]
+thing1 = "Hello"
+thing2 = "Goodbye"

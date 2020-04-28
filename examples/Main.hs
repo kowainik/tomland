@@ -86,6 +86,7 @@ data Test = Test
     , susers     :: !(Set User)
     , husers     :: !(HashSet User)
     , payloads   :: !(Map Text Int)
+    , depends    :: !(Map Text Text)
     }
 
 
@@ -108,6 +109,7 @@ testT = Test
     <*> Toml.set userCodec "suser" .= susers
     <*> Toml.hashSet userCodec "huser" .= husers
     <*> Toml.map (Toml.text "name") (Toml.int "payload") "payloads" .= payloads
+    <*> Toml.tableMapCodec Toml._KeyText Toml._Text "depends" .= depends
   where
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)
