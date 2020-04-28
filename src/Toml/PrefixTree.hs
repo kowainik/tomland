@@ -15,6 +15,7 @@ module Toml.PrefixTree
        , Key (..)
        , Prefix
        , pattern (:||)
+       , keyToText
 
          -- * Key difference
        , KeysDiff (..)
@@ -103,6 +104,9 @@ pattern x :|| xs <- Key (x :| xs)
     x :|| xs = Key (x :| xs)
 
 {-# COMPLETE (:||) #-}
+
+keyToText :: Key -> Text
+keyToText = Text.intercalate "." . NonEmpty.toList . coerce
 
 -- | Type synonym for 'Key'.
 type Prefix = Key
