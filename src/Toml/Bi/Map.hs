@@ -53,6 +53,10 @@ module Toml.Bi.Map
        , _IntSet
        , _HashSet
 
+         -- * Bidirectional mappings for 'Key'
+       , _KeyText
+       , _KeyString
+
          -- * Helpers for BiMap and AnyValue
        , mkAnyValueBiMap
        , _TextBy
@@ -88,6 +92,9 @@ import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import Text.Read (readEither)
 
+import qualified Toml.Parser.Core as P (errorBundlePretty, parse)
+import Toml.Parser.Key (keyP)
+import Toml.PrefixTree (Key (..), Piece (..), keyToText)
 import Toml.Type (AnyValue (..), MatchError (..), TValue (..), Value (..), applyAsToAny, matchBool,
                   matchDay, matchDouble, matchHours, matchInteger, matchLocal, matchText,
                   matchZoned, mkMatchError, toMArray)
@@ -571,6 +578,31 @@ _HashSet bi = iso HS.toList HS.fromList >>> _Array bi
 _IntSet :: TomlBiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
 {-# INLINE _IntSet #-}
+
+{- | Bidirectional converter between 'Key' and 'Text'.
+
+@since x.x.x.x
+-}
+_KeyText :: TomlBiMap Key Text
+_KeyText = BiMap
+    { forward = Right . keyToText
+    , backward = textToKey
+    }
+
+{- | Bidirectional converter between 'Key' and 'String'.
+
+@since x.x.x.x
+-}
+_KeyString :: TomlBiMap Key String
+_KeyString = BiMap
+    { forward = Right . T.unpack . keyToText
+    , backward = textToKey . T.pack
+    }
+
+textToKey :: Text -> Either TomlBiMapError Key
+textToKey t = case P.parse keyP "" t of
+    Left err  -> Left $ ArbitraryError $ T.pack $ P.errorBundlePretty err
+    Right key -> Right key
 
 tShow :: Show a => a -> Text
 tShow = T.pack . show

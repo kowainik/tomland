@@ -69,6 +69,7 @@ module Toml.Bi.Combinators
 
          -- * Combinators for Maps
        , map
+       , tableMapCodec
 
          -- * General construction of codecs
        , match
@@ -76,7 +77,7 @@ module Toml.Bi.Combinators
 
 import Prelude hiding (all, any, last, map, product, read, sum)
 
-import Control.Monad (forM)
+import Control.Monad (foldM, forM)
 import Control.Monad.Except (catchError, throwError)
 import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
@@ -513,3 +514,34 @@ map keyCodec valCodec key = Codec input output
                     insertTableArrays key $ t :| (ts ++ tomls)
 
         dict <$ modify updateAction
+-- TODO: add docs and tests
+tableMapCodec
+    :: forall key val . Ord key
+    => TomlBiMap Key key  -- ^ Bidirectional converter between TOML and Map keys
+    -> TomlBiMap val AnyValue  -- ^ Bidirectional converter between TOML and Map values
+    -> Key  -- ^ Table name key
+    -> TomlCodec (Map key val)
+tableMapCodec keyBiMap valBiMap key = Codec input output
+  where
+    input :: Env (Map key val)
+    input = do
+        mTable <- asks $ Prefix.lookup key . tomlTables
+        case mTable of
+            Nothing   -> pure Map.empty
+            Just toml -> fmap Map.fromList $ forM (HashMap.toList (tomlPairs toml)) $ \(tomlKey, anyVal) ->
+                case backward valBiMap anyVal of
+                    Right v  -> case forward keyBiMap tomlKey of
+                        Right k  -> pure (k, v)
+                        Left err -> throwError $ BiMapError err
+                    Left err -> throwError $ BiMapError err
+
+    output :: Map key val -> St (Map key val)
+    output dict = do
+        newToml <- foldM update mempty (Map.toList dict)
+        dict <$ modify (insertTable key newToml)
+
+    update :: TOML -> (key, val) -> St TOML
+    update toml (k, v) = do
+        tomlKey <- MaybeT $ pure $ either (const Nothing) Just $ backward keyBiMap k
+        anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward valBiMap v
+        return $ insertKeyAnyVal tomlKey anyVal toml
