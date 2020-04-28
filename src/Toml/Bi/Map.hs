@@ -579,12 +579,20 @@ _IntSet :: TomlBiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
 {-# INLINE _IntSet #-}
 
+{- | Bidirectional converter between 'Key' and 'Text'.
+
+@since x.x.x.x
+-}
 _KeyText :: TomlBiMap Key Text
 _KeyText = BiMap
     { forward = Right . keyToText
     , backward = textToKey
     }
 
+{- | Bidirectional converter between 'Key' and 'String'.
+
+@since x.x.x.x
+-}
 _KeyString :: TomlBiMap Key String
 _KeyString = BiMap
     { forward = Right . T.unpack . keyToText
