@@ -544,4 +544,4 @@ tableMapCodec keyBiMap valBiMap key = Codec input output
     update toml (k, v) = do
         tomlKey <- MaybeT $ pure $ either (const Nothing) Just $ backward keyBiMap k
         anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward valBiMap v
-        toml <$ modify (insertKeyAnyVal tomlKey anyVal)
+        return $ insertKeyAnyVal tomlKey anyVal toml
