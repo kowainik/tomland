@@ -515,14 +515,14 @@ map keyCodec valCodec key = Codec input output
         dict <$ modify updateAction
 
 tableMapCodec
-    :: Ord key
+    :: forall key val . Ord key
     => TomlBiMap Key key  -- ^ Bidirectional converter between TOML and Map keys
     -> TomlBiMap val AnyValue  -- ^ Bidirectional converter between TOML and Map values
     -> Key  -- ^ Table name key
     -> TomlCodec (Map key val)
 tableMapCodec keyBiMap valBiMap key = Codec input output
   where
-    -- input :: Env (Map key val)
+    input :: Env (Map key val)
     input = do
         mTable <- asks $ Prefix.lookup key . tomlTables
         case mTable of
@@ -534,11 +534,12 @@ tableMapCodec keyBiMap valBiMap key = Codec input output
                         Left err -> throwError $ BiMapError err
                     Left err -> throwError $ BiMapError err
 
-    -- output :: Map key val -> St (Map key val)
+    output :: Map key val -> St (Map key val)
     output dict = do
         newToml <- foldM update mempty (Map.toList dict)
         dict <$ modify (insertTable key newToml)
 
+    update :: TOML -> (key, val) -> St TOML
     update toml (k, v) = do
         tomlKey <- MaybeT $ pure $ either (const Nothing) Just $ backward keyBiMap k
         anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward valBiMap v
