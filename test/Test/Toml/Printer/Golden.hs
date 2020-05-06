@@ -26,7 +26,7 @@ prettyPrinterGoldenSpec = describe "Toml.Printer Golden tests" $ do
     test "pretty_custom_sorted" noFormatting { printOptionsSorting = Just spamEgg }
   where
     test :: String -> PrintOptions -> SpecWith (Arg Expectation)
-    test name options = it ("Golden " <> name) $
+    test name options = it ("Golden " ++ name) $
         defaultGolden
             ("test/golden/" ++ name ++ ".golden")
             (T.unpack $ prettyOptions options example)
