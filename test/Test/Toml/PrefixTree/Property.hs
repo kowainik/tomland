@@ -1,9 +1,13 @@
-module Test.Toml.PrefixTree.Property where
+module Test.Toml.PrefixTree.Property
+    ( prefixTreePropertySpec
+    ) where
 
 import Hedgehog (forAll, tripping, (===))
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it)
+import Test.Hspec.Hedgehog (hedgehog)
 
-import Test.Toml.Gen (PropertyTest, genKey, genPrefixMap, genVal, prop)
-import Test.Toml.Property (assocLaw, identityLaw)
+import Test.Toml.Gen (genKey, genPrefixMap, genVal)
+import Test.Toml.Property (assocSemigroup, leftIdentityMonoid, rightIdentityMonoid)
 
 import Data.String (IsString (..))
 
@@ -11,21 +15,23 @@ import qualified Data.Text as Text
 import qualified Toml.PrefixTree as Prefix
 import qualified Toml.Printer as Printer
 
-----------------------------------------------------------------------------
--- Key printing and parsing
-----------------------------------------------------------------------------
 
-test_KeyPrinting :: PropertyTest
-test_KeyPrinting = prop "Key printing: fromString . prettyKey == id" $ do
+prefixTreePropertySpec :: Spec
+prefixTreePropertySpec = describe "Prefix Tree property tests" $ do
+    keyPrintSpec
+    insertLookupSpec
+    insertInsertSpec
+    assocSemigroup      genPrefixMap
+    leftIdentityMonoid  genPrefixMap
+    rightIdentityMonoid genPrefixMap
+
+keyPrintSpec :: SpecWith (Arg Expectation)
+keyPrintSpec = it "Key printing: fromString . prettyKey ≡ id" $ hedgehog $ do
     key <- forAll genKey
     tripping key Printer.prettyKey (Just . fromString . Text.unpack)
 
-----------------------------------------------------------------------------
--- InsertLookup
-----------------------------------------------------------------------------
-
-test_PrefixTreeInsertLookup :: PropertyTest
-test_PrefixTreeInsertLookup =  prop "lookup k (insert k v m) == Just v" $ do
+insertLookupSpec :: SpecWith (Arg Expectation)
+insertLookupSpec = it "lookup k (insert k v m) ≡ Just v" $ hedgehog $ do
     t   <- forAll genPrefixMap
     key <- forAll genKey
     val <- forAll genVal
@@ -35,12 +41,8 @@ test_PrefixTreeInsertLookup =  prop "lookup k (insert k v m) == Just v" $ do
     -- DEBUG: ensures that trees of depth at least 5 are generated
     -- assert $ depth prefMap < 5
 
-----------------------------------------------------------------------------
--- InsertInsert
-----------------------------------------------------------------------------
-
-test_PrefixTreeInsertInsert :: PropertyTest
-test_PrefixTreeInsertInsert =  prop "insert x a . insert x b == insert x a" $ do
+insertInsertSpec :: SpecWith (Arg Expectation)
+insertInsertSpec = it "insert x a . insert x b ≡ insert x a" $ hedgehog $ do
     t <- forAll genPrefixMap
     x <- forAll genKey
     a <- forAll genVal
@@ -61,13 +63,3 @@ test_PrefixTreeInsertInsert =  prop "insert x a . insert x b == insert x a" $ do
 -- depthT :: PrefixTree a -> Int
 -- depthT (Leaf _ _)           = 1
 -- depthT (Branch _ _ prefMap) = 1 + depth prefMap
-
-----------------------------------------------------------------------------
--- Laws
-----------------------------------------------------------------------------
-
-test_PrefixTreeAssocLaw :: PropertyTest
-test_PrefixTreeAssocLaw = assocLaw genPrefixMap
-
-test_PrefixTreeIdentityLaw :: PropertyTest
-test_PrefixTreeIdentityLaw = identityLaw genPrefixMap

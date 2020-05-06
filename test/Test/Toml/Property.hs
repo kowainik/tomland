@@ -1,39 +1,56 @@
 module Test.Toml.Property
-       ( assocLaw
-       , identityLaw
+       ( assocSemigroup
+       , rightIdentityMonoid
+       , leftIdentityMonoid
        ) where
 
 import Data.Semigroup (Semigroup ((<>)))
 import Hedgehog (Gen, forAll, (===))
+import Test.Hspec (Arg, Expectation, SpecWith, it)
+import Test.Hspec.Hedgehog (hedgehog)
 
-import Test.Toml.Gen (PropertyTest, prop)
 
 {- | The semigroup associativity axiom:
 
 @
 x <> (y <> z) ≡ (x <> y) <> z
 @
-
 -}
-assocLaw :: (Eq a, Show a, Semigroup a) => Gen a -> PropertyTest
-assocLaw gen = prop "Semigroup associativity law" $ do
+assocSemigroup
+    :: (Eq a, Show a, Semigroup a)
+    => Gen a
+    -> SpecWith (Arg Expectation)
+assocSemigroup gen = it "Semigroup associativity: x <> (y <> z) ≡ (x <> y) <> z" $ hedgehog $ do
     x <- forAll gen
     y <- forAll gen
     z <- forAll gen
 
     (x <> (y <> z)) === ((x <> y) <> z)
 
-{- | Identity law for Monoid
+{- | Right Identity law for Monoid
 
 @
-mempty <> x = x
-x <> mempty = x
+x <> mempty ≡ x
 @
-
 -}
-identityLaw :: (Eq a, Show a, Semigroup a, Monoid a) => Gen a -> PropertyTest
-identityLaw gen = prop "Monoid identity laws" $ do
+rightIdentityMonoid
+    :: (Eq a, Show a, Semigroup a, Monoid a)
+    => Gen a
+    -> SpecWith (Arg Expectation)
+rightIdentityMonoid gen = it "Monoid Right Identity: x <> mempty ≡ x" $ hedgehog $ do
     x <- forAll gen
-
     x <> mempty === x
+
+{- | Left Identity law for Monoid
+
+@
+mempty <> x ≡ x
+@
+-}
+leftIdentityMonoid
+    :: (Eq a, Show a, Semigroup a, Monoid a)
+    => Gen a
+    -> SpecWith (Arg Expectation)
+leftIdentityMonoid gen = it "Monoid Right Identity: mempty <> x ≡ x" $ hedgehog $ do
+    x <- forAll gen
     mempty <> x === x

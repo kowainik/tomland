@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Test.Toml.Parsing.Unit.Common
        ( parseX
        , failOn
@@ -40,8 +38,8 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), TimeZone, ZonedTime (..), fromGregorian,
                   minutesToTimeZone)
+import Test.Hspec (Expectation)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
-import Test.Tasty.Hspec (Expectation)
 import Text.Megaparsec (Parsec, ShowErrorComponent, Stream, parse)
 
 import Toml.Parser.Item (tomlP)
@@ -52,9 +50,6 @@ import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
 import Toml.PrefixTree (Key (..))
 import Toml.Type (TOML (..), UValue (..))
 
-----------------------------------------------------------------------------
--- Utilities
-----------------------------------------------------------------------------
 
 parseX
     :: (ShowErrorComponent e, Stream s, Show a, Eq a)

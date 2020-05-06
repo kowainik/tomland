@@ -1,18 +1,35 @@
 -- | This module contains golden tests for @Toml.Printer@.
 
 module Test.Toml.Printer.Golden
-       ( test_prettyGolden
+       ( prettyPrinterGoldenSpec
        ) where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Ord (comparing)
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.Silver (goldenVsAction)
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it)
+import Test.Hspec.Golden (defaultGolden)
 
 import Toml (TOML, Value (..))
 import Toml.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.PrefixTree (Key (..), (<|))
 import Toml.Printer (PrintOptions (..), defaultOptions, prettyOptions)
+
+import qualified Data.Text as T
+
+
+prettyPrinterGoldenSpec :: Spec
+prettyPrinterGoldenSpec = describe "Toml.Printer Golden tests" $ do
+    test "pretty_default" defaultOptions
+    test "pretty_sorted_only" noFormatting { printOptionsSorting = Just compare }
+    test "pretty_indented_only" noFormatting { printOptionsIndent = 4 }
+    test "pretty_unformatted" noFormatting
+    test "pretty_custom_sorted" noFormatting { printOptionsSorting = Just spamEgg }
+  where
+    test :: String -> PrintOptions -> SpecWith (Arg Expectation)
+    test name options = it ("Golden " ++ name) $
+        defaultGolden
+            ("test/golden/" ++ name ++ ".golden")
+            (T.unpack $ prettyOptions options example)
 
 example :: TOML
 example = mkToml $ do
@@ -48,17 +65,3 @@ spamEggDecorate k
 
 spamEgg :: Key -> Key -> Ordering
 spamEgg = comparing spamEggDecorate
-
-test_prettyGolden :: TestTree
-test_prettyGolden =
-    testGroup "Toml.Printer"
-        [ test "pretty_default" defaultOptions
-        , test "pretty_sorted_only" noFormatting { printOptionsSorting = Just compare }
-        , test "pretty_indented_only" noFormatting { printOptionsIndent = 4 }
-        , test "pretty_unformatted" noFormatting
-        , test "pretty_custom_sorted" noFormatting { printOptionsSorting = Just spamEgg }
-        ]
-  where
-    test name options =
-        goldenVsAction name ("test/golden/" ++ name ++ ".golden")
-            (pure $ prettyOptions options example) id

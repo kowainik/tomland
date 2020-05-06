@@ -1,10 +1,11 @@
-{-# LANGUAGE FlexibleContexts #-}
+module Test.Toml.Parsing.Unit.Text
+    ( textSpecs
+    ) where
 
-module Test.Toml.Parsing.Unit.Text where
-
-import Test.Tasty.Hspec (Spec, context, describe, it)
+import Test.Hspec (Spec, context, describe, it)
 
 import Test.Toml.Parsing.Unit.Common (dquote, dquote3, parseText, squote, squote3, textFailOn)
+
 
 textSpecs :: Spec
 textSpecs = describe "textP" $ do

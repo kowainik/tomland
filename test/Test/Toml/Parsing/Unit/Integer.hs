@@ -1,10 +1,11 @@
-{-# LANGUAGE FlexibleContexts #-}
+module Test.Toml.Parsing.Unit.Integer
+    ( integerSpecs
+    ) where
 
-module Test.Toml.Parsing.Unit.Integer where
-
-import Test.Tasty.Hspec (Spec, context, describe, it)
+import Test.Hspec (Spec, context, describe, it)
 
 import Test.Toml.Parsing.Unit.Common (integerFailOn, parseInteger)
+
 
 integerSpecs :: Spec
 integerSpecs = describe "integerP" $ do

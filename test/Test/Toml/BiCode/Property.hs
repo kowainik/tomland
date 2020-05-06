@@ -1,10 +1,15 @@
-{-# LANGUAGE FlexibleInstances  #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Test.Toml.BiCode.Property where
+{-# LANGUAGE FlexibleInstances #-}
+
+module Test.Toml.BiCode.Property
+    ( biCodePropertySpec
+    ) where
 
 import Control.Applicative (liftA2, (<|>))
 import Control.Category ((>>>))
 import Data.ByteString (ByteString)
+import Data.Char (chr, ord)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
@@ -13,19 +18,21 @@ import Data.Monoid (All (..), Any (..), First (..), Last (..), Product (..), Sum
 import Data.Semigroup ((<>))
 import Data.Set (Set)
 import Data.Text (Text)
-import Data.Char (chr, ord)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 import GHC.Exts (fromList)
 import GHC.Generics (Generic)
 import Hedgehog (Gen, forAll, tripping, (===))
 import Numeric.Natural (Natural)
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it)
+import Test.Hspec.Hedgehog (hedgehog)
 
-import Toml (TomlBiMap, TomlCodec, (.=), genericCodec, HasCodec, hasCodec, HasItemCodec, BiMap, AnyValue, iso, _Int, Key)
+import Toml (AnyValue, BiMap, HasCodec, HasItemCodec, Key, TomlBiMap, TomlCodec, genericCodec,
+             hasCodec, iso, (.=), _Int)
 import Toml.Bi.Code (decode, encode)
 
-import Test.Toml.Gen (PropertyTest, genBool, genByteString, genDay, genDouble, genFloat, genHashSet,
-                      genHours, genInt, genIntSet, genInteger, genLByteString, genLocal, genNatural,
-                      genNonEmpty, genString, genText, genWord, genZoned, prop)
+import Test.Toml.Gen (genBool, genByteString, genDay, genDouble, genFloat, genHashSet, genHours,
+                      genInt, genIntSet, genInteger, genLByteString, genLocal, genNatural,
+                      genNonEmpty, genString, genText, genWord, genZoned)
 
 import qualified Data.ByteString.Lazy as L
 import qualified Hedgehog.Gen as Gen
@@ -33,19 +40,25 @@ import qualified Hedgehog.Range as Range
 import qualified Toml
 
 
-test_encodeDecodeProp :: PropertyTest
-test_encodeDecodeProp = prop "decode . encode == id" $ do
+biCodePropertySpec :: Spec
+biCodePropertySpec = describe "BiCode Property tests" $ do
+    encodeDecodeSpec
+    genericCodecRoundtripSpec
+    genericCustomCodecEncodeDecodeSpec
+
+encodeDecodeSpec :: SpecWith (Arg Expectation)
+encodeDecodeSpec = it "decode . encode ≡ id" $ hedgehog $ do
     bigType <- forAll genBigType
     tripping bigType (encode bigTypeCodec) (decode bigTypeCodec)
 
-test_genericCodecRoundtripProp :: PropertyTest
-test_genericCodecRoundtripProp = prop "genericCodecDecode . genericCodecEncode == id" $ do
+genericCodecRoundtripSpec :: SpecWith (Arg Expectation)
+genericCodecRoundtripSpec = it "genericCodecDecode . genericCodecEncode ≡ id" $ hedgehog $ do
     bigType <- forAll genBigType
     tripping bigType (encode bigTypeGenericCodec) (decode bigTypeGenericCodec)
 
-test_genericCustomCodecEncodeDecodeProp :: PropertyTest
-test_genericCustomCodecEncodeDecodeProp =
-    prop "(decode . encode) genericCodec == (decode . encode) customCodec" $ do
+genericCustomCodecEncodeDecodeSpec :: SpecWith (Arg Expectation)
+genericCustomCodecEncodeDecodeSpec =
+    it "(decode . encode) genericCodec ≡ (decode . encode) customCodec" $ hedgehog $ do
         bigType <- forAll genBigType
         decode bigTypeGenericCodec (encode bigTypeGenericCodec bigType) === decode bigTypeCodec (encode bigTypeCodec bigType)
 

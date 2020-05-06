@@ -1,12 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE PatternSynonyms  #-}
+{-# LANGUAGE PatternSynonyms #-}
 
-module Test.Toml.Parsing.Unit.Key where
+module Test.Toml.Parsing.Unit.Key
+    ( keySpecs
+    ) where
 
-import Test.Tasty.Hspec (Spec, context, describe, it)
+import Test.Hspec (Spec, context, describe, it, xit)
 import Toml.PrefixTree (pattern (:||))
 
 import Test.Toml.Parsing.Unit.Common (dquote, parseKey, squote)
+
 
 keySpecs :: Spec
 keySpecs = describe "keyP" $ do
@@ -31,5 +33,5 @@ keySpecs = describe "keyP" $ do
             parseKey "physical.color" "physical.color"
             parseKey "physical.shape" "physical.shape"
             parseKey "site.\"google.com\"" ("site" :|| ["\"google.com\""])
-        -- it "ignores whitespaces around dot-separated parts" $ do
-        --     parseKey "a . b . c. d" (makeKey ["a", "b", "c", "d"])
+        xit "ignores whitespaces around dot-separated parts" $
+            parseKey "a . b . c. d" ("a" :|| ["b", "c", "d"])

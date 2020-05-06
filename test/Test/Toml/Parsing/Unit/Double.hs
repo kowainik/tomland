@@ -1,14 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
+module Test.Toml.Parsing.Unit.Double
+    (doubleSpecs
+    ) where
 
-module Test.Toml.Parsing.Unit.Double where
-
+import Test.Hspec (Spec, describe, it)
 import Test.Hspec.Megaparsec (parseSatisfies)
-import Test.Tasty.Hspec (Spec, describe, it)
 import Text.Megaparsec (parse)
 
+import Test.Toml.Parsing.Unit.Common (doubleFailOn, parseDouble)
 import Toml.Parser.Value (doubleP)
 
-import Test.Toml.Parsing.Unit.Common (doubleFailOn, parseDouble)
 
 doubleSpecs :: Spec
 doubleSpecs = describe "doubleP" $ do
