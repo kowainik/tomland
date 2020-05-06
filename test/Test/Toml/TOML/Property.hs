@@ -1,15 +1,17 @@
-module Test.Toml.TOML.Property where
+{- | Property tests on laws for @TOML@ data type.
+-}
+module Test.Toml.TOML.Property
+    ( tomlLawsSpec
+    ) where
 
-import Test.Toml.Gen (PropertyTest, genToml)
-import Test.Toml.Property (assocLaw, identityLaw)
+import Test.Hspec (Spec, describe)
+
+import Test.Toml.Gen (genToml)
+import Test.Toml.Property (assocSemigroup, leftIdentityMonoid, rightIdentityMonoid)
 
 
-----------------------------------------------------------------------------
--- Laws
-----------------------------------------------------------------------------
-
-test_TomlAssocLaw :: PropertyTest
-test_TomlAssocLaw = assocLaw genToml
-
-test_TomlIdentityLaw :: PropertyTest
-test_TomlIdentityLaw = identityLaw genToml
+tomlLawsSpec :: Spec
+tomlLawsSpec = describe "TOML laws" $ do
+    assocSemigroup genToml
+    rightIdentityMonoid genToml
+    leftIdentityMonoid genToml

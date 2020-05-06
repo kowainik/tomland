@@ -1,6 +1,8 @@
-module Test.Toml.Parsing.Unit where
+module Test.Toml.Parsing.Unit
+    ( parsingUnitSpec
+    ) where
 
-import Test.Tasty.Hspec (Spec)
+import Test.Hspec (Spec, describe)
 
 import Test.Toml.Parsing.Unit.Array (arraySpecs)
 import Test.Toml.Parsing.Unit.Bool (boolSpecs)
@@ -11,8 +13,9 @@ import Test.Toml.Parsing.Unit.Key (keySpecs)
 import Test.Toml.Parsing.Unit.Text (textSpecs)
 import Test.Toml.Parsing.Unit.Toml (tomlSpecs)
 
-spec_Parser :: Spec
-spec_Parser = do
+
+parsingUnitSpec :: Spec
+parsingUnitSpec = describe "Parser Unit tests" $ do
     arraySpecs
     boolSpecs
     dateSpecs

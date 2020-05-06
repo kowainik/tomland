@@ -1,22 +1,23 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE PatternSynonyms  #-}
+{-# LANGUAGE PatternSynonyms #-}
 
-module Test.Toml.Parsing.Unit.Toml where
+module Test.Toml.Parsing.Unit.Toml
+    ( tomlSpecs
+    ) where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Semigroup ((<>))
 import Data.Text (Text)
+import Test.Hspec (Spec, describe, it, xit)
 
-import Test.Tasty.Hspec (Spec, describe, it)
-
+import Test.Toml.Parsing.Unit.Common (day2, failOn, parseToml, tomlFailOn)
 import Toml.Edsl (empty, mkToml, table, tableArray, (=:))
+import Toml.Parser.Item (keyValP)
 import Toml.PrefixTree (pattern (:||))
 import Toml.Type (TOML (..), Value (..))
 
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 
-import Test.Toml.Parsing.Unit.Common (day2, parseToml, tomlFailOn)
 
 tomlSpecs :: Spec
 tomlSpecs = do
@@ -35,10 +36,10 @@ tomlSpecs = do
             parseToml "x    =1"   toml
             parseToml "x\t= 1 "   toml
             parseToml "\"x\" = 1" $ mkToml ("\"x\"" =: 1)
-        --xit "fails if the key, equals sign, and value are not on the same line" $ do
-        --  keyValFailOn "x\n=\n1"
-        --  keyValFailOn "x=\n1"
-        --  keyValFailOn "\"x\"\n=\n1"
+        xit "fails if the key, equals sign, and value are not on the same line" $ do
+            failOn keyValP "x\n=\n1"
+            failOn keyValP "x=\n1"
+            failOn keyValP "\"x\"\n=\n1"
         it "works if the value is broken over multiple lines" $
             parseToml "x=[1, \n2\n]" $ mkToml ("x" =: Array [1, 2])
         it "fails if the value is not specified" $

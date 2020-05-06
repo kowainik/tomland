@@ -8,13 +8,9 @@
 -- | This module contains all generators for @tomland@ testing.
 
 module Test.Toml.Gen
-       ( -- * Property
-         PropertyTest
-       , prop
-
-         -- * Generators
+       ( -- * Generators
          -- ** Primitive
-       , genInt
+         genInt
        , genInteger
        , genDouble
        , genWord
@@ -55,8 +51,8 @@ import Control.Applicative (liftA2)
 import Control.Monad (forM, replicateM)
 import Data.ByteString (ByteString)
 import Data.Fixed (Fixed (..))
-import Data.Functor.Identity (Identity)
 import Data.Hashable (Hashable)
+import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
@@ -65,11 +61,8 @@ import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGrego
                   minutesToTimeZone)
 import Data.Word (Word8)
 import GHC.Exts (fromList)
-import GHC.Stack (HasCallStack)
-import Hedgehog (Gen, GenBase, MonadGen, PropertyT, Range, property)
+import Hedgehog (Gen, Range)
 import Numeric.Natural (Natural)
-import Test.Tasty (TestName, TestTree)
-import Test.Tasty.Hedgehog (testProperty)
 
 import Toml.Bi.Map (toMArray)
 import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..))
@@ -84,14 +77,6 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import qualified Toml.PrefixTree as Toml (fromList)
 
-----------------------------------------------------------------------------
--- Property test creator
-----------------------------------------------------------------------------
-
-type PropertyTest = [TestTree]
-
-prop :: HasCallStack => TestName -> PropertyT IO () -> [TestTree]
-prop testName = pure . testProperty testName . property
 
 ----------------------------------------------------------------------------
 -- Common generators
@@ -101,51 +86,51 @@ prop testName = pure . testProperty testName . property
 
 type V = Int
 
-genVal :: MonadGen m => m V
+genVal :: Gen V
 genVal = Gen.int (Range.constant 0 256)
 
 -- | Generates random value of 'AnyValue' type.
-genAnyValue :: (MonadGen m, GenBase m ~ Identity) => m AnyValue
+genAnyValue :: Gen AnyValue
 genAnyValue = Gen.choice $
     (AnyValue <$> genArray) : noneArrayList
 
 -- | Generate either a bare piece, or a quoted piece
-genPiece :: forall m . (MonadGen m, GenBase m ~ Identity) => m Piece
+genPiece :: Gen Piece
 genPiece = Piece <$> Gen.choice [bare, quoted]
   where
-    alphadashes :: m Char
+    bare :: Gen Text
+    bare = Gen.text (Range.constant 1 10) alphadashes
+
+    alphadashes :: Gen Char
     alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
 
-    notControl :: m Char
-    notControl = Gen.filter (not . Char.isControl) Gen.unicode
+    quoted :: Gen Text
+    quoted = genNotEscape $ Gen.choice [quotedWith '"', quotedWith '\'']
 
-    bare :: m Text
-    bare = Gen.text (Range.constant 1 10) alphadashes
+    quotedWith :: Char -> Gen Text
+    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) notControl
+      where
+        notControl :: Gen Char
+        notControl = Gen.filter (\x -> x /= c && not (Char.isControl x)) Gen.unicode
 
     wrapChar :: Char -> Text -> Text
     wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
 
-    quotedWith :: Char -> m Text
-    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) (Gen.filter (/= c) notControl)
-
-    quoted :: m Text
-    quoted = genNotEscape $ Gen.choice [quotedWith '"', quotedWith '\'']
-
-genKey :: (MonadGen m, GenBase m ~ Identity) => m Key
+genKey :: Gen Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
 
-genKeyAnyValue :: (MonadGen m, GenBase m ~ Identity) => m (Key, AnyValue)
+genKeyAnyValue :: Gen (Key, AnyValue)
 genKeyAnyValue = liftA2 (,) genKey genAnyValue
 
-genKeyAnyValueList :: (MonadGen m, GenBase m ~ Identity) => m [(Key, AnyValue)]
+genKeyAnyValueList :: Gen [(Key, AnyValue)]
 genKeyAnyValueList = Gen.list (Range.linear 0 10) genKeyAnyValue
 
 -- Generates key-value pair for PrefixMap
-genEntry :: (MonadGen m, GenBase m ~ Identity) => m (Piece, Key)
+genEntry :: Gen (Piece, Key)
 genEntry = genKey >>= \case
     key@(piece :|| _) -> pure (piece, key)
 
-genPrefixMap :: (MonadGen m, GenBase m ~ Identity) => m (PrefixMap V)
+genPrefixMap :: Gen (PrefixMap V)
 genPrefixMap = do
     entries <- Gen.list (Range.linear 0 10) genEntry
     kvps    <- forM entries $ \(piece, key) -> do
@@ -154,7 +139,7 @@ genPrefixMap = do
 
     pure $ fromList kvps
 
-genPrefixTree :: forall m . (MonadGen m, GenBase m ~ Identity) => Key -> m (PrefixTree V)
+genPrefixTree :: Key -> Gen (PrefixTree V)
 genPrefixTree key = Gen.recursive
     -- list picker generator combinator
     Gen.choice
@@ -163,7 +148,7 @@ genPrefixTree key = Gen.recursive
     -- recursive generators
     [ genPrefixMap >>= genBranch ]
   where
-    genBranch :: PrefixMap V -> m (PrefixTree V)
+    genBranch :: PrefixMap V -> Gen (PrefixTree V)
     genBranch prefMap = do
         prefVal <- Gen.maybe genVal
         pure $ Branch key prefVal prefMap
@@ -171,44 +156,48 @@ genPrefixTree key = Gen.recursive
 makeToml :: [(Key, AnyValue)] -> TOML
 makeToml kv = TOML (fromList kv) mempty mempty
 
-genToml :: (MonadGen m, GenBase m ~ Identity) => m TOML
+genToml :: Gen TOML
 genToml = Gen.recursive
-            Gen.choice
-            [ makeToml <$> genKeyAnyValueList ]
-            [ TOML <$> keyValues <*> tables <*> arrays ]
+    Gen.choice
+    [ makeToml <$> genKeyAnyValueList ]
+    [ TOML <$> keyValues <*> tables <*> arrays ]
   where
+    keyValues :: Gen (HashMap Key AnyValue)
     keyValues = fromList <$> genKeyAnyValueList
+
+    tables :: Gen (PrefixMap TOML)
     tables = fmap Toml.fromList
-             $ Gen.list (Range.linear 0 5)
-             $ (,) <$> genKey <*> genToml
-    arrays = fmap fromList $
-             Gen.list (Range.linear 0 10) $ do
-               key <- genKey
-               arr <- Gen.list (Range.linear 1 10) genToml
-               return (key, NE.fromList arr)
+        $ Gen.list (Range.linear 0 5)
+        $ (,) <$> genKey <*> genToml
+
+    arrays :: Gen (HashMap Key (NonEmpty TOML))
+    arrays = fmap fromList $ Gen.list (Range.linear 0 10) $ do
+        key <- genKey
+        arr <- Gen.list (Range.linear 1 10) genToml
+        pure (key, NE.fromList arr)
 
 -- Date generators
 
-genDay :: MonadGen m => m Day
+genDay :: Gen Day
 genDay = do
     y <- toInteger <$> Gen.int (Range.constant 1968 2019)
     m <- Gen.int (Range.constant 1 12)
     d <- Gen.int (Range.constant 1 28)
     pure $ fromGregorian y m d
 
-genHours :: MonadGen m => m TimeOfDay
+genHours :: Gen TimeOfDay
 genHours = do
     secs <- MkFixed <$> Gen.integral (Range.constant 0 61)
     mins <- Gen.int (Range.constant 0 59)
     hours <- Gen.int (Range.constant 0 23)
     pure $ TimeOfDay hours mins secs
 
-genLocal :: MonadGen m => m LocalTime
+genLocal :: Gen LocalTime
 genLocal = do
     day <- genDay
     LocalTime day <$> genHours
 
-genZoned :: MonadGen m => m ZonedTime
+genZoned :: Gen ZonedTime
 genZoned = do
     local <- genLocal
     zMin <- Gen.int (Range.constant (-720) 720)
@@ -220,13 +209,13 @@ genZoned = do
 range100 :: Range Int
 range100 = Range.constant 0 100
 
-genInt :: MonadGen m => m Int
+genInt :: Gen Int
 genInt = Gen.int Range.constantBounded
 
-genInteger :: MonadGen m => m Integer
+genInteger :: Gen Integer
 genInteger = toInteger <$> genInt
 
-genDouble :: MonadGen m => m Double
+genDouble :: Gen Double
 genDouble = Gen.frequency
     [ (10, Gen.double $ Range.constant @Double (-1000000.0) 1000000.0)
     , (1, Gen.constant $ 1/0)
@@ -234,16 +223,16 @@ genDouble = Gen.frequency
     , (1, Gen.constant $ 0/0)
     ]
 
-genWord :: MonadGen m => m Word
+genWord :: Gen Word
 genWord = Gen.word Range.constantBounded
 
-genWord8 :: MonadGen m => m Word8
+genWord8 :: Gen Word8
 genWord8 = Gen.word8 Range.constantBounded
 
-genNatural :: MonadGen m => m Natural
+genNatural :: Gen Natural
 genNatural = fromIntegral <$> genWord
 
-genFloat :: MonadGen m => m Float
+genFloat :: Gen Float
 genFloat = Gen.float (Range.constant (-10000.0) 10000.0)
 
 genHashSet :: (Eq a, Hashable a) => Gen a -> Gen (HashSet a)
@@ -258,16 +247,16 @@ genList = Gen.list range100
 genIntSet :: Gen IntSet
 genIntSet = fromList <$> genList genInt
 
-genBool :: MonadGen m => m Bool
+genBool :: Gen Bool
 genBool = Gen.bool
 
 -- | Generatates control sympol.
-genEscapeSequence :: MonadGen m => m Text
+genEscapeSequence :: Gen Text
 genEscapeSequence = Gen.element
     [ "\n", "\b", "\f", "\r", "\t", "\\", "\"" ]
 
 -- | Generatates punctuation.
-genPunctuation :: MonadGen m => m Text
+genPunctuation :: Gen Text
 genPunctuation = Gen.element
     [ ",", ".", ":", ";", "'", "?", "!", "`"
     , "-", "_", "*", "$", "#", "@", "(", ")"
@@ -275,23 +264,23 @@ genPunctuation = Gen.element
     ]
 
 -- | Generatates n length list of hex chars.
-genDiffHex :: MonadGen m => Int -> m String
+genDiffHex :: Int -> Gen String
 genDiffHex n = replicateM n Gen.hexit
 
 -- | Generates unicode color string (u1234)
-genUniHex4Color :: MonadGen m => m Text
+genUniHex4Color :: Gen Text
 genUniHex4Color = do
     hex <- genDiffHex 4
     pure . Text.pack $ "\\u" ++ hex
 
 -- | Generates unicode color string (u12345678)
-genUniHex8Color :: MonadGen m => m Text
+genUniHex8Color :: Gen Text
 genUniHex8Color = do
     hex <- genDiffHex 8
     pure . Text.pack $ "\\U" ++ hex
 
 -- | Generates text from different symbols.
-genText :: MonadGen m => m Text
+genText :: Gen Text
 genText = genNotEscape $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
     [ Text.singleton <$> Gen.alphaNum
     , genEscapeSequence
@@ -313,7 +302,7 @@ genLText :: Gen L.Text
 genLText = L.fromStrict <$> genText
 
 -- | List of AnyValue generators.
-noneArrayList :: MonadGen m => [m AnyValue]
+noneArrayList :: [Gen AnyValue]
 noneArrayList =
     [ AnyValue . Bool    <$> genBool
     , AnyValue . Integer <$> genInteger
@@ -325,7 +314,7 @@ noneArrayList =
     , AnyValue . Hours   <$> genHours
     ]
 
-genArrayFrom :: MonadGen m => m AnyValue -> m (Value 'TArray)
+genArrayFrom :: Gen AnyValue -> Gen (Value 'TArray)
 genArrayFrom noneArray = do
     eVal <- toMArray <$> Gen.list (Range.constant 0 5) noneArray
     case eVal of
@@ -333,12 +322,30 @@ genArrayFrom noneArray = do
         Right val -> pure val
 
 {- | Generate arrays and nested arrays. For example:
+
 Common array:
-Array [Double (-563397.0197456297),Double (-308866.62837749254),Double (-29555.32072604308),Double 772371.8575471763,Double (-880016.1210667372),Double 182763.78796234122,Double (-462893.41157520143),Double 814856.6483699235,Double (-454629.17640282493)]
+
+@
+Array
+    [ Double (-5.7)
+    , Double (-6.4)
+    , Double 1.3
+    ]
+@
+
 Nested array of AnyValue:
-Array [Array [Text "ACyz38VcLz0hxwdFkHTU6PYK8h8CeaiEpI2xAaiZTKBQ3zC1W717cZY35lk8EAK6pPw3WvwIdNktxIV2LrvFSpU8ee6zkXvpvePitW9aspAeeOCF9Q9ry20y7skFZ2qShi7CSx8888zWIqyc8iBkoLNvq4fONLtuUqSw2SlNee4hDIwrnx5O4RuHW1dQfJcnC34h9S0DlIGYP08qq6QHxO4E0HE74cNmiViGm3xpDC8Ro5D8Y6p0FLSN1ELq9Lwm",Text "HhNv0LKICdlKxN"],Array [Integer 986479839551009895,Integer 8636972066308796678,Integer (-3464941350081979804),Integer (-6560688879547055621),Integer (-4749037439349044738)],Array []]
+
+@
+Array
+    [ Array
+        [ Text "AH",Text "HA"]
+        , Array [Integer 9,Integer (-3)]
+        , Array []
+        ]
+    ]
+@
 -}
-genArray :: (MonadGen m, GenBase m ~ Identity) => m (Value 'TArray)
+genArray :: Gen (Value 'TArray)
 genArray = Gen.recursive Gen.choice
     [Gen.choice $ map genArrayFrom noneArrayList]
     [Array <$> Gen.list (Range.constant 0 5) genArray]
@@ -346,7 +353,7 @@ genArray = Gen.recursive Gen.choice
 -- filters
 
 -- | Discards strings that end with \
-genNotEscape :: MonadGen m => m Text -> m Text
+genNotEscape :: Gen Text -> Gen Text
 genNotEscape gen = gen >>= \t ->
     if | Text.null t -> pure t
        | Text.last t == '\\' -> Gen.discard

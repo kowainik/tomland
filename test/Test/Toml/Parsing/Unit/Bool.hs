@@ -1,10 +1,11 @@
-{-# LANGUAGE FlexibleContexts #-}
+module Test.Toml.Parsing.Unit.Bool
+    ( boolSpecs
+    ) where
 
-module Test.Toml.Parsing.Unit.Bool where
-
-import Test.Tasty.Hspec (Spec, describe, it)
+import Test.Hspec (Spec, describe, it)
 
 import Test.Toml.Parsing.Unit.Common (boolFailOn, parseBool)
+
 
 boolSpecs :: Spec
 boolSpecs = describe "boolP" $ do

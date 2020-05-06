@@ -17,6 +17,7 @@ module Toml.Parser.Item
        , setTableName
 
        , tomlP
+       , keyValP
        ) where
 
 import Control.Applicative (liftA2, many)
@@ -90,19 +91,21 @@ tomlItemP = asum
     , TableArrayName <$> tableArrayNameP <?> "array of tables name"
     , keyValP
     ]
-  where
-    -- parser for "key = val" pairs; can be one of three forms:
-    -- 1. key = { ... }
-    -- 2. key = [ {...}, {...}, ... ]
-    -- 3. key = ...
-    keyValP :: Parser TomlItem
-    keyValP = do
-        key <- keyP <* text "="
-        asum
-            [ InlineTable key <$> inlineTableP <?> "inline table"
-            , InlineTableArray key <$> try inlineTableArrayP <?> "inline array of tables"
-            , KeyVal key <$> anyValueP <?> "key-value pair"
-            ]
+
+{- | parser for @"key = val"@ pairs; can be one of three forms:
+
+1. key = { ... }
+2. key = [ {...}, {...}, ... ]
+3. key = ...
+-}
+keyValP :: Parser TomlItem
+keyValP = do
+    key <- keyP <* text "="
+    asum
+        [ InlineTable key <$> inlineTableP <?> "inline table"
+        , InlineTableArray key <$> try inlineTableArrayP <?> "inline array of tables"
+        , KeyVal key <$> anyValueP <?> "key-value pair"
+        ]
 
 -- | Parser for the full content of the .toml file.
 tomlP :: Parser [TomlItem]
