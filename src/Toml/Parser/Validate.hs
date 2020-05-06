@@ -24,7 +24,6 @@ module Toml.Parser.Validate
 
 import Data.Bifunctor (first)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Semigroup ((<>))
 import Data.Tree (Forest, Tree (..))
 
 import Toml.Parser.Item (Table (..), TomlItem (..), setTableName)

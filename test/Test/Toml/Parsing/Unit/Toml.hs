@@ -5,7 +5,6 @@ module Test.Toml.Parsing.Unit.Toml
     ) where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Test.Hspec (Spec, describe, it, xit)
 

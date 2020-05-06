@@ -3,6 +3,14 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## Unreleased
+
+* [#253](https://github.com/kowainik/tomland/issues/253):
+  Support GHC-8.10.1. Move to GHC-8.8.3 from 8.8.1.
+  Drop support of GHC-8.2.2.
+* [#252](https://github.com/kowainik/tomland/issues/252):
+  Move to `hspec-*` family of libraries from `tasty-*`.
+
 ## 1.2.1.0 — Nov 6, 2019
 
 * [#203](https://github.com/kowainik/tomland/issues/203):

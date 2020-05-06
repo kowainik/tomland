@@ -4,7 +4,6 @@ module Test.Toml.Property
        , leftIdentityMonoid
        ) where
 
-import Data.Semigroup (Semigroup ((<>)))
 import Hedgehog (Gen, forAll, (===))
 import Test.Hspec (Arg, Expectation, SpecWith, it)
 import Test.Hspec.Hedgehog (hedgehog)
@@ -34,7 +33,7 @@ x <> mempty ≡ x
 @
 -}
 rightIdentityMonoid
-    :: (Eq a, Show a, Semigroup a, Monoid a)
+    :: (Eq a, Show a, Monoid a)
     => Gen a
     -> SpecWith (Arg Expectation)
 rightIdentityMonoid gen = it "Monoid Right Identity: x <> mempty ≡ x" $ hedgehog $ do
@@ -48,7 +47,7 @@ mempty <> x ≡ x
 @
 -}
 leftIdentityMonoid
-    :: (Eq a, Show a, Semigroup a, Monoid a)
+    :: (Eq a, Show a, Monoid a)
     => Gen a
     -> SpecWith (Arg Expectation)
 leftIdentityMonoid gen = it "Monoid Right Identity: mempty <> x ≡ x" $ hedgehog $ do

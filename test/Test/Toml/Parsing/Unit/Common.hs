@@ -34,7 +34,6 @@ module Test.Toml.Parsing.Unit.Common
        , hours1
        ) where
 
-import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), TimeZone, ZonedTime (..), fromGregorian,
                   minutesToTimeZone)

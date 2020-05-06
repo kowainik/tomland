@@ -20,7 +20,6 @@ import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators (between, count, option, optional, sepBy1, sepEndBy,
                                         skipMany)
 import Data.Fixed (Pico)
-import Data.Semigroup ((<>))
 import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime (..), fromGregorianValid,
                   makeTimeOfDayValid, minutesToTimeZone)
 import Text.Read (readMaybe)

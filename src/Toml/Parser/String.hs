@@ -16,7 +16,6 @@ module Toml.Parser.String
 import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators (count, manyTill, optional)
 import Data.Char (chr, isControl)
-import Data.Semigroup ((<>))
 import Data.Text (Text)
 
 import Toml.Parser.Core (Parser, anySingle, char, eol, hexDigitChar, lexeme, satisfy, space, string,

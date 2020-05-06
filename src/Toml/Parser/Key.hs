@@ -17,7 +17,6 @@ module Toml.Parser.Key
 import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators.NonEmpty (sepBy1)
 import Control.Monad.Combinators (between)
-import Data.Semigroup ((<>))
 import Data.Text (Text)
 
 import Toml.Parser.Core (Parser, alphaNumChar, char, lexeme, text)

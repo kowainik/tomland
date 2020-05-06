@@ -36,7 +36,6 @@ import Control.Monad.State (State, execState)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Bifunctor (first)
 import Data.Foldable (toList)
-import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
