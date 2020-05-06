@@ -19,7 +19,6 @@ module Toml.Type.TOML
 import Control.DeepSeq (NFData)
 import Data.HashMap.Strict (HashMap)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Semigroup (Semigroup (..))
 import GHC.Generics (Generic)
 
 import Toml.PrefixTree (Key (..), PrefixMap)

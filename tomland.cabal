@@ -34,27 +34,25 @@ extra-doc-files:     README.md
                      CHANGELOG.md
 extra-source-files:  test/golden/*.golden
                      test/examples/*.toml
-tested-with:         GHC == 8.2.2
-                     GHC == 8.4.4
+tested-with:         GHC == 8.4.4
                      GHC == 8.6.5
-                     GHC == 8.8.1
+                     GHC == 8.8.3
+                     GHC == 8.10.1
 
 source-repository head
   type:                git
   location:            https://github.com/kowainik/tomland.git
 
 common common-options
-  build-depends:       base >= 4.10 && < 4.14
+  build-depends:       base >= 4.10 && < 4.15
 
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
                        -Wincomplete-uni-patterns
                        -Wincomplete-record-updates
-  if impl(ghc >= 8.0)
-    ghc-options:       -Wredundant-constraints
-  if impl(ghc >= 8.2)
-    ghc-options:       -fhide-source-paths
+                       -Wredundant-constraints
+                       -fhide-source-paths
                        -freverse-errors
   if impl(ghc >= 8.4)
     ghc-options:       -Wmissing-export-lists
@@ -62,6 +60,8 @@ common common-options
   if impl(ghc >= 8.8.1)
     ghc-options:       -Wmissing-deriving-strategies
                        -Werror=missing-deriving-strategies
+  if impl(ghc >= 8.10)
+    ghc-options:       -Wunused-packages
 
   default-language:    Haskell2010
   default-extensions:  DeriveGeneric
@@ -109,7 +109,7 @@ library
                      , mtl ^>= 2.2
                      , parser-combinators >= 1.1.0 && < 1.3
                      , text ^>= 1.2
-                     , time >= 1.8 && < 1.10
+                     , time >= 1.8 && < 1.11
                      , transformers ^>= 0.5
                      , unordered-containers ^>= 0.2.7
 

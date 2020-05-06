@@ -84,7 +84,6 @@ import Data.Bifunctor (bimap, first)
 import Data.ByteString (ByteString)
 import Data.Hashable (Hashable)
 import Data.Map (Map)
-import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Word (Word8)
@@ -94,7 +93,7 @@ import Text.Read (readEither)
 
 import qualified Toml.Parser.Core as P (errorBundlePretty, parse)
 import Toml.Parser.Key (keyP)
-import Toml.PrefixTree (Key (..), Piece (..), keyToText)
+import Toml.PrefixTree (Key (..), keyToText)
 import Toml.Type (AnyValue (..), MatchError (..), TValue (..), Value (..), applyAsToAny, matchBool,
                   matchDay, matchDouble, matchHours, matchInteger, matchLocal, matchText,
                   matchZoned, mkMatchError, toMArray)
