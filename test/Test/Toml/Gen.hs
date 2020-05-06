@@ -99,7 +99,7 @@ genPiece :: Gen Piece
 genPiece = Piece <$> Gen.choice [bare, quoted]
   where
     bare :: Gen Text
-    bare = Gen.text (Range.constant 1 10) alphadashes
+    bare = liftA2 Text.cons Gen.alpha $ Gen.text (Range.constant 1 10) alphadashes
 
     alphadashes :: Gen Char
     alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
