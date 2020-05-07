@@ -140,12 +140,14 @@ import GHC.Generics ((:*:) (..), (:+:), C1, D1, Generic (..), K1 (..), M1 (..), 
 import GHC.TypeLits (ErrorMessage (..), TypeError)
 import Numeric.Natural (Natural)
 
-import Toml.Bi (TomlBiMap, TomlCodec, (.=))
+import Toml.Bi (TomlBiMap)
+import Toml.Codec (TomlCodec, (.=))
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue)
 
 import qualified Data.Text.Lazy as L
 import qualified Toml.Bi as Toml
+import qualified Toml.Codec as Toml
 
 
 {- | Generic codec for arbitrary data types. Uses field names as keys.

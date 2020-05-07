@@ -37,6 +37,7 @@ For the details of the library implementation see blog post:
 
 module Toml
     ( module Toml.Bi
+    , module Toml.Codec
     , module Toml.Generic
     , module Toml.Parser
     , module Toml.PrefixTree
@@ -45,6 +46,7 @@ module Toml
     ) where
 
 import Toml.Bi
+import Toml.Codec
 import Toml.Generic
 import Toml.Parser
 import Toml.PrefixTree
