@@ -1,79 +1,76 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-
 {- |
-Copyright: (c) 2018-2019 Kowainik
+Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Contains TOML-specific combinators for converting between TOML and user data types.
+Contains TOML-specific combinators for converting between TOML and user data
+types.
 -}
 
-module Toml.Bi.Combinators
-       ( -- * Basic codecs for primitive values
-         -- ** Boolean
-         bool
-         -- ** Integral numbers
-       , integer
-       , natural
-       , int
-       , word
-       , word8
-         -- ** Floating point numbers
-       , double
-       , float
-         -- ** Text types
-       , text
-       , lazyText
-       , byteString
-       , lazyByteString
-       , byteStringArray
-       , lazyByteStringArray
-       , string
-         -- ** Time types
-       , zonedTime
-       , localTime
-       , day
-       , timeOfDay
+module Toml.Codec.Combinators
+    ( -- * Basic codecs for primitive values
+      -- ** Boolean
+      bool
+      -- ** Integral numbers
+    , integer
+    , natural
+    , int
+    , word
+    , word8
+      -- ** Floating point numbers
+    , double
+    , float
+      -- ** Text types
+    , text
+    , lazyText
+    , byteString
+    , lazyByteString
+    , byteStringArray
+    , lazyByteStringArray
+    , string
+      -- ** Time types
+    , zonedTime
+    , localTime
+    , day
+    , timeOfDay
 
-         -- * Codecs for containers of primitives
-       , arrayOf
-       , arraySetOf
-       , arrayIntSet
-       , arrayHashSetOf
-       , arrayNonEmptyOf
+      -- * Codecs for containers of primitives
+    , arrayOf
+    , arraySetOf
+    , arrayIntSet
+    , arrayHashSetOf
+    , arrayNonEmptyOf
 
-         -- * Codecs for 'Monoid's
-         -- ** Bool wrappers
-       , all
-       , any
-         -- ** 'Num' wrappers
-       , sum
-       , product
-         -- ** 'Maybe' wrappers
-       , first
-       , last
+      -- * Codecs for 'Monoid's
+      -- ** Bool wrappers
+    , all
+    , any
+      -- ** 'Num' wrappers
+    , sum
+    , product
+      -- ** 'Maybe' wrappers
+    , first
+    , last
 
-         -- * Additional codecs for custom types
-       , textBy
-       , read
-       , enumBounded
+      -- * Additional codecs for custom types
+    , textBy
+    , read
+    , enumBounded
 
-         -- * Combinators for tables
-       , table
-       , nonEmpty
-       , list
-       , set
-       , hashSet
+      -- * Combinators for tables
+    , table
+    , nonEmpty
+    , list
+    , set
+    , hashSet
 
-         -- * Combinators for Maps
-       , map
-       , tableMapCodec
+      -- * Combinators for Maps
+    , map
+    , tableMapCodec
 
-         -- * General construction of codecs
-       , match
-       ) where
+      -- * General construction of codecs
+    , match
+    ) where
 
 import Prelude hiding (all, any, last, map, product, read, sum)
 
@@ -96,12 +93,14 @@ import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Word (Word8)
 import Numeric.Natural (Natural)
 
-import Toml.Bi.Code (DecodeException (..), Env, St, TomlCodec, execTomlCodec)
 import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _ByteStringArray, _Day,
                     _Double, _EnumBounded, _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString,
                     _LByteStringArray, _LText, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
                     _String, _Text, _TextBy, _TimeOfDay, _Word, _Word8, _ZonedTime)
-import Toml.Bi.Monad (Codec (..), dimap, dioptional)
+import Toml.Codec.Code (execTomlCodec)
+import Toml.Codec.Di (dimap, dioptional)
+import Toml.Codec.Error (TomlDecodeError (..))
+import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
 import Toml.PrefixTree (Key)
 import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
@@ -133,7 +132,7 @@ myType = 'match' _MyType
 match :: forall a . TomlBiMap a AnyValue -> Key -> TomlCodec a
 match BiMap{..} key = Codec input output
   where
-    input :: Env a
+    input :: TomlEnv a
     input = do
         mVal <- asks $ HashMap.lookup key . tomlPairs
         case mVal of
@@ -142,7 +141,7 @@ match BiMap{..} key = Codec input output
                 Right v  -> pure v
                 Left err -> throwError $ BiMapError err
 
-    output :: a -> St a
+    output :: a -> TomlState a
     output a = do
         anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward a
         a <$ modify (insertKeyAnyVal key anyVal)
@@ -367,7 +366,7 @@ last codec = dimap getLast Last . dioptional . codec
 give better error messages. So when error happens we know all pieces of table
 key, not only the last one.
 -}
-handleErrorInTable :: Key -> DecodeException -> Env a
+handleErrorInTable :: Key -> TomlDecodeError -> TomlEnv a
 handleErrorInTable key = \case
     KeyNotFound name        -> throwError $ KeyNotFound (key <> name)
     TableNotFound name      -> throwError $ TableNotFound (key <> name)
@@ -375,21 +374,21 @@ handleErrorInTable key = \case
     e                       -> throwError e
 
 -- | Run 'codecRead' function with given 'TOML' inside 'Control.Monad.Reader.ReaderT' context.
-codecReadTOML :: TOML -> TomlCodec a -> Env a
+codecReadTOML :: TOML -> TomlCodec a -> TomlEnv a
 codecReadTOML toml codec = local (const toml) (codecRead codec)
 
 -- | Codec for tables. Use it when when you have nested objects.
 table :: forall a . TomlCodec a -> Key -> TomlCodec a
 table codec key = Codec input output
   where
-    input :: Env a
+    input :: TomlEnv a
     input = do
         mTable <- asks $ Prefix.lookup key . tomlTables
         case mTable of
             Nothing   -> throwError $ TableNotFound key
             Just toml -> codecReadTOML toml codec `catchError` handleErrorInTable key
 
-    output :: a -> St a
+    output :: a -> TomlState a
     output a = do
         mTable <- gets $ Prefix.lookup key . tomlTables
         let toml = fromMaybe mempty mTable
@@ -402,7 +401,7 @@ tables.
 nonEmpty :: forall a . TomlCodec a -> Key -> TomlCodec (NonEmpty a)
 nonEmpty codec key = Codec input output
   where
-    input :: Env (NonEmpty a)
+    input :: TomlEnv (NonEmpty a)
     input = do
         mTables <- asks $ HashMap.lookup key . tomlTableArrays
         case mTables of
@@ -411,7 +410,7 @@ nonEmpty codec key = Codec input output
                 codecReadTOML toml codec `catchError` handleErrorInTable key
 
     -- adds all TOML objects to the existing list if there are some
-    output :: NonEmpty a -> St (NonEmpty a)
+    output :: NonEmpty a -> TomlState (NonEmpty a)
     output as = do
         let tomls = fmap (execTomlCodec codec) as
         mTables <- gets $ HashMap.lookup key . tomlTableArrays
@@ -486,7 +485,7 @@ map :: forall k v .
     -> TomlCodec (Map k v)  -- ^ Codec for the 'Map'
 map keyCodec valCodec key = Codec input output
   where
-    input :: Env (Map k v)
+    input :: TomlEnv (Map k v)
     input = do
         mTables <- asks $ HashMap.lookup key . tomlTableArrays
         case mTables of
@@ -496,7 +495,7 @@ map keyCodec valCodec key = Codec input output
                 v <- codecReadTOML toml valCodec
                 pure (k, v)
 
-    output :: Map k v -> St (Map k v)
+    output :: Map k v -> TomlState (Map k v)
     output dict = do
         let tomls = fmap
                 (\(k, v) -> execTomlCodec keyCodec k <> execTomlCodec valCodec v)
@@ -513,6 +512,7 @@ map keyCodec valCodec key = Codec input output
                     insertTableArrays key $ t :| (ts ++ tomls)
 
         dict <$ modify updateAction
+
 -- TODO: add docs and tests
 tableMapCodec
     :: forall key val . Ord key
@@ -522,7 +522,7 @@ tableMapCodec
     -> TomlCodec (Map key val)
 tableMapCodec keyBiMap valBiMap key = Codec input output
   where
-    input :: Env (Map key val)
+    input :: TomlEnv (Map key val)
     input = do
         mTable <- asks $ Prefix.lookup key . tomlTables
         case mTable of
@@ -534,12 +534,12 @@ tableMapCodec keyBiMap valBiMap key = Codec input output
                         Left err -> throwError $ BiMapError err
                     Left err -> throwError $ BiMapError err
 
-    output :: Map key val -> St (Map key val)
+    output :: Map key val -> TomlState (Map key val)
     output dict = do
         newToml <- foldM update mempty (Map.toList dict)
         dict <$ modify (insertTable key newToml)
 
-    update :: TOML -> (key, val) -> St TOML
+    update :: TOML -> (key, val) -> TomlState TOML
     update toml (k, v) = do
         tomlKey <- MaybeT $ pure $ either (const Nothing) Just $ backward keyBiMap k
         anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward valBiMap v

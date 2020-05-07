@@ -10,6 +10,13 @@ The changelog is available [on GitHub][2].
   Drop support of GHC-8.2.2.
 * [#252](https://github.com/kowainik/tomland/issues/252):
   Move to `hspec-*` family of libraries from `tasty-*`.
+* [#263](https://github.com/kowainik/tomland/issues/263):
+  Simplify `Codec` abstraction. Instead of having `Codec r w c a`
+  now it is `Codec TomlEnv TomlState c a`.
+
+  Remove `BiCodec` as it is simple `TomlCodec` with this change.
+* Rename `DecodeException` to `TomlDecodeError`.
+* Add `decodeFileEither` and `encodeToFile` functions.
 
 ## 1.2.1.0 — Nov 6, 2019
 

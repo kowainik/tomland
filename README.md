@@ -145,9 +145,8 @@ everything is okay.
 ```haskell
 main :: IO ()
 main = do
-    tomlExample <- TIO.readFile "examples/readme.toml"
-    let res = Toml.decode settingsCodec tomlExample
-    case res of
+    tomlRes <- Toml.decodeFileEither settingsCodec "examples/readme.toml"
+    case tomlRes of
         Left err -> print err
         Right settings -> TIO.putStrLn $ Toml.encode settingsCodec settings
 ```

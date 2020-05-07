@@ -27,7 +27,7 @@ import Test.Hspec.Hedgehog (hedgehog)
 
 import Toml (AnyValue, BiMap, HasCodec, HasItemCodec, Key, TomlBiMap, TomlCodec, genericCodec,
              hasCodec, iso, (.=), _Int)
-import Toml.Bi.Code (decode, encode)
+import Toml.Codec.Code (decode, encode)
 
 import Test.Toml.Gen (genBool, genByteString, genDay, genDouble, genFloat, genHashSet, genHours,
                       genInt, genIntSet, genInteger, genLByteString, genLocal, genNatural,
