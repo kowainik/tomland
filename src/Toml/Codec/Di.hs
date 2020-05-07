@@ -97,8 +97,8 @@ exampleCodec = Example
 @
 -}
 dioptional
-    :: Codec inC out
-    -> Codec (Maybe inC) (Maybe out)
+    :: TomlCodec a
+    -> TomlCodec (Maybe a)
 dioptional Codec{..} = Codec
     { codecRead  = optional codecRead
     , codecWrite = traverse codecWrite
@@ -167,10 +167,10 @@ exampleCodec =
 @since 1.2.0.0
 -}
 dimatch
-    :: (inC -> Maybe inD)  -- ^ Mapper for consumer
-    -> (outA -> outB)      -- ^ Mapper for producer
-    -> Codec inD outA  -- ^ Source 'Codec' object
-    -> Codec inC outB  -- ^ Target 'Codec' object
+    :: (b -> Maybe a)  -- ^ Mapper for consumer
+    -> (a -> b)     -- ^ Mapper for producer
+    -> TomlCodec a  -- ^ Source 'Codec' object
+    -> TomlCodec b  -- ^ Target 'Codec' object
 dimatch match ctor codec = Codec
     { codecRead = ctor <$> codecRead codec
     , codecWrite = \c -> case match c of
