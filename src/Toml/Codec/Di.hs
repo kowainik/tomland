@@ -67,10 +67,10 @@ exampleCodec = Example
 @
 -}
 dimap
-    :: (inC -> inD)    -- ^ Mapper for consumer
-    -> (outA -> outB)  -- ^ Mapper for producer
-    -> Codec inD outA  -- ^ Source 'Codec' object
-    -> Codec inC outB  -- ^ Target 'Codec' object
+    :: (b -> a)    -- ^ Mapper for consumer
+    -> (a -> b)  -- ^ Mapper for producer
+    -> TomlCodec a  -- ^ Source 'Codec' object
+    -> TomlCodec b  -- ^ Target 'Codec' object
 dimap f g codec = Codec
     { codecRead  = g <$> codecRead codec
     , codecWrite = fmap g . codecWrite codec . f

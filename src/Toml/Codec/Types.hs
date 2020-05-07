@@ -47,8 +47,8 @@ type TomlCodec a = Codec a a
 
 {- | Monad for bidirectional conversion. Contains pair of functions:
 
-1. How to read value of type @a@ from immutable environment context ('TomlEnv')?
-2. How to store value of type @a@ in stateful context ('TomlState')?
+1. How to read value of type @outT@ from immutable environment context ('TomlEnv')?
+2. How to store a value of type @inT@ in stateful context ('TomlState') and return a value of type @outT@?
 
 This approach with the bunch of utility functions allows to
 have single description for from/to @TOML@ conversion.
@@ -59,7 +59,7 @@ In practice this type will always be used in the following way:
 type 'TomlCodec' a = 'Codec' a a
 @
 
-Type parameter @c@ if fictional. Here some trick is used. This trick is
+Type parameter @inT@ if fictional. Here some trick is used. This trick is
 implemented in the [codec](http://hackage.haskell.org/package/codec) package and
 described in more details in related blog post:
 <https://blog.poisson.chat/posts/2016-10-12-bidirectional-serialization.html>.
