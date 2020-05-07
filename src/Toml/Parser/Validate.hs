@@ -149,6 +149,7 @@ validateItemForest = go mempty
         -- ignore subforest here
         InlineTable key table -> do
             HashMap.lookup key tomlPairs `errorOnJust` SameNameKeyTable key
+            HashMap.lookup key tomlTableArrays `errorOnJust` SameNameTableArray key
             PrefixMap.lookup key tomlTables `errorOnJust` DuplicateTable key
             tableToml <- createTomlFromTable table
             go (insertTable key tableToml toml) nodes
@@ -161,6 +162,7 @@ validateItemForest = go mempty
 
         TableName key -> do
             HashMap.lookup key tomlPairs `errorOnJust` SameNameKeyTable key
+            HashMap.lookup key tomlTableArrays `errorOnJust` SameNameTableArray key
             PrefixMap.lookup key tomlTables `errorOnJust` DuplicateTable key
             subTable <- go mempty (subForest node)
             go (insertTable key subTable toml) nodes
