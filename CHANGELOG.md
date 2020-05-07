@@ -17,6 +17,8 @@ The changelog is available [on GitHub][2].
   Remove `BiCodec` as it is simple `TomlCodec` with this change.
 * Rename `DecodeException` to `TomlDecodeError`.
 * Add `decodeFileEither` and `encodeToFile` functions.
+* [#218](https://github.com/kowainik/tomland/issues/218):
+  Add tests for TOML validation.
 
 ## 1.2.1.0 — Nov 6, 2019
 

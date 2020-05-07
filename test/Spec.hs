@@ -8,6 +8,7 @@ import Test.Toml.BiMap.Property (biMapPropertySpec)
 import Test.Toml.Parsing.Examples (parsingExamplesSpec)
 import Test.Toml.Parsing.Property (parsingPropertySpec)
 import Test.Toml.Parsing.Unit (parsingUnitSpec)
+import Test.Toml.Parsing.Validation (parsingValidationSpec)
 import Test.Toml.PrefixTree.Property (prefixTreePropertySpec)
 import Test.Toml.PrefixTree.Unit (prefixTreeUnitSpec)
 import Test.Toml.Printer.Golden (prettyPrinterGoldenSpec)
@@ -27,6 +28,7 @@ main = hspec $ modifyMaxDiscardRatio (+ 90) $ do
     parsingExamplesSpec
     parsingPropertySpec
     parsingUnitSpec
+    parsingValidationSpec
     -- prefix tree
     prefixTreePropertySpec
     prefixTreeUnitSpec

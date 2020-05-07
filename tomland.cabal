@@ -164,6 +164,7 @@ test-suite tomland-test
                          Test.Toml.Parsing.Unit.Key
                          Test.Toml.Parsing.Unit.Text
                          Test.Toml.Parsing.Unit.Toml
+                       Test.Toml.Parsing.Validation
                        Test.Toml.PrefixTree.Property
                        Test.Toml.PrefixTree.Unit
                        Test.Toml.Printer.Golden
