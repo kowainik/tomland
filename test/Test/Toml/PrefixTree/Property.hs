@@ -2,6 +2,7 @@ module Test.Toml.PrefixTree.Property
     ( prefixTreePropertySpec
     ) where
 
+import Data.String (IsString (..))
 import Hedgehog (forAll, tripping, (===))
 import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it)
 import Test.Hspec.Hedgehog (hedgehog)
@@ -9,11 +10,9 @@ import Test.Hspec.Hedgehog (hedgehog)
 import Test.Toml.Gen (genKey, genPrefixMap, genVal)
 import Test.Toml.Property (assocSemigroup, leftIdentityMonoid, rightIdentityMonoid)
 
-import Data.String (IsString (..))
-
 import qualified Data.Text as Text
-import qualified Toml.PrefixTree as Prefix
-import qualified Toml.Printer as Printer
+import qualified Toml.Type.PrefixTree as Prefix
+import qualified Toml.Type.Printer as Printer
 
 
 prefixTreePropertySpec :: Spec

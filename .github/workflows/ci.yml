@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        cabal: ["3.0"]
+        cabal: ["3.2"]
         ghc:
           - "8.4.4"
           - "8.6.5"
@@ -53,11 +53,11 @@ jobs:
     - name: Build
       run: |
         cabal update
-        cabal build --enable-tests --enable-benchmarks --write-ghc-environment-files=always
+        cabal build all --enable-tests --enable-benchmarks --write-ghc-environment-files=always
 
     - name: Test
       run: |
-        cabal test --enable-tests
+        cabal test all --enable-tests --test-show-details=direct
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}

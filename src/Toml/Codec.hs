@@ -17,12 +17,18 @@ module Toml.Codec
     , module Toml.Codec.Di
       -- $combinators
     , module Toml.Codec.Combinators
+      -- $generic
+    , module Toml.Codec.Generic
+      -- $bimap
+    , module Toml.Codec.BiMap
     ) where
 
+import Toml.Codec.BiMap
 import Toml.Codec.Code
 import Toml.Codec.Combinators
 import Toml.Codec.Di
 import Toml.Codec.Error
+import Toml.Codec.Generic
 import Toml.Codec.Types
 
 {- $types
@@ -46,4 +52,13 @@ Forward and backward mapping functions and combinators (similar to profunctors).
 {- $combinators
 Contains TOML-specific combinators and codecs for converting between TOML and
 user data types.
+-}
+
+{- $generic
+Automatic TOML codecs using 'GHC.Generics.Generic'.
+-}
+
+{- $bimap
+Partial bidirectional conversion between TOML primitives and Haskell
+values.
 -}

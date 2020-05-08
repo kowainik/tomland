@@ -93,16 +93,18 @@ import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Word (Word8)
 import Numeric.Natural (Natural)
 
-import Toml.Bi.Map (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _ByteStringArray, _Day,
-                    _Double, _EnumBounded, _Float, _HashSet, _Int, _IntSet, _Integer, _LByteString,
-                    _LByteStringArray, _LText, _LocalTime, _Natural, _NonEmpty, _Read, _Set,
-                    _String, _Text, _TextBy, _TimeOfDay, _Word, _Word8, _ZonedTime)
+import Toml.Codec.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _ByteStringArray, _Day,
+                         _Double, _EnumBounded, _Float, _HashSet, _Int, _IntSet, _Integer,
+                         _LByteString, _LByteStringArray, _LText, _LocalTime, _Natural, _NonEmpty,
+                         _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _Word8,
+                         _ZonedTime)
 import Toml.Codec.Code (execTomlCodec)
 import Toml.Codec.Di (dimap, dioptional)
 import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
-import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue (..), TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
+import Toml.Type.AnyValue (AnyValue (..))
+import Toml.Type.Key (Key)
+import Toml.Type.TOML (TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HashMap
@@ -111,7 +113,8 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import qualified Data.Text.Lazy as L
-import qualified Toml.PrefixTree as Prefix
+
+import qualified Toml.Type.PrefixTree as Prefix
 
 
 {- | General function to create bidirectional converters for key-value pairs. In

@@ -64,9 +64,12 @@ import GHC.Exts (fromList)
 import Hedgehog (Gen, Range)
 import Numeric.Natural (Natural)
 
-import Toml.Bi.Map (toMArray)
-import Toml.PrefixTree (pattern (:||), Key (..), Piece (..), PrefixMap, PrefixTree (..))
-import Toml.Type (AnyValue (..), TOML (..), TValue (..), Value (..))
+import Toml.Codec.BiMap (toMArray)
+import Toml.Type.AnyValue (AnyValue (..))
+import Toml.Type.Key (pattern (:||), Key (..), Piece (..))
+import Toml.Type.PrefixTree (PrefixMap, PrefixTree (..))
+import Toml.Type.TOML (TOML (..))
+import Toml.Type.Value (TValue (..), Value (..))
 
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Char as Char
@@ -75,7 +78,8 @@ import qualified Data.Text as Text
 import qualified Data.Text.Lazy as L
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import qualified Toml.PrefixTree as Toml (fromList)
+
+import qualified Toml.Type.PrefixTree as Toml (fromList)
 
 
 ----------------------------------------------------------------------------

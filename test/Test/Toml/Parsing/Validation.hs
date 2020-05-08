@@ -11,9 +11,10 @@ import Text.Megaparsec (parse)
 import Test.Toml.Gen (genToml)
 import Toml.Parser.Item (Table (..), TomlItem (..), tomlP)
 import Toml.Parser.Validate (ValidationError (..), validateItems)
-import Toml.PrefixTree (Key)
-import Toml.Printer (pretty)
-import Toml.Type (AnyValue (..), Value (..))
+import Toml.Type.AnyValue (AnyValue (..))
+import Toml.Type.Key (Key)
+import Toml.Type.Printer (pretty)
+import Toml.Type.Value (Value (..))
 
 
 parsingValidationSpec :: Spec

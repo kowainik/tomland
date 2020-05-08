@@ -46,8 +46,9 @@ import Toml.Parser.Key (keyP)
 import Toml.Parser.String (textP)
 import Toml.Parser.Validate (validateItems)
 import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
-import Toml.PrefixTree (Key (..))
-import Toml.Type (TOML (..), UValue (..))
+import Toml.Type.Key (Key (..))
+import Toml.Type.TOML (TOML (..))
+import Toml.Type.UValue (UValue (..))
 
 
 parseX

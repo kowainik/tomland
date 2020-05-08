@@ -9,10 +9,11 @@ import Data.Text (Text)
 import Test.Hspec (Spec, describe, it, xit)
 
 import Test.Toml.Parsing.Unit.Common (day2, failOn, parseToml, tomlFailOn)
-import Toml.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.Parser.Item (keyValP)
-import Toml.PrefixTree (pattern (:||))
-import Toml.Type (TOML (..), Value (..))
+import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
+import Toml.Type.Key (pattern (:||))
+import Toml.Type.TOML (TOML (..))
+import Toml.Type.Value (Value (..))
 
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T

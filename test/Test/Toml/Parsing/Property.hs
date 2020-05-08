@@ -8,7 +8,7 @@ import Test.Hspec.Hedgehog (hedgehog)
 
 import Test.Toml.Gen (genToml)
 import Toml.Parser (parse)
-import Toml.Printer (pretty)
+import Toml.Type.Printer (pretty)
 
 
 parsingPropertySpec :: Spec

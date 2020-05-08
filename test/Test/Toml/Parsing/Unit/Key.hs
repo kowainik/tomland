@@ -5,7 +5,8 @@ module Test.Toml.Parsing.Unit.Key
     ) where
 
 import Test.Hspec (Spec, context, describe, it, xit)
-import Toml.PrefixTree (pattern (:||))
+
+import Toml.Type.Key (pattern (:||))
 
 import Test.Toml.Parsing.Unit.Common (dquote, parseKey, squote)
 

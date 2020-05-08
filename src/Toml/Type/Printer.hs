@@ -1,14 +1,14 @@
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
-Copyright: (c) 2018-2019 Kowainik
+Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Contains functions for pretty printing @toml@ types.
 -}
 
-module Toml.Printer
+module Toml.Type.Printer
        ( PrintOptions(..)
        , defaultOptions
        , pretty
@@ -24,8 +24,11 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Time (ZonedTime, defaultTimeLocale, formatTime)
 
-import Toml.PrefixTree (Key (..), Piece (..), PrefixMap, PrefixTree (..))
-import Toml.Type (AnyValue (..), TOML (..), Value (..))
+import Toml.Type.AnyValue (AnyValue (..))
+import Toml.Type.Key (Key (..), Piece (..))
+import Toml.Type.PrefixTree (PrefixMap, PrefixTree (..))
+import Toml.Type.TOML (TOML (..))
+import Toml.Type.Value (Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty

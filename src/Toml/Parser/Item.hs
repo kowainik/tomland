@@ -1,5 +1,5 @@
 {-|
-Copyright: (c) 2018-2019 Kowainik
+Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
@@ -29,8 +29,8 @@ import Data.List.NonEmpty (NonEmpty)
 import Toml.Parser.Core (Parser, eof, sc, text, try, (<?>))
 import Toml.Parser.Key (keyP, tableArrayNameP, tableNameP)
 import Toml.Parser.Value (anyValueP)
-import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue)
+import Toml.Type.AnyValue (AnyValue)
+import Toml.Type.Key (Key)
 
 
 {- | One item of a TOML file. It could be either:

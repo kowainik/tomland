@@ -1,5 +1,5 @@
 {- |
-Copyright: (c) 2018-2019 Kowainik
+Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
@@ -27,11 +27,11 @@ import Data.List.NonEmpty (NonEmpty (..))
 import Data.Tree (Forest, Tree (..))
 
 import Toml.Parser.Item (Table (..), TomlItem (..), setTableName)
-import Toml.PrefixTree (Key, KeysDiff (FstIsPref), keysDiff)
-import Toml.Type (TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
+import Toml.Type.Key (Key, KeysDiff (FstIsPref), keysDiff)
+import Toml.Type.TOML (TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
 import qualified Data.HashMap.Strict as HashMap
-import qualified Toml.PrefixTree as PrefixMap
+import qualified Toml.Type.PrefixTree as PrefixMap
 
 
 {- | Validate list of 'TomlItem's and convert to 'TOML' if not validation
