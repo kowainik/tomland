@@ -9,6 +9,11 @@ Core types for TOML AST.
 module Toml.Type
     ( -- $toml
       module Toml.Type.TOML
+
+--      -- $edsl
+--    , module Toml.Type.Edsl
+--    Edsl.table conflicts with Codec.table
+
       -- $printer
     , module Toml.Type.Printer
       -- $prefix
@@ -24,6 +29,7 @@ module Toml.Type
     ) where
 
 import Toml.Type.AnyValue
+-- import Toml.Type.Edsl
 import Toml.Type.Key
 import Toml.Type.PrefixTree
 import Toml.Type.Printer
@@ -35,6 +41,10 @@ import Toml.Type.Value
 Main TOML AST data type. Text is converted to 'TOML' first. All codecs
 work with the 'TOML' type instead of raw text.
 -}
+
+-- {- $eDSL
+-- eDSL for type-safe construction of the 'TOML' values.
+-- -}
 
 {- $printer
 Pretty-printer for 'TOML'.

@@ -55,8 +55,10 @@ provides high-level API of @tomland@ library.
 
 {- $type
 Low-level implementation details of types that power @tomland@. The
-"Toml.Type" module contains types to repesent TOML AST and basic
-functions to work with it.
+"Toml.Type" module contains types to represent TOML AST and basic
+functions to work with it. This module also contains pretty-printing
+API for 'TOML' AST and eDSL for type-safe definition of the TOML
+values.
 -}
 
 {- $parser
