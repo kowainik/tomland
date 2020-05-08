@@ -1,5 +1,5 @@
 {- |
-Copyright: (c) 2018-2019 Kowainik
+Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
@@ -41,7 +41,7 @@ exampleToml = 'mkToml' $ __do__
 @
 -}
 
-module Toml.Edsl
+module Toml.Type.Edsl
        ( TDSL
        , mkToml
        , empty
@@ -53,8 +53,9 @@ module Toml.Edsl
 import Control.Monad.State (State, execState, modify, put)
 import Data.List.NonEmpty (NonEmpty)
 
-import Toml.PrefixTree (Key)
-import Toml.Type (TOML (..), Value, insertKeyVal, insertTable, insertTableArrays)
+import Toml.Type.Key (Key)
+import Toml.Type.TOML (TOML (..), insertKeyVal, insertTable, insertTableArrays)
+import Toml.Type.Value (Value)
 
 
 -- | Monad for creating TOML.

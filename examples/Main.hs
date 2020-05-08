@@ -13,12 +13,14 @@ import Data.Text (Text)
 import Data.Time (fromGregorian)
 import GHC.Generics (Generic)
 
-import Toml (ParseException (..), TomlCodec, pretty, (.=), (<!>))
-import Toml.Edsl (mkToml, table, (=:))
+import Toml (TomlCodec, TomlParseError (..), pretty, (.=), (<!>))
 import Toml.Type (TOML (..), Value (..))
+import Toml.Type.Edsl (mkToml, table, (=:))
 
 import qualified Data.Text.IO as TIO
+
 import qualified Toml
+
 
 newtype TestInside = TestInside { unInside :: Text }
 
@@ -132,7 +134,7 @@ main = do
     TIO.putStrLn "=== Trying to print invalid TOML ==="
     content <- TIO.readFile "examples/invalid.toml"
     TIO.putStrLn $ case Toml.parse content of
-        Left (ParseException e) -> e
+        Left (TomlParseError e) -> e
         Right toml              -> pretty toml
 
     TIO.putStrLn "=== Testing bidirectional conversion ==="

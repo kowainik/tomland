@@ -34,8 +34,8 @@ import Data.Text (Text)
 import Toml.Codec.Error (LoadTomlException (..), TomlDecodeError (..), prettyTomlDecodeError)
 import Toml.Codec.Types (Codec (..), TomlCodec)
 import Toml.Parser (parse)
-import Toml.Printer (pretty)
 import Toml.Type (TOML (..))
+import Toml.Type.Printer (pretty)
 
 import qualified Data.Text.IO as TIO
 

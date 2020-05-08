@@ -10,6 +10,9 @@ The changelog is available [on GitHub][2].
   Drop support of GHC-8.2.2.
 * [#252](https://github.com/kowainik/tomland/issues/252):
   Move to `hspec-*` family of libraries from `tasty-*`.
+* [#256](https://github.com/kowainik/tomland/issues/256):
+  Rename modules to simplify module structure.
+  __TODO__: write migration guide
 * [#263](https://github.com/kowainik/tomland/issues/263):
   Simplify `Codec` abstraction. Instead of having `Codec r w c a`
   now it is `Codec TomlEnv TomlState c a`.

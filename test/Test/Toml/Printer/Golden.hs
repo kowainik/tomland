@@ -9,10 +9,11 @@ import Data.Ord (comparing)
 import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it)
 import Test.Hspec.Golden (defaultGolden)
 
-import Toml (TOML, Value (..))
-import Toml.Edsl (empty, mkToml, table, tableArray, (=:))
-import Toml.PrefixTree (Key (..), (<|))
-import Toml.Printer (PrintOptions (..), defaultOptions, prettyOptions)
+import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
+import Toml.Type.Key (Key (..), (<|))
+import Toml.Type.Printer (PrintOptions (..), defaultOptions, prettyOptions)
+import Toml.Type.TOML (TOML)
+import Toml.Type.Value (Value (..))
 
 import qualified Data.Text as T
 

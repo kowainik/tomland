@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
 {- |
-Copyright: (c) 2018-2019 Kowainik
+Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
@@ -21,12 +21,13 @@ import Data.HashMap.Strict (HashMap)
 import Data.List.NonEmpty (NonEmpty)
 import GHC.Generics (Generic)
 
-import Toml.PrefixTree (Key (..), PrefixMap)
 import Toml.Type.AnyValue (AnyValue (..))
+import Toml.Type.Key (Key (..))
+import Toml.Type.PrefixTree (PrefixMap)
 import Toml.Type.Value (Value)
 
 import qualified Data.HashMap.Strict as HashMap
-import qualified Toml.PrefixTree as Prefix
+import qualified Toml.Type.PrefixTree as Prefix
 
 
 {- | Represents TOML configuration value.

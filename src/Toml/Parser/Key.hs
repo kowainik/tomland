@@ -1,5 +1,5 @@
 {- |
-Copyright: (c) 2018-2019 Kowainik
+Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
@@ -21,7 +21,7 @@ import Data.Text (Text)
 
 import Toml.Parser.Core (Parser, alphaNumChar, char, lexeme, text)
 import Toml.Parser.String (basicStringP, literalStringP)
-import Toml.PrefixTree (Key (..), Piece (..))
+import Toml.Type.Key (Key (..), Piece (..))
 
 import qualified Data.Text as Text
 

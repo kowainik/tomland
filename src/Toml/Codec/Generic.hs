@@ -10,7 +10,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
-Copyright: (c) 2018-2019 Kowainik
+Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
@@ -103,7 +103,7 @@ of the 'HasItemCodec' typeclass.
 @since 1.1.1.0
 -}
 
-module Toml.Generic
+module Toml.Codec.Generic
        ( genericCodec
        , genericCodecWithOptions
        , stripTypeNameCodec
@@ -140,14 +140,17 @@ import GHC.Generics ((:*:) (..), (:+:), C1, D1, Generic (..), K1 (..), M1 (..), 
 import GHC.TypeLits (ErrorMessage (..), TypeError)
 import Numeric.Natural (Natural)
 
-import Toml.Bi (TomlBiMap)
-import Toml.Codec (TomlCodec, (.=))
-import Toml.PrefixTree (Key)
-import Toml.Type (AnyValue)
+import Toml.Codec.BiMap (TomlBiMap)
+import Toml.Codec.Di ((.=))
+import Toml.Codec.Types (TomlCodec)
+import Toml.Type.AnyValue (AnyValue)
+import Toml.Type.Key (Key)
 
 import qualified Data.Text.Lazy as L
-import qualified Toml.Bi as Toml
-import qualified Toml.Codec as Toml
+
+import qualified Toml.Codec.BiMap as Toml
+import qualified Toml.Codec.Combinators as Toml
+import qualified Toml.Codec.Di as Toml
 
 
 {- | Generic codec for arbitrary data types. Uses field names as keys.
@@ -376,27 +379,27 @@ instance (Hashable a, Eq a, HasItemCodec a) => HasCodec (HashSet a) where
         Left prim   -> Toml.arrayHashSetOf prim
         Right codec -> Toml.hashSet codec
 
--- | @since 1.x.x.x
+-- | @since 1.3.0.0
 instance HasCodec All where
     hasCodec = Toml.diwrap . hasCodec @Bool
 
--- | @since 1.x.x.x
+-- | @since 1.3.0.0
 instance HasCodec Any where
     hasCodec = Toml.diwrap . hasCodec @Bool
 
--- | @since 1.x.x.x
+-- | @since 1.3.0.0
 instance HasCodec a => HasCodec (Sum a) where
     hasCodec = Toml.diwrap . hasCodec @a
 
--- | @since 1.x.x.x
+-- | @since 1.3.0.0
 instance HasCodec a => HasCodec (Product a) where
     hasCodec = Toml.diwrap . hasCodec @a
 
--- | @since 1.x.x.x
+-- | @since 1.3.0.0
 instance HasCodec a => HasCodec (First a) where
     hasCodec = Toml.diwrap . hasCodec @(Maybe a)
 
--- | @since 1.x.x.x
+-- | @since 1.3.0.0
 instance HasCodec a => HasCodec (Last a) where
     hasCodec = Toml.diwrap . hasCodec @(Maybe a)
 

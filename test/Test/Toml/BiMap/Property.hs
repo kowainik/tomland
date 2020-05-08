@@ -6,14 +6,15 @@ module Test.Toml.BiMap.Property
 
 import Data.Time (ZonedTime (..))
 import Hedgehog (Gen, PropertyT, assert, forAll, tripping, (===))
-
 import Test.Hspec (Spec, describe, it)
 import Test.Hspec.Hedgehog (hedgehog)
-import Toml.Bi.Map (BiMap (..), TomlBiMap)
+
+import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
 
 import qualified Hedgehog.Gen as Gen
+
 import qualified Test.Toml.Gen as G
-import qualified Toml.Bi.Map as B
+import qualified Toml.Codec.BiMap as B
 
 
 biMapPropertySpec :: Spec

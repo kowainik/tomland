@@ -6,9 +6,9 @@ module Test.Toml.PrefixTree.Unit
 
 import Test.Hspec (Spec, describe, it, shouldBe)
 
-import Toml.PrefixTree (pattern (:||))
+import Toml.Type.Key (pattern (:||))
 
-import qualified Toml.PrefixTree as Prefix
+import qualified Toml.Type.PrefixTree as Prefix
 
 
 prefixTreeUnitSpec :: Spec

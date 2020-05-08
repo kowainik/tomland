@@ -21,10 +21,10 @@ import Data.Foldable (toList)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import Toml.Bi.Map (TomlBiMapError, prettyBiMapError)
-import Toml.Parser (ParseException (..))
-import Toml.PrefixTree (Key (..), unPiece)
-import Toml.Type (TValue, showType)
+import Toml.Codec.BiMap (TomlBiMapError, prettyBiMapError)
+import Toml.Parser (TomlParseError (..))
+import Toml.Type.Key (Key (..), unPiece)
+import Toml.Type.Value (TValue, showType)
 
 import qualified Data.Text as Text
 
@@ -36,7 +36,7 @@ data TomlDecodeError
     | KeyNotFound !Key  -- ^ No such key
     | TableNotFound !Key  -- ^ No such table
     | TypeMismatch !Key !Text !TValue  -- ^ Expected type vs actual type
-    | ParseError !ParseException  -- ^ Exception during parsing
+    | ParseError !TomlParseError  -- ^ Exception during parsing
     deriving stock (Eq, Generic)
     deriving anyclass (NFData)
 
@@ -61,7 +61,8 @@ prettyTomlDecodeError de = "tomland decode error:  " <> case de of
     TypeMismatch name expected actual -> "Type for key " <> joinKey name <> " doesn't match."
         <> "\n  Expected: " <> expected
         <> "\n  Actual:   " <> Text.pack (showType actual)
-    ParseError (ParseException msg) -> "Parse error during conversion from TOML to custom user type: \n  " <> msg
+    ParseError (TomlParseError msg) ->
+        "Parse error during conversion from TOML to custom user type: \n  " <> msg
   where
     joinKey :: Key -> Text
     joinKey = Text.intercalate "." . map unPiece . toList . unKey
