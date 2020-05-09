@@ -40,6 +40,9 @@ age = 777
 username = "username"
 password = "password"
 
-[depends]
-thing1 = "Hello"
-thing2 = "Goodbye"
+[dependencies]
+thing1 = "simple"
+thing2 = { git = "somewhere" }
+thing3 = { git = "else", version = "1.0" }
+thing4 = { path = "here" }
+thing5 = { path = "there", version = "1.1" }

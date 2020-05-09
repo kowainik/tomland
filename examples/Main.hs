@@ -70,25 +70,58 @@ userStatusCodec =
     Toml.dimatch matchRegistered (uncurry Registered) (Toml.table userPassCodec "testStatus")
     <|> Toml.dimatch matchAnonymous Anonymous (Toml.text "testStatus")
 
+data Version =
+      SimpleVersion !Text
+    | GitVersion !Text !(Maybe Text)
+    | PathVersion !Text !(Maybe Text)
+
+matchSimpleVersion :: Version -> Maybe Text
+matchSimpleVersion (SimpleVersion v) = Just v
+matchSimpleVersion _                 = Nothing
+
+matchGitVersion :: Version -> Maybe (Text, Maybe Text)
+matchGitVersion (GitVersion path version) = Just (path, version)
+matchGitVersion _                         = Nothing
+
+matchPathVersion :: Version -> Maybe (Text, Maybe Text)
+matchPathVersion (PathVersion path version) = Just (path, version)
+matchPathVersion _                          = Nothing
+
+gitVersionCodec :: TomlCodec (Text, Maybe Text)
+gitVersionCodec = (,)
+    <$> Toml.text "git" .= fst
+    <*> Toml.dioptional (Toml.text "version") .= snd
+
+pathVersionCodec :: TomlCodec (Text, Maybe Text)
+pathVersionCodec = (,)
+    <$> Toml.text "path" .= fst
+    <*> Toml.dioptional (Toml.text "version") .= snd
+
+versionCodec :: Toml.Key -> TomlCodec Version
+versionCodec key =
+    Toml.dimatch matchSimpleVersion SimpleVersion (Toml.text key)
+    <|> Toml.dimatch matchGitVersion (uncurry GitVersion) (Toml.table gitVersionCodec key)
+    <|> Toml.dimatch matchPathVersion (uncurry PathVersion) (Toml.table pathVersionCodec key)
+
 data Test = Test
-    { testB      :: !Bool
-    , testI      :: !Int
-    , testF      :: !Double
-    , testS      :: !Text
-    , testA      :: ![Text]
-    , testM      :: !(Maybe Bool)
-    , testX      :: !TestInside
-    , testY      :: !(Maybe TestInside)
-    , testN      :: !N
-    , testC      :: !ColorScheme
-    , testE1     :: !(Either Integer String)
-    , testE2     :: !(Either String Double)
-    , testStatus :: !UserStatus
-    , users      :: ![User]
-    , susers     :: !(Set User)
-    , husers     :: !(HashSet User)
-    , payloads   :: !(Map Text Int)
-    , depends    :: !(Map Text Text)
+    { testB        :: !Bool
+    , testI        :: !Int
+    , testF        :: !Double
+    , testS        :: !Text
+    , testA        :: ![Text]
+    , testM        :: !(Maybe Bool)
+    , testX        :: !TestInside
+    , testY        :: !(Maybe TestInside)
+    , testN        :: !N
+    , testC        :: !ColorScheme
+    , testE1       :: !(Either Integer String)
+    , testE2       :: !(Either String Double)
+    , testStatus   :: !UserStatus
+    , users        :: ![User]
+    , susers       :: !(Set User)
+    , husers       :: !(HashSet User)
+    , payloads     :: !(Map Text Int)
+    , dependencies :: !(Map Text Version)
     }
 
 
@@ -101,7 +134,7 @@ testT = Test
     <*> Toml.arrayOf Toml._Text "testA" .= testA
     <*> Toml.dioptional (Toml.bool "testM") .= testM
     <*> Toml.table insideCodec "testX" .= testX
-    <*> Toml.dioptional ((Toml.table insideCodec) "testY") .= testY
+    <*> Toml.dioptional (Toml.table insideCodec "testY") .= testY
     <*> Toml.diwrap (Toml.text "testN") .= testN
     <*> Toml.enumBounded "testC" .= testC
     <*> eitherT1 .= testE1
@@ -111,7 +144,7 @@ testT = Test
     <*> Toml.set userCodec "suser" .= susers
     <*> Toml.hashSet userCodec "huser" .= husers
     <*> Toml.map (Toml.text "name") (Toml.int "payload") "payloads" .= payloads
-    <*> Toml.tableMapCodec Toml._KeyText Toml._Text "depends" .= depends
+    <*> Toml.dynamicMapCodec Toml._KeyText versionCodec "dependencies" .= dependencies
   where
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)

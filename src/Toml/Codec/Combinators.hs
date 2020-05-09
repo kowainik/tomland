@@ -66,7 +66,7 @@ module Toml.Codec.Combinators
 
       -- * Combinators for Maps
     , map
-    , tableMapCodec
+    , dynamicMapCodec
 
       -- * General construction of codecs
     , match
@@ -103,7 +103,7 @@ import Toml.Codec.Di (dimap, dioptional)
 import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
 import Toml.Type.AnyValue (AnyValue (..))
-import Toml.Type.Key (Key)
+import Toml.Type.Key (Key (..))
 import Toml.Type.TOML (TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
 import qualified Data.ByteString.Lazy as BL
@@ -517,25 +517,47 @@ map keyCodec valCodec key = Codec input output
         dict <$ modify updateAction
 
 -- TODO: add docs and tests
-tableMapCodec
-    :: forall key val . Ord key
-    => TomlBiMap Key key  -- ^ Bidirectional converter between TOML and Map keys
-    -> TomlBiMap val AnyValue  -- ^ Bidirectional converter between TOML and Map values
-    -> Key  -- ^ Table name key
+dynamicMapCodec
+    :: forall key val
+    .  Ord key
+    => TomlBiMap Key key
+    -> (Key -> TomlCodec val)
+    -> Key
     -> TomlCodec (Map key val)
-tableMapCodec keyBiMap valBiMap key = Codec input output
+dynamicMapCodec keyBiMap valCodec key = Codec input output
   where
     input :: TomlEnv (Map key val)
     input = do
-        mTable <- asks $ Prefix.lookup key . tomlTables
-        case mTable of
+        mtable <- asks $ Prefix.lookup key . tomlTables
+        case mtable of
             Nothing   -> pure Map.empty
-            Just toml -> fmap Map.fromList $ forM (HashMap.toList (tomlPairs toml)) $ \(tomlKey, anyVal) ->
-                case backward valBiMap anyVal of
-                    Right v  -> case forward keyBiMap tomlKey of
-                        Right k  -> pure (k, v)
-                        Left err -> throwError $ BiMapError err
-                    Left err -> throwError $ BiMapError err
+            Just toml -> do
+                simpleVals <- fmap Map.fromList $ forM (HashMap.toList (tomlPairs toml)) $ \(thisKey, anyVal) ->
+                    let thisToml = TOML {tomlPairs = HashMap.singleton thisKey anyVal, tomlTables = mempty, tomlTableArrays = mempty}
+                        thisCodec = valCodec thisKey in
+                        case forward keyBiMap thisKey of
+                            Right k  -> do
+                                v <- codecReadTOML thisToml thisCodec
+                                return (k, v)
+                            Left err -> throwError $ BiMapError err
+                tableVals <- fmap Map.fromList $ forM (HashMap.toList (tomlTables toml)) $ \(keyPiece, prefixTree) ->
+                    let thisKey = Key (keyPiece :| [])
+                        thisToml = TOML {tomlPairs = mempty, tomlTables = HashMap.singleton keyPiece prefixTree, tomlTableArrays = mempty}
+                        thisCodec = valCodec thisKey in
+                        case forward keyBiMap thisKey of
+                            Right k  -> do
+                                v <- codecReadTOML thisToml thisCodec
+                                return (k, v)
+                            Left err -> throwError $ BiMapError err
+                arrayVals <- fmap Map.fromList $ forM (HashMap.toList (tomlTableArrays toml)) $ \(thisKey, tomls) ->
+                    let thisToml = TOML {tomlPairs = mempty, tomlTables = mempty, tomlTableArrays = HashMap.singleton thisKey tomls}
+                        thisCodec = valCodec thisKey in
+                        case forward keyBiMap thisKey of
+                            Right k  -> do
+                                v <- codecReadTOML thisToml thisCodec
+                                return (k, v)
+                            Left err -> throwError $ BiMapError err
+                return (simpleVals `Map.union` tableVals `Map.union` arrayVals)
 
     output :: Map key val -> TomlState (Map key val)
     output dict = do
@@ -544,6 +566,7 @@ tableMapCodec keyBiMap valBiMap key = Codec input output
 
     update :: TOML -> (key, val) -> TomlState TOML
     update toml (k, v) = do
-        tomlKey <- MaybeT $ pure $ either (const Nothing) Just $ backward keyBiMap k
-        anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward valBiMap v
-        return $ insertKeyAnyVal tomlKey anyVal toml
+        thisKey <- MaybeT $ pure $ either (const Nothing) Just $ backward keyBiMap k
+        let thisCodec = valCodec thisKey
+        let thisToml = execTomlCodec thisCodec v
+        return $ toml <> thisToml
