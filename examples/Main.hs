@@ -70,6 +70,37 @@ userStatusCodec =
     Toml.dimatch matchRegistered (uncurry Registered) (Toml.table userPassCodec "testStatus")
     <|> Toml.dimatch matchAnonymous Anonymous (Toml.text "testStatus")
 
+data Colour
+   = Hex Text
+   | RGB Rgb
+
+matchHex :: Colour -> Maybe Text
+matchHex = \case
+    Hex t -> Just t
+    _ -> Nothing
+
+matchRgb :: Colour -> Maybe Rgb
+matchRgb = \case
+    RGB rgb -> Just rgb
+    _ -> Nothing
+
+colourCodec :: Toml.Key -> TomlCodec Colour
+colourCodec key =
+        Toml.dimatch matchHex Hex (Toml.text key)
+    <|> Toml.dimatch matchRgb RGB (Toml.table rgbCodec key)
+
+data Rgb = Rgb
+    { rgbRed   :: Int
+    , rgbGreen :: Int
+    , rgbBlue  :: Int
+    }
+
+rgbCodec :: TomlCodec Rgb
+rgbCodec = Rgb
+    <$> Toml.int "red"   .= rgbRed
+    <*> Toml.int "green" .= rgbGreen
+    <*> Toml.int "blue"  .= rgbBlue
+
 data Test = Test
     { testB      :: !Bool
     , testI      :: !Int
@@ -88,7 +119,7 @@ data Test = Test
     , susers     :: !(Set User)
     , husers     :: !(HashSet User)
     , payloads   :: !(Map Text Int)
-    , depends    :: !(Map Text Text)
+    , colours    :: !(Map Text Colour)
     }
 
 
@@ -111,7 +142,7 @@ testT = Test
     <*> Toml.set userCodec "suser" .= susers
     <*> Toml.hashSet userCodec "huser" .= husers
     <*> Toml.map (Toml.text "name") (Toml.int "payload") "payloads" .= payloads
-    <*> Toml.tableMapCodec Toml._KeyText Toml._Text "depends" .= depends
+    <*> Toml.tableMap Toml._KeyText colourCodec "colours" .= colours
   where
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)

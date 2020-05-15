@@ -1,3 +1,6 @@
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TupleSections   #-}
+
 {- |
 Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
@@ -64,9 +67,9 @@ module Toml.Codec.Combinators
     , set
     , hashSet
 
-      -- * Combinators for Maps
+      -- * Combinators for 'Map's
     , map
-    , tableMapCodec
+    , tableMap
 
       -- * General construction of codecs
     , match
@@ -74,7 +77,8 @@ module Toml.Codec.Combinators
 
 import Prelude hiding (all, any, last, map, product, read, sum)
 
-import Control.Monad (foldM, forM)
+import Control.Applicative (empty)
+import Control.Monad (forM, forM_)
 import Control.Monad.Except (catchError, throwError)
 import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
@@ -103,7 +107,7 @@ import Toml.Codec.Di (dimap, dioptional)
 import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
 import Toml.Type.AnyValue (AnyValue (..))
-import Toml.Type.Key (Key)
+import Toml.Type.Key (pattern (:||), Key)
 import Toml.Type.TOML (TOML (..), insertKeyAnyVal, insertTable, insertTableArrays)
 
 import qualified Data.ByteString.Lazy as BL
@@ -516,34 +520,112 @@ map keyCodec valCodec key = Codec input output
 
         dict <$ modify updateAction
 
--- TODO: add docs and tests
-tableMapCodec
-    :: forall key val . Ord key
-    => TomlBiMap Key key  -- ^ Bidirectional converter between TOML and Map keys
-    -> TomlBiMap val AnyValue  -- ^ Bidirectional converter between TOML and Map values
-    -> Key  -- ^ Table name key
-    -> TomlCodec (Map key val)
-tableMapCodec keyBiMap valBiMap key = Codec input output
+{- | This 'TomlCodec' helps you to convert TOML key-value pairs
+directly to 'Map' using TOML keys as 'Map' keys. It can be convenient
+if your 'Map' keys are types like 'Text' and you want to work with raw
+TOML keys directly.
+
+For example, if you have TOML like this:
+
+@
+[colours]
+yellow = "#FFFF00"
+red    = { red = 255, green = 0, blue = 0 }
+pink   = "#FFC0CB"
+@
+
+You want to convert such TOML configuration into the following Haskell
+types:
+
+
+@
+__data__ Rgb = Rgb
+    { rgbRed   :: Int
+    , rgbGreen :: Int
+    , rgbBlue  :: Int
+    }
+
+__data__ Colour
+    = Hex Text
+    | RGB Rgb
+
+colourCodec :: 'TomlCodec' Colour
+colourCodec = ...
+
+__data__ ColourConfig = ColourConfig
+    { configColours :: 'Map' 'Text' Colour
+    }
+@
+
+And you want in the result to have a 'Map' like this:
+
+@
+'Map.fromList'
+    [ "yellow" -> Hex "#FFFF00"
+    , "pink"   -> Hex "#FFC0CB"
+    , "red"    -> Rgb 255 0 0
+    ]
+@
+
+You can use 'tableMap' to define 'TomlCodec' in the following way:
+
+@
+colourConfigCodec :: 'TomlCodec' ColourConfig
+colourConfigCodec = ColourConfig
+    \<$\> Toml.'tableMap' Toml._KeyText colourCodec "colours" .= configColours
+@
+
+__Hint:__ You can use 'Toml.Codec.BiMap._KeyText' or
+'Toml.Codec.BiMap._KeyString' to convert betwen TOML keys and 'Map'
+keys (or you can write your custom 'TomlBiMap').
+
+__NOTE__: Unlike the 'map' codec, this codec is less flexible (i.e. it doesn't
+allow to have arbitrary structures as 'Key's, it works only for
+text-like keys), but can be helpful if you want to save a few
+keystrokes during TOML configuration. A similar TOML configuration,
+but suitable for the 'map' codec will look like this:
+
+@
+colours =
+    [ { key = "yellow", hex = "#FFFF00" }
+    , { key = "pink",   hex = "#FFC0CB" }
+    , { key = "red",    rgb = { red = 255, green = 0, blue = 0 } }
+    ]
+@
+
+@since 1.3.0.0
+-}
+tableMap
+    :: forall k v
+    .  Ord k
+    => TomlBiMap Key k
+    -- ^ Bidirectional converter between TOML 'Key's and 'Map' keys
+    -> (Key -> TomlCodec v)
+    -- ^ Codec for 'Map' values for the corresponding 'Key'
+    -> Key
+    -- ^ Table name for 'Map'
+    -> TomlCodec (Map k v)
+tableMap keyBiMap valCodec tableName = Codec input output
   where
-    input :: TomlEnv (Map key val)
-    input = do
-        mTable <- asks $ Prefix.lookup key . tomlTables
-        case mTable of
-            Nothing   -> pure Map.empty
-            Just toml -> fmap Map.fromList $ forM (HashMap.toList (tomlPairs toml)) $ \(tomlKey, anyVal) ->
-                case backward valBiMap anyVal of
-                    Right v  -> case forward keyBiMap tomlKey of
-                        Right k  -> pure (k, v)
-                        Left err -> throwError $ BiMapError err
+    input :: TomlEnv (Map k v)
+    input = asks (Prefix.lookup tableName . tomlTables) >>= \case
+        Nothing -> pure Map.empty
+        Just toml -> local (const toml) $ do
+            valKeys <- asks (HashMap.keys . tomlPairs)
+            tableKeys <- asks (fmap (:|| []) . HashMap.keys . tomlTables)
+            fmap Map.fromList $ forM (valKeys <> tableKeys) $ \key ->
+                case forward keyBiMap key of
                     Left err -> throwError $ BiMapError err
+                    Right k  -> (k,) <$> codecRead (valCodec key)
 
-    output :: Map key val -> TomlState (Map key val)
-    output dict = do
-        newToml <- foldM update mempty (Map.toList dict)
-        dict <$ modify (insertTable key newToml)
-
-    update :: TOML -> (key, val) -> TomlState TOML
-    update toml (k, v) = do
-        tomlKey <- MaybeT $ pure $ either (const Nothing) Just $ backward keyBiMap k
-        anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward valBiMap v
-        return $ insertKeyAnyVal tomlKey anyVal toml
+    output :: Map k v -> TomlState (Map k v)
+    output m = do
+        mTable <- gets $ Prefix.lookup tableName . tomlTables
+        let toml = fromMaybe mempty mTable
+        let newToml = execState (runMaybeT updateMapTable) toml
+        m <$ modify (insertTable tableName newToml)
+      where
+        updateMapTable :: TomlState ()
+        updateMapTable = forM_ (Map.toList m) $ \(k, v) -> case backward keyBiMap k of
+            Left _    -> empty
+            Right key -> codecWrite (valCodec key) v
