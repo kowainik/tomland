@@ -60,6 +60,8 @@ The changelog is available [on GitHub][2].
   Export a function for parsing TOML keys.
 * [#311](https://github.com/kowainik/tomland/issues/311):
   Reimplement custom `TomlState` instead of using `MaybeT` and `State`.
+* [#272](https://github.com/kowainik/tomland/issues/272):
+  Add `TomlTable` newtype to be used in generic `DerivingVia`.
 
 ## 1.2.1.0 — Nov 6, 2019
 

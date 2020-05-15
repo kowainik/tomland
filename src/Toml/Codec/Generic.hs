@@ -125,6 +125,9 @@ module Toml.Codec.Generic
        , ByteStringAsBytes (..)
        , LByteStringAsText (..)
        , LByteStringAsBytes (..)
+
+         -- * Deriving Via
+       , TomlTable (..)
        ) where
 
 import Data.ByteString (ByteString)
@@ -669,10 +672,6 @@ instance HasCodec a => HasCodec (Last a) where
     hasCodec = Toml.last (hasCodec @a)
     {-# INLINE hasCodec #-}
 
-{-
-TODO: uncomment when higher-kinded roles will be implemented
-* https://github.com/ghc-proposals/ghc-proposals/pull/233
-
 {- | @newtype@ for generic deriving of 'HasCodec' typeclass for custom data
 types that should we wrapped into separate table. Use it only for data types
 that are fields of another data types.
@@ -712,7 +711,6 @@ instance (Generic a, GenericCodec (Rep a)) => HasCodec (TomlTable a) where
 
 instance (Generic a, GenericCodec (Rep a)) => HasItemCodec (TomlTable a) where
     hasItemCodec = Right $ Toml.diwrap $ genericCodec @a
--}
 
 {- $bytestring
 There are two ways to encode 'ByteString' in TOML:
@@ -726,9 +724,7 @@ To handle all these cases, @tomland@ provides helpful newtypes, specifically:
 * 'ByteStringAsBytes'
 * 'LByteStringAsText'
 * 'LByteStringAsBytes'
--}
 
-{- TODO: uncomment when the same GHC issue as above is resolved:
 As a bonus, on GHC >= 8.6 you can use these newtypes with the @DerivingVia@
 extensions for your own 'ByteString' types.
 

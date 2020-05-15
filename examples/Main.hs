@@ -1,5 +1,7 @@
 {-# OPTIONS -Wno-unused-top-binds #-}
+
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingVia    #-}
 
 module Main (main) where
 
@@ -7,6 +9,7 @@ import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
 import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
+import Data.ByteString (ByteString)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
@@ -18,6 +21,7 @@ import GHC.Generics (Generic)
 import Toml (TomlCodec, TomlParseError (..), pretty, (.=), (<!>))
 import Toml.Type (TOML (..), Value (..))
 import Toml.Type.Edsl (mkToml, table, (=:))
+import Toml.Codec.Generic (TomlTable (..), stripTypeNameCodec, HasCodec (..), ByteStringAsBytes (..))
 
 import qualified Data.Text.IO as TIO
 
@@ -177,6 +181,24 @@ testT = Test
              <!> Toml.match (Toml._Right >>> Toml._Double)
                ) "either"
 
+data GenericPerson = GenericPerson
+    { genericPersonName    :: !Text
+    , genericPersonAddress :: !Address
+    } deriving stock (Generic)
+
+data Address = Address
+    { addressStreet :: !Text
+    , addressHouse  :: !Int
+    } deriving stock (Generic)
+      deriving HasCodec via (TomlTable Address)
+
+testGeneric :: TomlCodec GenericPerson
+testGeneric = stripTypeNameCodec
+
+newtype MyByteString = MyByteString
+    { unMyByteString :: ByteString
+    } deriving HasCodec via ByteStringAsBytes
+
 main :: IO ()
 main = do
     TIO.putStrLn "=== Printing manually specified TOML ==="
@@ -193,6 +215,12 @@ main = do
     TIO.putStrLn $ case Toml.decode testT biFile of
         Left msgs  -> Toml.prettyTomlDecodeErrors msgs
         Right test -> Toml.encode testT test
+
+    TIO.putStrLn "=== Testing Deriving Via ==="
+    genericFile <- TIO.readFile "examples/generic.toml"
+    TIO.putStrLn $ case Toml.decode testGeneric genericFile of
+        Left msg   -> Toml.prettyTomlDecodeErrors msg
+        Right test -> Toml.encode testGeneric test
 
 myToml :: TOML
 myToml = mkToml $ do
