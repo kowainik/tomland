@@ -154,9 +154,9 @@ matchBar (Bar b num) = Just (b, num)
 matchBar _           = Nothing
 
 barCodec :: TomlCodec (Bool, Int)
-barCodec = (,)
-    \<$\> Toml.bool "a" '.=' fst
-    \<*\> Toml.int "b" '.=' snd
+barCodec = Toml.pair
+    (Toml.bool "a")
+    (Toml.int "b")
 
 exampleCodec :: TomlCodec Example
 exampleCodec =

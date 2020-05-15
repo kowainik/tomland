@@ -61,9 +61,9 @@ matchAnonymous (Anonymous username) = Just username
 matchAnonymous _                    = Nothing
 
 userPassCodec :: TomlCodec (Text, Text)
-userPassCodec = (,)
-    <$> Toml.text "username" .= fst
-    <*> Toml.text "password" .= snd
+userPassCodec = Toml.pair
+    (Toml.text "username")
+    (Toml.text "password")
 
 userStatusCodec :: TomlCodec UserStatus
 userStatusCodec =
@@ -112,6 +112,8 @@ data Test = Test
     , testY      :: !(Maybe TestInside)
     , testN      :: !N
     , testC      :: !ColorScheme
+    , testPair   :: !(Int, Text)
+    , testTriple :: !(Int, Text, Bool)
     , testE1     :: !(Either Integer String)
     , testE2     :: !(Either String Double)
     , testStatus :: !UserStatus
@@ -135,6 +137,8 @@ testT = Test
     <*> Toml.dioptional ((Toml.table insideCodec) "testY") .= testY
     <*> Toml.diwrap (Toml.text "testN") .= testN
     <*> Toml.enumBounded "testC" .= testC
+    <*> Toml.table pairC "testPair" .= testPair
+    <*> Toml.table tripleC "testTriple" .= testTriple
     <*> eitherT1 .= testE1
     <*> eitherT2 .= testE2
     <*> userStatusCodec .= testStatus
@@ -144,6 +148,12 @@ testT = Test
     <*> Toml.map (Toml.text "name") (Toml.int "payload") "payloads" .= payloads
     <*> Toml.tableMap Toml._KeyText colourCodec "colours" .= colours
   where
+    pairC :: TomlCodec (Int, Text)
+    pairC = Toml.pair (Toml.int "pNum") (Toml.text "pName")
+
+    tripleC :: TomlCodec (Int, Text, Bool)
+    tripleC = Toml.triple (Toml.int "tNum") (Toml.text "tName") (Toml.bool "isFav")
+
     -- different keys for sum type
     eitherT1 :: TomlCodec (Either Integer String)
     eitherT1 = Toml.match (Toml._Left >>> Toml._Integer)  "either.Left"
