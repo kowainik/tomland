@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Test.Toml.BiMap.Property
-    ( biMapPropertySpec
+module Test.Toml.Codec.BiMap
+    ( biMapSpec
     ) where
 
 import Data.Time (ZonedTime (..))
@@ -17,8 +17,12 @@ import qualified Test.Toml.Gen as G
 import qualified Toml.Codec.BiMap as B
 
 
-biMapPropertySpec :: Spec
-biMapPropertySpec = describe "BiMap Rountrip Property tests" $ do
+biMapSpec :: Spec
+biMapSpec = describe "Tagged Partial Bidirectional Isomorphism: property tests" $
+    biMapRoundtripSpec
+
+biMapRoundtripSpec :: Spec
+biMapRoundtripSpec = describe "BiMap Rountrip Property tests" $ do
     it "Bool" (testBiMap B._Bool G.genBool)
     it "Integer" (testBiMap B._Integer G.genInteger)
     it "Natural" (testBiMap B._Natural G.genNatural)

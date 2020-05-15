@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module Test.Toml.Parsing.Unit.Toml
+module Test.Toml.Parser.Toml
     ( tomlSpecs
     ) where
 
@@ -8,7 +8,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Text (Text)
 import Test.Hspec (Spec, describe, it, xit)
 
-import Test.Toml.Parsing.Unit.Common (day2, failOn, parseToml, tomlFailOn)
+import Test.Toml.Parser.Common (day2, failOn, parseToml, tomlFailOn)
 import Toml.Parser.Item (keyValP)
 import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.Type.Key (pattern (:||))

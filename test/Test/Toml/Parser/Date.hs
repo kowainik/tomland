@@ -1,12 +1,12 @@
-module Test.Toml.Parsing.Unit.Date
+module Test.Toml.Parser.Date
     ( dateSpecs
     ) where
 
 import Data.Time (LocalTime (..), TimeOfDay (..))
 import Test.Hspec (Spec, describe, it)
 
-import Test.Toml.Parsing.Unit.Common (dateTimeFailOn, day1, hours1, makeOffset, makeZoned, offset0,
-                                      offset710, parseDateTime)
+import Test.Toml.Parser.Common (dateTimeFailOn, day1, hours1, makeOffset, makeZoned, offset0,
+                                offset710, parseDateTime)
 import Toml.Type (UValue (..))
 
 

@@ -1,10 +1,10 @@
-module Test.Toml.Parsing.Unit.Bool
+module Test.Toml.Parser.Bool
     ( boolSpecs
     ) where
 
 import Test.Hspec (Spec, describe, it)
 
-import Test.Toml.Parsing.Unit.Common (boolFailOn, parseBool)
+import Test.Toml.Parser.Common (boolFailOn, parseBool)
 
 
 boolSpecs :: Spec

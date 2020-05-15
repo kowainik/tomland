@@ -1,10 +1,10 @@
-module Test.Toml.Parsing.Unit.Integer
+module Test.Toml.Parser.Integer
     ( integerSpecs
     ) where
 
 import Test.Hspec (Spec, context, describe, it)
 
-import Test.Toml.Parsing.Unit.Common (integerFailOn, parseInteger)
+import Test.Toml.Parser.Common (integerFailOn, parseInteger)
 
 
 integerSpecs :: Spec

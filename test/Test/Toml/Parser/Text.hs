@@ -1,10 +1,10 @@
-module Test.Toml.Parsing.Unit.Text
+module Test.Toml.Parser.Text
     ( textSpecs
     ) where
 
 import Test.Hspec (Spec, context, describe, it)
 
-import Test.Toml.Parsing.Unit.Common (dquote, dquote3, parseText, squote, squote3, textFailOn)
+import Test.Toml.Parser.Common (dquote, dquote3, parseText, squote, squote3, textFailOn)
 
 
 textSpecs :: Spec
