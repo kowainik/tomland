@@ -273,7 +273,8 @@ _Just = prism Just $ \case
 
 -- | Creates prism for 'AnyValue'.
 mkAnyValueBiMap
-    :: forall a (tag :: TValue) . (forall (t :: TValue) . Value t -> Either MatchError a)
+    :: forall a (tag :: TValue)
+    .  (forall (t :: TValue) . Value t -> Either MatchError a)
     -> (a -> Value tag)
     -> TomlBiMap a AnyValue
 mkAnyValueBiMap matchValue toValue = BiMap

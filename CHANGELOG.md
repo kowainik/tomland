@@ -8,6 +8,8 @@ The changelog is available [on GitHub][2].
 * [#253](https://github.com/kowainik/tomland/issues/253):
   Support GHC-8.10.1. Move to GHC-8.8.3 from 8.8.1.
   Drop support of GHC-8.2.2.
+* [#270](https://github.com/kowainik/tomland/issues/270):
+  Add `pair` and `triple` codecs for tuples.
 * [#252](https://github.com/kowainik/tomland/issues/252):
   Move to `hspec-*` family of libraries from `tasty-*`.
 * [#261](https://github.com/kowainik/tomland/issues/261):

@@ -22,6 +22,13 @@ payloads =
     , { name = "bar", payload = 69 }
     ]
 
+testPair = { pNum = 11, pName = "eleven" }
+
+[testTriple]
+    tNum = 11
+    tName = "eleven"
+    isFav = true
+
 [testX]
   inside = "xxx"
 
