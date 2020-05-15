@@ -546,8 +546,8 @@ __data__ Rgb = Rgb
     }
 
 __data__ Colour
-   = Hex Text
-   | RGB Rgb
+    = Hex Text
+    | RGB Rgb
 
 colourCodec :: 'TomlCodec' Colour
 colourCodec = ...
@@ -562,7 +562,7 @@ And you want in the result to have a 'Map' like this:
 @
 'Map.fromList'
     [ "yellow" -> Hex "#FFFF00"
-    , "ping"   -> Hex "#FFC0CB"
+    , "pink"   -> Hex "#FFC0CB"
     , "red"    -> Rgb 255 0 0
     ]
 @
