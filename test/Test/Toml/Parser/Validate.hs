@@ -1,5 +1,5 @@
-module Test.Toml.Parsing.Validation
-    ( parsingValidationSpec
+module Test.Toml.Parser.Validate
+    ( validateSpec
     ) where
 
 import Data.List.NonEmpty (NonEmpty (..))
@@ -17,8 +17,8 @@ import Toml.Type.Printer (pretty)
 import Toml.Type.Value (Value (..))
 
 
-parsingValidationSpec :: Spec
-parsingValidationSpec = describe "Parser Validation tests" $ do
+validateSpec :: Spec
+validateSpec = describe "Parser Validation tests" $ do
   -- property success
     validationProperty
     -- failure

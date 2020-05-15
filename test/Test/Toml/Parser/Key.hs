@@ -1,14 +1,13 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module Test.Toml.Parsing.Unit.Key
+module Test.Toml.Parser.Key
     ( keySpecs
     ) where
 
 import Test.Hspec (Spec, context, describe, it, xit)
 
+import Test.Toml.Parser.Common (dquote, parseKey, squote)
 import Toml.Type.Key (pattern (:||))
-
-import Test.Toml.Parsing.Unit.Common (dquote, parseKey, squote)
 
 
 keySpecs :: Spec

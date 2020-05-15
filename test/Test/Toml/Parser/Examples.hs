@@ -1,5 +1,5 @@
-module Test.Toml.Parsing.Examples
-    ( parsingExamplesSpec
+module Test.Toml.Parser.Examples
+    ( examplesSpec
     ) where
 
 import Data.Either (isRight)
@@ -11,8 +11,8 @@ import Toml.Parser (parse)
 import qualified Data.Text.IO as TIO
 
 
-parsingExamplesSpec :: Spec
-parsingExamplesSpec = describe "Can parse official TOML examples" $ do
+examplesSpec :: Spec
+examplesSpec = describe "Can parse official TOML examples" $ do
     files <- runIO $ listDirectory exampleDir
     mapM_ example files
 

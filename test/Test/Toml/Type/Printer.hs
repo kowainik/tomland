@@ -1,7 +1,7 @@
 -- | This module contains golden tests for @Toml.Printer@.
 
-module Test.Toml.Printer.Golden
-       ( prettyPrinterGoldenSpec
+module Test.Toml.Type.Printer
+       ( printerSpec
        ) where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
@@ -18,8 +18,8 @@ import Toml.Type.Value (Value (..))
 import qualified Data.Text as T
 
 
-prettyPrinterGoldenSpec :: Spec
-prettyPrinterGoldenSpec = describe "Toml.Printer Golden tests" $ do
+printerSpec :: Spec
+printerSpec = describe "Toml.Type.Printer: Golden tests for pretty-printing" $ do
     test "pretty_default" defaultOptions
     test "pretty_sorted_only" noFormatting { printOptionsSorting = Just compare }
     test "pretty_indented_only" noFormatting { printOptionsIndent = 4 }

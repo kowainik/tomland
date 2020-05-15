@@ -1,5 +1,5 @@
-module Test.Toml.Parsing.Property
-    ( parsingPropertySpec
+module Test.Toml.Parser.Property
+    ( propertySpec
     ) where
 
 import Hedgehog (forAll, tripping)
@@ -11,8 +11,8 @@ import Toml.Parser (parse)
 import Toml.Type.Printer (pretty)
 
 
-parsingPropertySpec :: Spec
-parsingPropertySpec = describe "Parsing property tests"
+propertySpec :: Spec
+propertySpec = describe "Parsing property tests"
     parsePrintRoundTrip
 
 parsePrintRoundTrip :: SpecWith (Arg Expectation)

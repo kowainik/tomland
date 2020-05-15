@@ -1,4 +1,4 @@
-module Test.Toml.Parsing.Unit.Common
+module Test.Toml.Parser.Common
        ( parseX
        , failOn
        , parseArray

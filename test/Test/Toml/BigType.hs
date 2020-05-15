@@ -2,8 +2,14 @@
 
 {-# LANGUAGE FlexibleInstances #-}
 
-module Test.Toml.BiCode.Property
-    ( biCodePropertySpec
+{- | Huge data type that has fields of different types.
+-}
+
+module Test.Toml.BigType
+    ( BigType (..)
+    , genBigType
+    , bigTypeCodec
+    , bigTypeGenericCodec
     ) where
 
 import Control.Applicative (liftA2, (<|>))
@@ -20,46 +26,20 @@ import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 import GHC.Exts (fromList)
 import GHC.Generics (Generic)
-import Hedgehog (Gen, forAll, tripping, (===))
+import Hedgehog (Gen)
 import Numeric.Natural (Natural)
-import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it)
-import Test.Hspec.Hedgehog (hedgehog)
-
-import Toml (AnyValue, BiMap, HasCodec, HasItemCodec, Key, TomlBiMap, TomlCodec, genericCodec,
-             hasCodec, iso, (.=), _Int)
-import Toml.Codec.Code (decode, encode)
 
 import Test.Toml.Gen (genBool, genByteString, genDay, genDouble, genFloat, genHashSet, genHours,
                       genInt, genIntSet, genInteger, genLByteString, genLocal, genNatural,
                       genNonEmpty, genString, genText, genWord, genZoned)
+import Toml (AnyValue, BiMap, HasCodec, HasItemCodec, Key, TomlBiMap, TomlCodec, genericCodec,
+             hasCodec, iso, (.=), _Int)
 
 import qualified Data.ByteString.Lazy as L
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import qualified Toml
 
-
-biCodePropertySpec :: Spec
-biCodePropertySpec = describe "BiCode Property tests" $ do
-    encodeDecodeSpec
-    genericCodecRoundtripSpec
-    genericCustomCodecEncodeDecodeSpec
-
-encodeDecodeSpec :: SpecWith (Arg Expectation)
-encodeDecodeSpec = it "decode . encode ≡ id" $ hedgehog $ do
-    bigType <- forAll genBigType
-    tripping bigType (encode bigTypeCodec) (decode bigTypeCodec)
-
-genericCodecRoundtripSpec :: SpecWith (Arg Expectation)
-genericCodecRoundtripSpec = it "genericCodecDecode . genericCodecEncode ≡ id" $ hedgehog $ do
-    bigType <- forAll genBigType
-    tripping bigType (encode bigTypeGenericCodec) (decode bigTypeGenericCodec)
-
-genericCustomCodecEncodeDecodeSpec :: SpecWith (Arg Expectation)
-genericCustomCodecEncodeDecodeSpec =
-    it "(decode . encode) genericCodec ≡ (decode . encode) customCodec" $ hedgehog $ do
-        bigType <- forAll genBigType
-        decode bigTypeGenericCodec (encode bigTypeGenericCodec bigType) === decode bigTypeCodec (encode bigTypeCodec bigType)
 
 data BigType = BigType
     { btBool          :: !Bool

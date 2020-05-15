@@ -147,28 +147,36 @@ test-suite tomland-test
   hs-source-dirs:      test
   main-is:             Spec.hs
 
-  other-modules:
-                       Test.Toml.BiCode.Property
-                       Test.Toml.BiMap.Property
+  other-modules:       Test.Toml.Codec
+                         Test.Toml.Codec.BiMap
+                         Test.Toml.Codec.Combinators
+                         Test.Toml.Codec.Generic
+
+                       Test.Toml.Parser
+                         Test.Toml.Parser.Examples
+                         Test.Toml.Parser.Property
+                         Test.Toml.Parser.Validate
+                         -- unit tests for parsing different parts of TOML ast
+                         Test.Toml.Parser.Array
+                         Test.Toml.Parser.Bool
+                         Test.Toml.Parser.Common
+                         Test.Toml.Parser.Date
+                         Test.Toml.Parser.Double
+                         Test.Toml.Parser.Integer
+                         Test.Toml.Parser.Key
+                         Test.Toml.Parser.Text
+                         Test.Toml.Parser.Toml
+
+                       Test.Toml.Type
+                         Test.Toml.Type.Key
+                         Test.Toml.Type.PrefixTree
+                         Test.Toml.Type.Printer
+                         Test.Toml.Type.TOML
+
+                       -- helpers
+                       Test.Toml.BigType
                        Test.Toml.Gen
                        Test.Toml.Property
-                       Test.Toml.Parsing.Examples
-                       Test.Toml.Parsing.Property
-                       Test.Toml.Parsing.Unit
-                         Test.Toml.Parsing.Unit.Array
-                         Test.Toml.Parsing.Unit.Bool
-                         Test.Toml.Parsing.Unit.Common
-                         Test.Toml.Parsing.Unit.Date
-                         Test.Toml.Parsing.Unit.Double
-                         Test.Toml.Parsing.Unit.Integer
-                         Test.Toml.Parsing.Unit.Key
-                         Test.Toml.Parsing.Unit.Text
-                         Test.Toml.Parsing.Unit.Toml
-                       Test.Toml.Parsing.Validation
-                       Test.Toml.PrefixTree.Property
-                       Test.Toml.PrefixTree.Unit
-                       Test.Toml.Printer.Golden
-                       Test.Toml.TOML.Property
 
   build-depends:       bytestring ^>= 0.10
                      , containers >= 0.5.7 && < 0.7

@@ -1,11 +1,11 @@
-module Test.Toml.Parsing.Unit.Array
+module Test.Toml.Parser.Array
     ( arraySpecs
     ) where
 
 import Data.Time (TimeOfDay (..))
 import Test.Hspec (Spec, describe, it)
 
-import Test.Toml.Parsing.Unit.Common (arrayFailOn, day1, day2, int1, int2, int3, int4, parseArray)
+import Test.Toml.Parser.Common (arrayFailOn, day1, day2, int1, int2, int3, int4, parseArray)
 import Toml.Type (UValue (..))
 
 

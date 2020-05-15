@@ -1,4 +1,4 @@
-module Test.Toml.Parsing.Unit.Double
+module Test.Toml.Parser.Double
     (doubleSpecs
     ) where
 
@@ -6,7 +6,7 @@ import Test.Hspec (Spec, describe, it)
 import Test.Hspec.Megaparsec (parseSatisfies)
 import Text.Megaparsec (parse)
 
-import Test.Toml.Parsing.Unit.Common (doubleFailOn, parseDouble)
+import Test.Toml.Parser.Common (doubleFailOn, parseDouble)
 import Toml.Parser.Value (doubleP)
 
 
