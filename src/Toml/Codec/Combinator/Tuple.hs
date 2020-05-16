@@ -3,8 +3,25 @@ Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Contains TOML-specific combinators for converting between TOML and user data
-types.
+TOML-specific combinators for converting between TOML and Haskell tuples.
+
++-------------------------------+---------------+------------------------+
+|         Haskell Type          |    @TOML@     |   'TomlCodec'          |
++===============================+===============+========================+
+| __@('Int', 'Text')@__         | @[foo]@       | @'pair'@               |
++-------------------------------+---------------+------------------------+
+|                               | @    a = 42@  | @    ('Toml.int' "a")@ |
++-------------------------------+---------------+------------------------+
+|                               |@    b = "bar"@| @    ('Toml.text' "b")@|
++-------------------------------+---------------+------------------------+
+| __@('Int', 'Text', 'Bool')@__ | @[foo]@       | @'triple'@             |
++-------------------------------+---------------+------------------------+
+|                               | @    a = 42@  | @    ('Toml.int' "a")@ |
++-------------------------------+---------------+------------------------+
+|                               |@    b = "bar"@| @    ('Toml.text' "b")@|
++-------------------------------+---------------+------------------------+
+|                               |@    c = false@| @    ('Toml.bool' "c")@|
++-------------------------------+---------------+------------------------+
 
 @since 1.3.0.0
 -}
@@ -22,6 +39,7 @@ import Toml.Codec.Types (TomlCodec)
 values of the pair.
 
 If I have the following @TOML@ entry
+
 @
 myPair = { first = 11, second = "eleven"}
 @
@@ -48,6 +66,7 @@ pair aCodec bCodec = (,)
 values of the triple.
 
 If I have the following @TOML@ entry
+
 @
 myTriple =
     { first = 11
