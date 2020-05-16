@@ -60,6 +60,9 @@ module Toml.Codec.Combinator
     , textBy
     , read
     , enumBounded
+      -- ** Validation
+    , validate
+    , validateIf
 
       -- * Combinators for tables
     , table
@@ -79,7 +82,7 @@ module Toml.Codec.Combinator
 import Prelude hiding (all, any, last, map, product, read, sum)
 
 import Toml.Codec.Combinator.Common (match)
-import Toml.Codec.Combinator.Custom (enumBounded, read, textBy)
+import Toml.Codec.Combinator.Custom (enumBounded, read, textBy, validate, validateIf)
 import Toml.Codec.Combinator.List (arrayNonEmptyOf, arrayOf, list, nonEmpty)
 import Toml.Codec.Combinator.Map (map, tableMap)
 import Toml.Codec.Combinator.Monoid (all, any, first, last, product, sum)

@@ -56,6 +56,7 @@ module Toml.Codec.BiMap.Conversion
     , _EnumBounded
     , _Read
     , _TextBy
+    , _Validate
 
       -- * 'Key's
     , _KeyText
@@ -402,6 +403,21 @@ _TextBy toText parseText = BiMap toAnyValue fromAnyValue
     fromAnyValue :: AnyValue -> Either TomlBiMapError a
     fromAnyValue (AnyValue v) =
         first WrongValue (matchText v) >>= first ArbitraryError . parseText
+
+{- | By the given 'BiMap' validates it with the given predicate that returns
+'Either' the value, if the validation is successful, or the 'Text' of the error
+that should be returned in case of validation failure.
+
+Usually used as the 'Toml.Codec.Combinator.Custom.validate' or
+'Toml.Codec.Combinator.Custom.validateIf' combinator.
+
+@since 1.3.0.0
+-}
+_Validate :: forall a . (a -> Either Text a) -> TomlBiMap a AnyValue -> TomlBiMap a AnyValue
+_Validate p BiMap{..} = BiMap forward backwardWithValidation
+  where
+    backwardWithValidation :: AnyValue -> Either TomlBiMapError a
+    backwardWithValidation anyVal = backward anyVal >>= first ArbitraryError . p
 
 {- | Helper 'BiMap' for '_EnumBounded' and 'Data.Text.Text'.
 

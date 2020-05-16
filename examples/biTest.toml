@@ -3,6 +3,10 @@ testI = -42
 testF = 1.23
 testS = "foobar"
 testA = [   "abacaba", "foo", 'bar'    ]
+
+testEven = 5
+# testEven = 5
+
 testN = "newtype"
 # testStatus = "username"
 
