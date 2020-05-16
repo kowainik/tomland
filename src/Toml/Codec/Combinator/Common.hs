@@ -51,11 +51,9 @@ match :: forall a . TomlBiMap a AnyValue -> Key -> TomlCodec a
 match BiMap{..} key = Codec input output
   where
     input :: TomlEnv a
-    input = do
-        mVal <- asks $ HashMap.lookup key . tomlPairs
-        case mVal of
-            Nothing     -> throwError $ KeyNotFound key
-            Just anyVal -> whenLeftBiMapError (backward anyVal) pure
+    input = asks (HashMap.lookup key . tomlPairs) >>= \case
+        Nothing     -> throwError $ KeyNotFound key
+        Just anyVal -> whenLeftBiMapError (backward anyVal) pure
 
     output :: a -> TomlState a
     output a = do

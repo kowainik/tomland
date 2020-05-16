@@ -28,10 +28,9 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid (All (..), Any (..), First (..), Last (..), Product (..), Sum (..))
 
 import Toml.Codec.Combinator.Primitive (bool)
-import Toml.Codec.Di (dimap, dioptional)
+import Toml.Codec.Di (dimap, dioptional, diwrap)
 import Toml.Codec.Types (TomlCodec)
 import Toml.Type.Key (Key)
-
 
 
 {- | Codec for 'All' wrapper for boolean values.
@@ -57,7 +56,7 @@ any = dimap (Just . getAny) (Any . fromMaybe False) . dioptional . bool
 @since 1.2.1.0
 -}
 sum :: (Key -> TomlCodec a) -> Key -> TomlCodec (Sum a)
-sum codec = dimap getSum Sum . codec
+sum codec = diwrap . codec
 {-# INLINE sum #-}
 
 {- | Codec for 'Product' wrapper for given converter's values.
@@ -73,7 +72,7 @@ product codec = diwrap . codec
 @since 1.2.1.0
 -}
 first :: (Key -> TomlCodec a) -> Key -> TomlCodec (First a)
-first codec = dimap getFirst First . dioptional . codec
+first codec = diwrap . dioptional . codec
 {-# INLINE first #-}
 
 {- | Codec for 'Last' wrapper for given converter's values.
@@ -81,5 +80,5 @@ first codec = dimap getFirst First . dioptional . codec
 @since 1.2.1.0
 -}
 last :: (Key -> TomlCodec a) -> Key -> TomlCodec (Last a)
-last codec = dimap getLast Last . dioptional . codec
+last codec = diwrap . dioptional . codec
 {-# INLINE last #-}

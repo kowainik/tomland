@@ -14,7 +14,7 @@ import qualified Toml.Type.Printer as Printer
 
 
 keySpec :: Spec
-keySpec = describe "TOML Key" $
+keySpec = describe "TOML Key"
     keyRoundtripSpec
 
 keyRoundtripSpec :: SpecWith (Arg Expectation)

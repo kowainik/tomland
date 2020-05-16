@@ -1,4 +1,3 @@
-
 {- |
 Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
@@ -8,7 +7,7 @@ Contains TOML-specific combinators for converting between TOML and user data
 types.
 -}
 
-module Toml.Codec.Combinators
+module Toml.Codec.Combinator
     ( -- * Basic codecs for primitive values
       -- ** Boolean
       bool

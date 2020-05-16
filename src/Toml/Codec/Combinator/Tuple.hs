@@ -1,4 +1,3 @@
-
 {- |
 Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0

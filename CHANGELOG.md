@@ -14,7 +14,8 @@ The changelog is available [on GitHub][2].
   Move to `hspec-*` family of libraries from `tasty-*`.
 * [#261](https://github.com/kowainik/tomland/issues/261):
   Implement `tableMap` codec to use TOML keys as `Map` keys.
-* [#256](https://github.com/kowainik/tomland/issues/256):
+* [#256](https://github.com/kowainik/tomland/issues/256),
+  [#278](https://github.com/kowainik/tomland/issues/278):
   Rename modules to simplify module structure.
   __TODO__: write migration guide
 * Rename `ParseException` to `TomlParseError`.

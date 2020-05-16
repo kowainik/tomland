@@ -83,7 +83,7 @@ library
                            Toml.Codec.BiMap
                              Toml.Codec.BiMap.Conversion
                            Toml.Codec.Code
-                           Toml.Codec.Combinators
+                           Toml.Codec.Combinator
                              Toml.Codec.Combinator.Common
                              Toml.Codec.Combinator.Custom
                              Toml.Codec.Combinator.List
@@ -161,7 +161,7 @@ test-suite tomland-test
   other-modules:       Test.Toml.Codec
                          Test.Toml.Codec.BiMap
                            Test.Toml.Codec.BiMap.Conversion
-                         Test.Toml.Codec.Combinators
+                         Test.Toml.Codec.Combinator
                          Test.Toml.Codec.Generic
 
                        Test.Toml.Parser

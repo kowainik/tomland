@@ -77,7 +77,7 @@ inlineTableP :: Parser Table
 inlineTableP =
     fmap Table
     $ between (text "{") (text "}")
-    $ (liftA2 (,) (keyP <* text "=") anyValueP) `sepEndBy` text ","
+    $ liftA2 (,) (keyP <* text "=") anyValueP `sepEndBy` text ","
 
 -- | Parser for inline arrays of tables.
 inlineTableArrayP :: Parser (NonEmpty Table)
