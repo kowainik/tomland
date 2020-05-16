@@ -1,121 +1,57 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE GADTs               #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE Rank2Types          #-}
-{-# LANGUAGE TypeFamilies        #-}
 
 {- |
 Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Implementation of tagged partial bidirectional isomorphism.
+Implementation of /Tagged Partial Bidirectional Isomorphism/. This
+module contains the 'BiMap' type that represents conversion between
+two types with the possibility of failure.
+
+See "Toml.Codec.BiMap.Conversion" for examples of 'BiMap' with
+specific types. The 'BiMap' concept is general and is not specific to
+TOML, but in this package most usages of 'BiMap' are between TOML
+values and Haskell values.
 -}
 
 module Toml.Codec.BiMap
-       ( -- * BiMap idea
-         BiMap (..)
-       , TomlBiMap
-       , invert
-       , iso
-       , prism
+    ( -- * 'BiMap' concept
+      BiMap (..)
+    , invert
+    , iso
+    , prism
 
-         -- * 'BiMap' errors for TOML
-       , TomlBiMapError (..)
-       , wrongConstructor
-       , prettyBiMapError
+      -- * TOML 'BiMap'
+      -- ** Type
+    , TomlBiMap
+      -- ** Error
+    , TomlBiMapError (..)
+    , wrongConstructor
+    , prettyBiMapError
+      -- ** Smart constructors
+    , mkAnyValueBiMap
+      -- ** Internals
+    , tShow
+    ) where
 
-         -- * Some predefined bi mappings
-       , _Array
-       , _Bool
-       , _Double
-       , _Integer
-       , _Text
-       , _LText
-       , _ZonedTime
-       , _LocalTime
-       , _Day
-       , _TimeOfDay
-       , _String
-       , _Read
-       , _Natural
-       , _Word
-       , _Word8
-       , _Int
-       , _Float
-       , _ByteString
-       , _LByteString
-       , _ByteStringArray
-       , _LByteStringArray
-       , _NonEmpty
-       , _Set
-       , _IntSet
-       , _HashSet
-
-         -- * Bidirectional mappings for 'Key'
-       , _KeyText
-       , _KeyString
-
-         -- * Helpers for BiMap and AnyValue
-       , mkAnyValueBiMap
-       , _TextBy
-       , _LTextText
-       , _NaturalInteger
-       , _StringText
-       , _ReadString
-       , _BoundedInteger
-       , _EnumBoundedText
-       , _ByteStringText
-       , _LByteStringText
-       , _Left
-       , _Right
-       , _EnumBounded
-       , _Just
-
-         -- * Useful utility functions
-       , toMArray
-       ) where
-
-import Control.Arrow ((>>>))
 import Control.DeepSeq (NFData)
 import Control.Monad ((>=>))
-import Data.Bifunctor (bimap, first)
-import Data.ByteString (ByteString)
-import Data.Hashable (Hashable)
-import Data.Map (Map)
+import Data.Bifunctor (first)
 import Data.Text (Text)
-import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
-import Data.Word (Word8)
 import GHC.Generics (Generic)
-import Numeric.Natural (Natural)
-import Text.Read (readEither)
 
-import Toml.Parser.Key (keyP)
-import Toml.Type.AnyValue (AnyValue (..), MatchError (..), applyAsToAny, matchBool, matchDay,
-                           matchDouble, matchHours, matchInteger, matchLocal, matchText, matchZoned,
-                           mkMatchError, toMArray)
-import Toml.Type.Key (Key (..), keyToText)
+import Toml.Type.AnyValue (AnyValue (..), MatchError (..))
 import Toml.Type.Value (TValue (..), Value (..))
 
 import qualified Control.Category as Cat
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.HashSet as HS
-import qualified Data.IntSet as IS
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Map as M
-import qualified Data.Set as S
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Encoding as TL
 
-import qualified Toml.Parser.Core as P (errorBundlePretty, parse)
-
-----------------------------------------------------------------------------
--- BiMap concepts and ideas
-----------------------------------------------------------------------------
 
 {- | Partial bidirectional isomorphism. @BiMap a b@ contains two function:
 
@@ -175,7 +111,7 @@ iso f g = BiMap (Right . f) (Right . g)
 {-# INLINE iso #-}
 
 {- | Creates 'BiMap' from prism-like pair of functions. This combinator can be
-used to create 'BiMap' for custom data types like this:
+used to create 'BiMap' for custom sum types like this:
 
 @
 __data__ User
@@ -196,13 +132,15 @@ _Client = Toml.'prism' Client $ \\__case__
 -}
 prism
     :: (field -> object)
+    -- ^ Constructor
     -> (object -> Either error field)
+    -- ^ Match object to either error or field
     -> BiMap error object field
 prism review preview = BiMap preview (Right . review)
 {-# INLINE prism #-}
 
 ----------------------------------------------------------------------------
--- BiMap error types
+-- TOML BiMap
 ----------------------------------------------------------------------------
 
 -- | 'BiMap' specialized to TOML error.
@@ -245,40 +183,26 @@ wrongConstructor
     -> Either TomlBiMapError b
 wrongConstructor constructor x = Left $ WrongConstructor constructor (tShow x)
 
-----------------------------------------------------------------------------
--- General purpose bimaps
-----------------------------------------------------------------------------
-
--- | Bimap for 'Either' and its left type
-_Left :: (Show l, Show r) => TomlBiMap (Either l r) l
-_Left = prism Left $ \case
-    Left l -> Right l
-    x -> wrongConstructor "Left" x
-
--- | Bimap for 'Either' and its right type
-_Right :: (Show l, Show r) => TomlBiMap (Either l r) r
-_Right = prism Right $ \case
-    Right r -> Right r
-    x -> wrongConstructor "Right" x
-
--- | Bimap for 'Maybe'
-_Just :: Show r => TomlBiMap (Maybe r) r
-_Just = prism Just $ \case
-    Just r -> Right r
-    x -> wrongConstructor "Just" x
+tShow :: Show a => a -> Text
+tShow = T.pack . show
+{-# INLINE tShow #-}
 
 ----------------------------------------------------------------------------
 --  BiMaps for value
 ----------------------------------------------------------------------------
 
--- | Creates prism for 'AnyValue'.
+{- | Smart constructor for 'BiMap' from a Haskell value (some
+primitive like 'Int' or 'Text') to 'AnyValue'.
+-}
 mkAnyValueBiMap
     :: forall a (tag :: TValue)
     .  (forall (t :: TValue) . Value t -> Either MatchError a)
+    -- ^ Haskell type exctractor from 'Value'
     -> (a -> Value tag)
+    -- ^ Convert Haskell type back to 'Value'
     -> TomlBiMap a AnyValue
 mkAnyValueBiMap matchValue toValue = BiMap
-    { forward = Right . toAnyValue
+    { forward  = Right . toAnyValue
     , backward = fromAnyValue
     }
   where
@@ -287,324 +211,3 @@ mkAnyValueBiMap matchValue toValue = BiMap
 
     fromAnyValue :: AnyValue -> Either TomlBiMapError a
     fromAnyValue (AnyValue value) = first WrongValue $ matchValue value
-
--- | Creates bimap for 'Data.Text.Text' to 'AnyValue' with custom functions
-_TextBy
-    :: forall a .
-       (a -> Text)              -- ^ @show@ function for @a@
-    -> (Text -> Either Text a)  -- ^ Parser of @a@ from 'Data.Text.Text'
-    -> TomlBiMap a AnyValue
-_TextBy toText parseText = BiMap toAnyValue fromAnyValue
-  where
-    toAnyValue :: a -> Either TomlBiMapError AnyValue
-    toAnyValue = Right . AnyValue . Text . toText
-
-    fromAnyValue :: AnyValue -> Either TomlBiMapError a
-    fromAnyValue (AnyValue v) =
-        first WrongValue (matchText v) >>= first ArbitraryError . parseText
-
-{- | 'Prelude.Bool' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.bool' combinator.
--}
-_Bool :: TomlBiMap Bool AnyValue
-_Bool = mkAnyValueBiMap matchBool Bool
-{-# INLINE _Bool #-}
-
-{- | 'Prelude.Integer' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.integer' combinator.
--}
-_Integer :: TomlBiMap Integer AnyValue
-_Integer = mkAnyValueBiMap matchInteger Integer
-{-# INLINE _Integer #-}
-
-{- | 'Prelude.Double' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.double' combinator.
--}
-_Double :: TomlBiMap Double AnyValue
-_Double = mkAnyValueBiMap matchDouble Double
-{-# INLINE _Double #-}
-
-{- | 'Data.Text.Text' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.text' combinator.
--}
-_Text :: TomlBiMap Text AnyValue
-_Text = mkAnyValueBiMap matchText Text
-{-# INLINE _Text #-}
-
--- | Helper bimap for 'Data.Text.Lazy.Text' and 'Data.Text.Text'.
-_LTextText :: BiMap e TL.Text Text
-_LTextText = iso TL.toStrict TL.fromStrict
-{-# INLINE _LTextText #-}
-
-{- | 'Data.Text.Lazy.Text' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.lazyText' combinator.
--}
-_LText :: TomlBiMap TL.Text AnyValue
-_LText = _LTextText >>> _Text
-{-# INLINE _LText #-}
-
-{- | 'Data.Time.ZonedTime' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.zonedTime' combinator.
--}
-_ZonedTime :: TomlBiMap ZonedTime AnyValue
-_ZonedTime = mkAnyValueBiMap matchZoned Zoned
-{-# INLINE _ZonedTime #-}
-
-{- | 'Data.Time.LocalTime' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.localTime' combinator.
--}
-_LocalTime :: TomlBiMap LocalTime AnyValue
-_LocalTime = mkAnyValueBiMap matchLocal Local
-{-# INLINE _LocalTime #-}
-
-{- | 'Data.Time.Day' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.day' combinator.
--}
-_Day :: TomlBiMap Day AnyValue
-_Day = mkAnyValueBiMap matchDay Day
-{-# INLINE _Day #-}
-
-{- | 'Data.Time.TimeOfDay' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.timeOfDay' combinator.
--}
-_TimeOfDay :: TomlBiMap TimeOfDay AnyValue
-_TimeOfDay = mkAnyValueBiMap matchHours Hours
-{-# INLINE _TimeOfDay #-}
-
--- | Helper bimap for 'String' and 'Data.Text.Text'.
-_StringText :: BiMap e String Text
-_StringText = iso T.pack T.unpack
-{-# INLINE _StringText #-}
-
-{- | 'String' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.string' combinator.
--}
-_String :: TomlBiMap String AnyValue
-_String = _StringText >>> _Text
-{-# INLINE _String #-}
-
--- | Helper bimap for 'String' and types with 'Read' and 'Show' instances.
-_ReadString :: (Show a, Read a) => TomlBiMap a String
-_ReadString = BiMap (Right . show) (first (ArbitraryError . T.pack) . readEither)
-{-# INLINE _ReadString #-}
-
--- | Bimap for 'AnyValue' and values with a 'Read' and 'Show' instance.
--- Usually used as 'Toml.Codec.Combinators.read' combinator.
-_Read :: (Show a, Read a) => TomlBiMap a AnyValue
-_Read = _ReadString >>> _String
-{-# INLINE _Read #-}
-
--- | Helper bimap for 'Natural' and 'Prelude.Integer'.
-_NaturalInteger :: TomlBiMap Natural Integer
-_NaturalInteger = BiMap (Right . toInteger) eitherInteger
-  where
-    eitherInteger :: Integer -> Either TomlBiMapError Natural
-    eitherInteger n
-      | n < 0     = Left $ ArbitraryError $ "Value is below zero, but expected Natural: " <> tShow n
-      | otherwise = Right (fromIntegral n)
-
-{- | 'String' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.natural' combinator.
--}
-_Natural :: TomlBiMap Natural AnyValue
-_Natural = _NaturalInteger >>> _Integer
-{-# INLINE _Natural #-}
-
--- | Helper bimap for 'Prelude.Integer' and integral, bounded values.
-_BoundedInteger :: (Integral a, Bounded a, Show a) => TomlBiMap a Integer
-_BoundedInteger = BiMap (Right . toInteger) eitherBounded
-  where
-    eitherBounded :: forall a. (Integral a, Bounded a, Show a) => Integer -> Either TomlBiMapError a
-    eitherBounded n
-      | n < toInteger (minBound @a) =
-         let msg = "Value " <> tShow n <> " is less than minBound: " <> tShow (minBound @a)
-         in Left $ ArbitraryError msg
-      | n > toInteger (maxBound @a) =
-         let msg = "Value " <> tShow n <> " is greater than maxBound: " <> tShow (maxBound @a)
-         in Left $ ArbitraryError msg
-      | otherwise = Right (fromIntegral n)
-
-{- | Helper bimap for '_EnumBounded' and 'Data.Text.Text'.
-
-@since 1.1.1.0
--}
-_EnumBoundedText :: forall a. (Show a, Enum a, Bounded a) => TomlBiMap a Text
-_EnumBoundedText = BiMap
-    { forward  = Right . tShow
-    , backward = toEnumBounded
-    }
-  where
-    toEnumBounded :: Text -> Either TomlBiMapError a
-    toEnumBounded value = case M.lookup value enumOptions of
-        Just a  -> Right a
-        Nothing ->
-            let msg = "Value is '" <> value <> "' but expected one of: " <> T.intercalate ", " options
-            in Left (ArbitraryError msg)
-      where
-        enumOptions :: Map Text a
-        enumOptions = M.fromList $ zip options enums
-        options  = fmap tShow enums
-        enums = [minBound @a .. maxBound @a]
-
-{- | Bimap for nullary sum data types with 'Show', 'Enum' and 'Bounded'
-instances.  Usually used as 'Toml.Codec.Combinators.enumBounded' combinator.
-
-@since 1.1.1.0
--}
-_EnumBounded :: (Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
-_EnumBounded = _EnumBoundedText >>> _Text
-{-# INLINE _EnumBounded #-}
-
-{- | 'Word' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.word' combinator.
--}
-_Word :: TomlBiMap Word AnyValue
-_Word = _BoundedInteger >>> _Integer
-{-# INLINE _Word #-}
-
-{- | 'Word8' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.word8' combinator.
-
-@since 1.2.0.0
--}
-_Word8 :: TomlBiMap Word8 AnyValue
-_Word8 = _BoundedInteger >>> _Integer
-{-# INLINE _Word8 #-}
-
-{- | 'Int' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.int' combinator.
--}
-_Int :: TomlBiMap Int AnyValue
-_Int = _BoundedInteger >>> _Integer
-{-# INLINE _Int #-}
-
-{- | 'Float' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.float' combinator.
--}
-_Float :: TomlBiMap Float AnyValue
-_Float = iso realToFrac realToFrac >>> _Double
-{-# INLINE _Float #-}
-
--- | Helper bimap for 'Data.Text.Text' and strict 'ByteString'
-_ByteStringText :: TomlBiMap ByteString Text
-_ByteStringText = prism T.encodeUtf8 eitherText
-  where
-    eitherText :: ByteString -> Either TomlBiMapError Text
-    eitherText = either (\err -> Left $ ArbitraryError $ tShow err) Right . T.decodeUtf8'
-{-# INLINE _ByteStringText #-}
-
--- | UTF8 encoded 'ByteString' bimap for 'AnyValue'.
--- Usually used as 'Toml.Codec.Combinators.byteString' combinator.
-_ByteString :: TomlBiMap ByteString AnyValue
-_ByteString = _ByteStringText >>> _Text
-{-# INLINE _ByteString #-}
-
--- | Helper bimap for 'Data.Text.Text' and lazy 'BL.ByteString'.
-_LByteStringText :: TomlBiMap BL.ByteString Text
-_LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) eitherText
-  where
-    eitherText :: BL.ByteString -> Either TomlBiMapError Text
-    eitherText = bimap (ArbitraryError . tShow) TL.toStrict . TL.decodeUtf8'
-{-# INLINE _LByteStringText #-}
-
--- | UTF8 encoded lazy 'BL.ByteString' bimap for 'AnyValue'.
--- Usually used as 'Toml.Codec.Combinators.lazyByteString' combinator.
-_LByteString :: TomlBiMap BL.ByteString AnyValue
-_LByteString = _LByteStringText >>> _Text
-{-# INLINE _LByteString #-}
-
-{- | 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
-Usually used as 'Toml.Codec.Combinators.byteStringArray' combinator.
-
-@since 1.2.0.0
--}
-_ByteStringArray :: TomlBiMap ByteString AnyValue
-_ByteStringArray = iso BS.unpack BS.pack >>> _Array _Word8
-{-# INLINE _ByteStringArray #-}
-
-{- | Lazy 'ByteString' bimap for 'AnyValue' encoded as a list of non-negative integers.
-Usually used as 'Toml.Codec.Combinators.lazyByteStringArray' combinator.
-
-@since 1.2.0.0
--}
-_LByteStringArray :: TomlBiMap BL.ByteString AnyValue
-_LByteStringArray = iso BL.unpack BL.pack >>>  _Array _Word8
-{-# INLINE _LByteStringArray #-}
-
--- | Takes a bimap of a value and returns a bimap between a list of values and 'AnyValue'
--- as an array. Usually used as 'Toml.Codec.Combinators.arrayOf' combinator.
-_Array :: forall a . TomlBiMap a AnyValue -> TomlBiMap [a] AnyValue
-_Array elementBimap = BiMap toAnyValue fromAnyValue
-  where
-    toAnyValue :: [a] -> Either TomlBiMapError AnyValue
-    toAnyValue = mapM (forward elementBimap) >=> bimap WrongValue AnyValue . toMArray
-
-    fromAnyValue :: AnyValue -> Either TomlBiMapError [a]
-    fromAnyValue (AnyValue v) = matchElements (backward elementBimap) v
-
-    -- can't reuse matchArray here :(
-    matchElements :: (AnyValue -> Either TomlBiMapError a) -> Value t -> Either TomlBiMapError [a]
-    matchElements match (Array a) = mapM (applyAsToAny match) a
-    matchElements _ val           = first WrongValue $ mkMatchError TArray val
-
-
--- | Takes a bimap of a value and returns a bimap between a non-empty list of values and 'AnyValue'
--- as an array. Usually used as 'Toml.Codec.Combinators.nonEmpty' combinator.
-_NonEmpty :: TomlBiMap a AnyValue -> TomlBiMap (NE.NonEmpty a) AnyValue
-_NonEmpty bi = _NonEmptyArray >>> _Array bi
-{-# INLINE _NonEmpty #-}
-
-_NonEmptyArray :: TomlBiMap (NE.NonEmpty a) [a]
-_NonEmptyArray = BiMap
-    { forward  = Right . NE.toList
-    , backward = maybe (Left $ ArbitraryError "Empty array list, but expected NonEmpty") Right . NE.nonEmpty
-    }
-{-# INLINE _NonEmptyArray #-}
-
--- | Takes a bimap of a value and returns a bimap between a set of values and 'AnyValue'
--- as an array. Usually used as 'Toml.Codec.Combinators.arraySetOf' combinator.
-_Set :: (Ord a) => TomlBiMap a AnyValue -> TomlBiMap (S.Set a) AnyValue
-_Set bi = iso S.toList S.fromList >>> _Array bi
-{-# INLINE _Set #-}
-
--- | Takes a bimap of a value and returns a bimap between a hash set of values and 'AnyValue'
--- as an array. Usually used as 'Toml.Codec.Combinators.arrayHashSetOf' combinator.
-_HashSet :: (Eq a, Hashable a) => TomlBiMap a AnyValue -> TomlBiMap (HS.HashSet a) AnyValue
-_HashSet bi = iso HS.toList HS.fromList >>> _Array bi
-{-# INLINE _HashSet #-}
-
-{- | 'IS.IntSet' bimap for 'AnyValue'. Usually used as
-'Toml.Codec.Combinators.arrayIntSet' combinator.
--}
-_IntSet :: TomlBiMap IS.IntSet AnyValue
-_IntSet = iso IS.toList IS.fromList >>> _Array _Int
-{-# INLINE _IntSet #-}
-
-{- | Bidirectional converter between 'Key' and 'Data.Text.Text'.
-
-@since 1.3.0.0
--}
-_KeyText :: TomlBiMap Key Text
-_KeyText = BiMap
-    { forward = Right . keyToText
-    , backward = textToKey
-    }
-
-{- | Bidirectional converter between 'Key' and 'String'.
-
-@since 1.3.0.0
--}
-_KeyString :: TomlBiMap Key String
-_KeyString = BiMap
-    { forward = Right . T.unpack . keyToText
-    , backward = textToKey . T.pack
-    }
-
-textToKey :: Text -> Either TomlBiMapError Key
-textToKey t = case P.parse keyP "" t of
-    Left err  -> Left $ ArbitraryError $ T.pack $ P.errorBundlePretty err
-    Right key -> Right key
-
-tShow :: Show a => a -> Text
-tShow = T.pack . show
-{-# INLINE tShow #-}

@@ -21,9 +21,12 @@ module Toml.Codec
     , module Toml.Codec.Generic
       -- $bimap
     , module Toml.Codec.BiMap
+      -- $bimapConversion
+    , module Toml.Codec.BiMap.Conversion
     ) where
 
 import Toml.Codec.BiMap
+import Toml.Codec.BiMap.Conversion
 import Toml.Codec.Code
 import Toml.Codec.Combinators
 import Toml.Codec.Di
@@ -59,6 +62,11 @@ Automatic TOML codecs using 'GHC.Generics.Generic'.
 -}
 
 {- $bimap
-Partial bidirectional conversion between TOML primitives and Haskell
+'BiMap' type that represents /Tagged Partial Bidirectional Conversion/
+between TOML primitives and Haskell types.
+-}
+
+{- $bimapConversion
+Specific implementations of 'BiMap' between Haskell types and TOML
 values.
 -}
