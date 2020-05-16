@@ -65,7 +65,7 @@ sum codec = dimap getSum Sum . codec
 @since 1.2.1.0
 -}
 product :: (Key -> TomlCodec a) -> Key -> TomlCodec (Product a)
-product codec = dimap getProduct Product . codec
+product codec = diwrap . codec
 {-# INLINE product #-}
 
 {- | Codec for 'First' wrapper for given converter's values.
