@@ -59,8 +59,8 @@ the 'Text' of the error that should be returned in case of validation failure.
 
 __Example:__
 
-Let's imagine that we want to have the 'Text' field in @TOML@ that could only
-have 3 chars in it. In this case, you can write the following codec:
+Let's imagine that we want to have the list in @TOML@ that could only
+have even 'Int's inside. In this case, you can write the following codec:
 
 @
 allEven :: ['Int'] -> 'Either' 'Text' ['Int']
@@ -69,7 +69,7 @@ allEven xs =
     then 'Right' xs
     else 'Left' "This is wrong, I asked you for even only :("
 
-allEvenCodec :: TomlCodec [Int]
+allEvenCodec :: 'TomlCodec' ['Int']
 allEvenCodec = Toml.'validate' allEven (Toml._Array Toml._Int) \"myEvenList\"
 @
 
@@ -92,7 +92,7 @@ tomland decode error:  This is wrong, I asked you for even only :(
 @since 1.3.0.0
 -}
 validate :: (a -> Either Text a) -> TomlBiMap a AnyValue -> Key -> TomlCodec a
-validate p bimap = match (_Validate p bimap)
+validate p biMap = match (_Validate p biMap)
 {-# INLINE validate #-}
 
 {- | Similar to 'validate' but takes the predicate that returnes 'Bool'.
@@ -131,7 +131,7 @@ tomland decode error:  Value does not pass the validation for key: myKeyName
 @since 1.3.0.0
 -}
 validateIf :: forall a . (a -> Bool) -> TomlBiMap a AnyValue -> Key -> TomlCodec a
-validateIf p bimap k = validate validateEither bimap k
+validateIf p biMap k = validate validateEither biMap k
   where
     validateEither :: a -> Either Text a
     validateEither a =
