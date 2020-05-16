@@ -15,8 +15,8 @@ module Toml.Codec
     , module Toml.Codec.Code
       -- $di
     , module Toml.Codec.Di
-      -- $combinators
-    , module Toml.Codec.Combinators
+      -- $combinator
+    , module Toml.Codec.Combinator
       -- $generic
     , module Toml.Codec.Generic
       -- $bimap
@@ -28,7 +28,7 @@ module Toml.Codec
 import Toml.Codec.BiMap
 import Toml.Codec.BiMap.Conversion
 import Toml.Codec.Code
-import Toml.Codec.Combinators
+import Toml.Codec.Combinator
 import Toml.Codec.Di
 import Toml.Codec.Error
 import Toml.Codec.Generic
@@ -52,7 +52,7 @@ types.
 Forward and backward mapping functions and combinators (similar to profunctors).
 -}
 
-{- $combinators
+{- $combinator
 Contains TOML-specific combinators and codecs for converting between TOML and
 user data types.
 -}

@@ -1,5 +1,5 @@
-module Test.Toml.Codec.Combinators
-    ( combinatorsSpec
+module Test.Toml.Codec.Combinator
+    ( combinatorSpec
     ) where
 
 import Hedgehog (forAll, tripping)
@@ -10,8 +10,8 @@ import Test.Toml.BigType (bigTypeCodec, genBigType)
 import Toml.Codec.Code (decode, encode)
 
 
-combinatorsSpec :: Spec
-combinatorsSpec = describe "Combinators spec" $
+combinatorSpec :: Spec
+combinatorSpec = describe "Combinator spec"
     encodeDecodeSpec
 
 encodeDecodeSpec :: SpecWith (Arg Expectation)

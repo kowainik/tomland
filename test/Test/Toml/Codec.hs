@@ -5,12 +5,12 @@ module Test.Toml.Codec
 import Test.Hspec (Spec, describe)
 
 import Test.Toml.Codec.BiMap (biMapSpec)
-import Test.Toml.Codec.Combinators (combinatorsSpec)
+import Test.Toml.Codec.Combinator (combinatorSpec)
 import Test.Toml.Codec.Generic (genericSpec)
 
 
 codecSpec :: Spec
 codecSpec = describe "Codec: unit and property tests for bidirectional codecs" $ do
     biMapSpec
-    combinatorsSpec
+    combinatorSpec
     genericSpec
