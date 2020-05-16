@@ -29,6 +29,7 @@ import GHC.Generics (Generic)
 import Hedgehog (Gen)
 import Numeric.Natural (Natural)
 
+import Test.Toml.Codec.Combinator.Common (Batman (..))
 import Test.Toml.Gen (genBool, genByteString, genDay, genDouble, genFloat, genHashSet, genHours,
                       genInt, genIntSet, genInteger, genLByteString, genLocal, genNatural,
                       genNonEmpty, genString, genText, genWord, genZoned)
@@ -74,20 +75,6 @@ data BigType = BigType
     , btFirst         :: !(First Int)
     , btLast          :: !(Last Int)
     } deriving stock (Show, Eq, Generic)
-
--- | Wrapper over 'Double' and 'Float' to be equal on @NaN@ values.
-newtype Batman a = Batman
-    { unBatman :: a
-    } deriving stock (Show)
-
-instance HasCodec a => HasCodec (Batman a) where
-    hasCodec = Toml.diwrap . hasCodec @a
-
-instance RealFloat a => Eq (Batman a) where
-    Batman a == Batman b =
-        if isNaN a
-            then isNaN b
-            else a == b
 
 newtype BigTypeNewtype = BigTypeNewtype
     { unBigTypeNewtype :: ZonedTime
