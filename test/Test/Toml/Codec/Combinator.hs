@@ -8,12 +8,16 @@ import Test.Hspec.Hedgehog (hedgehog)
 
 -- import Test.Toml.BigType (bigTypeCodec, genBigType)
 import Test.Toml.Codec.Combinator.Primitive (primitiveSpec)
+import Test.Toml.Codec.Combinator.Set (setSpec)
+import Test.Toml.Codec.Combinator.Tuple (tupleSpec)
 import Toml.Codec.Code (decode, encode)
 
 
 combinatorSpec :: Spec
-combinatorSpec = describe "Combinator spec"
+combinatorSpec = describe "Combinator spec" $ do
     primitiveSpec
+    setSpec
+    tupleSpec
 
 --     encodeDecodeSpec
 --

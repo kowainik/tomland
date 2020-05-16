@@ -164,6 +164,8 @@ test-suite tomland-test
                          Test.Toml.Codec.Combinator
                            Test.Toml.Codec.Combinator.Common
                            Test.Toml.Codec.Combinator.Primitive
+                           Test.Toml.Codec.Combinator.Set
+                           Test.Toml.Codec.Combinator.Tuple
                          Test.Toml.Codec.Generic
 
                        Test.Toml.Parser
