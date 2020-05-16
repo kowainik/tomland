@@ -40,3 +40,5 @@ keysDiffSpec = describe "Key difference" $ do
         keysDiff "key.foo" "key.bar" `shouldBe` Diff "key" "foo" "bar"
     it "Diff: Two components" $
         keysDiff "key.nest.foo" "key.nest.bar" `shouldBe` Diff "key.nest" "foo" "bar"
+    it "Diff: Two diff components" $
+        keysDiff "key.foo.nest" "key.bar.nest" `shouldBe` Diff "key" "foo.nest" "bar.nest"

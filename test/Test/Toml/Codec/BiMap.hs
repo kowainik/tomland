@@ -24,7 +24,7 @@ biMapSpec = describe "Tagged Partial Bidirectional Isomorphism: tests" $ do
     categoryLaws
 
 categoryLaws :: Spec
-categoryLaws = describe "Category laws" $ do
+categoryLaws = describe "BiMap Category instance laws" $ do
     it "Right identity: f . id ≡ f" $ biMapEquality
         (_Word8Integer . id)
         _Word8Integer
@@ -44,7 +44,7 @@ categoryLaws = describe "Category laws" $ do
         genText
 
 {- | Property that takes two 'BiMap's and checks them on equality. We
-consider two 'BiMap's @m1@ and @m2@ equal iff:
+consider two 'BiMap's @m1@ and @m2@ equal if:
 
 * @forward  m1 ≡ forward  m2@
 * @backward m1 ≡ backward m2@
