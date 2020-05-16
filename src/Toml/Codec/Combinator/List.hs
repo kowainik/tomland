@@ -3,8 +3,20 @@ Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Contains TOML-specific combinators for converting between TOML and user data
+TOML-specific combinators for converting between TOML and Haskell list-like data
 types.
+
++-------------------------+----------------------------------+-------------------------------------+
+|      Haskell Type       |              @TOML@              |             'TomlCodec'             |
++=========================+==================================+=====================================+
+| __@['Int']@__           | @a = [1, 2, 3]@                  | @'arrayOf' 'Toml._Int' "a"@         |
++-------------------------+----------------------------------+-------------------------------------+
+| __@'NonEmpty' 'Int'@__  | @a = [11, 42]@                   | @'arrayNonEmptyOf' 'Toml._Int' "a"@ |
++-------------------------+----------------------------------+-------------------------------------+
+| __@['Text']@__          | @x = [{a = "foo"}, {a = "bar"}]@ | @'list' ('Toml.text' "a") "x"@      |
++-------------------------+----------------------------------+-------------------------------------+
+| __@'NonEmpty' 'Text'@__ | @x = [{a = "foo"}, {a = "bar"}]@ | @'nonEmpty' ('Toml.text' "a") "x"@  |
++-------------------------+----------------------------------+-------------------------------------+
 
 @since 1.3.0.0
 -}

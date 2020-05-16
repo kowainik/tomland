@@ -3,8 +3,24 @@ Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Contains TOML-specific combinators for converting between TOML and user data
-types.
+TOML-specific combinators for converting between TOML and Haskell 'Monoid'
+wrapper data types.
+
++-----------------------+------------+----------------------------+
+|     Haskell Type      |   @TOML@   |        'TomlCodec'         |
++=======================+============+============================+
+| __'All'__             | @a = true@ | @'all' "a"@                |
++-----------------------+------------+----------------------------+
+| __'Any'__             | @a = true@ | @'any' "a"@                |
++-----------------------+------------+----------------------------+
+| __@'Sum' 'Int'@__     | @a = 1@    | @'sum' 'Toml.int' "a"@     |
++-----------------------+------------+----------------------------+
+| __@'Product' 'Int'@__ | @a = 0@    | @'product' 'Toml.int' "a"@ |
++-----------------------+------------+----------------------------+
+| __@'First' 'Int'@__   | @a = 42@   | @'first' 'Toml.int' "a"@   |
++-----------------------+------------+----------------------------+
+| __@'Last' 'Bool'@__   | @a = true@ | @'last' 'Toml.bool' "a"@   |
++-----------------------+------------+----------------------------+
 
 @since 1.3.0.0
 -}
