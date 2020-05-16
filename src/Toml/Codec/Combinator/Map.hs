@@ -6,8 +6,16 @@ Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Contains TOML-specific combinators for converting between TOML and user data
+TOML-specific combinators for converting between TOML and Haskell Map-like data
 types.
+
++--------------------------+-----------------------------+-------------------------------------------------+
+|       Haskell Type       |           @TOML@            |                   'TomlCodec'                   |
++==========================+=============================+=================================================+
+| __@'Map' 'Int' 'Text'@__ | @x = [{a = 42, b = "foo"}]@ | @'map' ('Toml.int' "a") ('Toml.text' "b") "x"@  |
++--------------------------+-----------------------------+-------------------------------------------------+
+| __@'Map' 'Text' 'Int'@__ | @x = [{a = 42, b = 11}]@    | @'tableMap' 'Toml._KeyText' 'Toml.int' "x"@     |
++--------------------------+-----------------------------+-------------------------------------------------+
 
 @since 1.3.0.0
 -}

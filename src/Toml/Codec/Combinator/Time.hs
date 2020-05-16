@@ -3,8 +3,20 @@ Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Contains TOML-specific combinators for converting between TOML and user data
-types.
+TOML-specific combinators for converting between TOML and Haskell date and time
+data types.
+
++-----------------+----------------------------+-------------------+
+|  Haskell Type   |           @TOML@           |    'TomlCodec'    |
++=================+============================+===================+
+| __'ZonedTime'__ | @a = 2020-05-16T04:32:00Z@ | @'zonedTime' "a"@ |
++-----------------+----------------------------+-------------------+
+| __'LocalTime'__ | @a = 2020-05-16T04:32:00@  | @'localTime' "a"@ |
++-----------------+----------------------------+-------------------+
+| __'Day'__       | @a = 2020-05-16@           | @'day' "a"@       |
++-----------------+----------------------------+-------------------+
+| __'TimeOfDay'__ | @a = 04:32:00@             | @'timeOfDay' "a"@ |
++-----------------+----------------------------+-------------------+
 
 @since 1.3.0.0
 -}
