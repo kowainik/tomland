@@ -206,7 +206,7 @@ _NaturalInteger = BiMap (Right . toInteger) eitherInteger
       | n < 0     = Left $ ArbitraryError $ "Value is below zero, but expected Natural: " <> tShow n
       | otherwise = Right (fromIntegral n)
 
-{- | 'String' 'BiMap' for 'AnyValue'. Usually used as the
+{- | 'Natural' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.natural' combinator.
 -}
 _Natural :: TomlBiMap Natural AnyValue
@@ -383,7 +383,9 @@ _Read :: (Show a, Read a) => TomlBiMap a AnyValue
 _Read = _ReadString >>> _String
 {-# INLINE _Read #-}
 
--- | Creates bimap for 'Data.Text.Text' to 'AnyValue' with custom functions
+{- | Creates 'BiMap' for 'Data.Text.Text' to 'AnyValue' with custom functions.
+Usually used as the 'Toml.Codec.Combinator.Custom.textBy' combinator.
+-}
 _TextBy
     :: forall a .
        (a -> Text)              -- ^ @show@ function for @a@
