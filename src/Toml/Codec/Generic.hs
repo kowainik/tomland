@@ -148,7 +148,7 @@ import Toml.Type.Key (Key)
 
 import qualified Data.Text.Lazy as L
 
-import qualified Toml.Codec.BiMap as Toml
+import qualified Toml.Codec.BiMap.Conversion as Toml
 import qualified Toml.Codec.Combinators as Toml
 import qualified Toml.Codec.Di as Toml
 

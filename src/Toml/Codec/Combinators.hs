@@ -101,11 +101,12 @@ import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Word (Word8)
 import Numeric.Natural (Natural)
 
-import Toml.Codec.BiMap (BiMap (..), TomlBiMap, _Array, _Bool, _ByteString, _ByteStringArray, _Day,
-                         _Double, _EnumBounded, _Float, _HashSet, _Int, _IntSet, _Integer,
-                         _LByteString, _LByteStringArray, _LText, _LocalTime, _Natural, _NonEmpty,
-                         _Read, _Set, _String, _Text, _TextBy, _TimeOfDay, _Word, _Word8,
-                         _ZonedTime)
+import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
+import Toml.Codec.BiMap.Conversion (_Array, _Bool, _ByteString, _ByteStringArray, _Day, _Double,
+                                    _EnumBounded, _Float, _HashSet, _Int, _IntSet, _Integer,
+                                    _LByteString, _LByteStringArray, _LText, _LocalTime, _Natural,
+                                    _NonEmpty, _Read, _Set, _String, _Text, _TextBy, _TimeOfDay,
+                                    _Word, _Word8, _ZonedTime)
 import Toml.Codec.Code (execTomlCodec)
 import Toml.Codec.Di (dimap, dioptional, (.=))
 import Toml.Codec.Error (TomlDecodeError (..))
