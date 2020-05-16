@@ -84,6 +84,16 @@ library
                              Toml.Codec.BiMap.Conversion
                            Toml.Codec.Code
                            Toml.Codec.Combinators
+                             Toml.Codec.Combinator.Common
+                             Toml.Codec.Combinator.Custom
+                             Toml.Codec.Combinator.List
+                             Toml.Codec.Combinator.Map
+                             Toml.Codec.Combinator.Monoid
+                             Toml.Codec.Combinator.Primitive
+                             Toml.Codec.Combinator.Set
+                             Toml.Codec.Combinator.Table
+                             Toml.Codec.Combinator.Time
+                             Toml.Codec.Combinator.Tuple
                            Toml.Codec.Di
                            Toml.Codec.Error
                            Toml.Codec.Generic
