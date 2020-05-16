@@ -20,6 +20,7 @@ module Test.Toml.Gen
 
        , genList
        , genNonEmpty
+       , genSet
        , genHashSet
        , genIntSet
 
@@ -56,6 +57,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian,
                   minutesToTimeZone)
@@ -237,6 +239,9 @@ genNatural = fromIntegral <$> genWord
 
 genFloat :: Gen Float
 genFloat = Gen.float (Range.constant (-10000.0) 10000.0)
+
+genSet :: Ord a => Gen a -> Gen (Set a)
+genSet genA = fromList <$> genList genA
 
 genHashSet :: (Eq a, Hashable a) => Gen a -> Gen (HashSet a)
 genHashSet genA = fromList <$> genList genA

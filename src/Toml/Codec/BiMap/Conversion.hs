@@ -47,8 +47,8 @@ module Toml.Codec.BiMap.Conversion
     , _Array
     , _NonEmpty
     , _Set
-    , _IntSet
     , _HashSet
+    , _IntSet
     , _ByteStringArray
     , _LByteStringArray
 
