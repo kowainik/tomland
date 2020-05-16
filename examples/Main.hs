@@ -110,6 +110,7 @@ data Test = Test
     , testM      :: !(Maybe Bool)
     , testX      :: !TestInside
     , testY      :: !(Maybe TestInside)
+    , testEven   :: !Int
     , testN      :: !N
     , testC      :: !ColorScheme
     , testPair   :: !(Int, Text)
@@ -135,6 +136,7 @@ testT = Test
     <*> Toml.dioptional (Toml.bool "testM") .= testM
     <*> Toml.table insideCodec "testX" .= testX
     <*> Toml.dioptional (Toml.table insideCodec "testY") .= testY
+    <*> Toml.validateIf even Toml._Int "testEven" .= testEven
     <*> Toml.diwrap (Toml.text "testN") .= testN
     <*> Toml.enumBounded "testC" .= testC
     <*> Toml.table pairC "testPair" .= testPair

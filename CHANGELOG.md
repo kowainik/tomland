@@ -28,6 +28,9 @@ The changelog is available [on GitHub][2].
 * Add `decodeFileEither` and `encodeToFile` functions.
 * [#218](https://github.com/kowainik/tomland/issues/218):
   Add tests for TOML validation.
+* [#237](https://github.com/kowainik/tomland/issues/237):
+  Add `BiMap` `_Validate` and codecs `validate` and `validateIf` for custom
+  validation.
 
 ## 1.2.1.0 — Nov 6, 2019
 
