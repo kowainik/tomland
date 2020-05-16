@@ -30,8 +30,10 @@ keysDiffSpec = describe "Key difference" $ do
         keysDiff "key" "key" `shouldBe` Equal
     it "Equal: Complex" $
         keysDiff "foo.bar.baz" "foo.bar.baz" `shouldBe` Equal
-    it "NoPrefix" $
+    it "NoPrefix: Simple" $
         keysDiff "foo" "bar" `shouldBe` NoPrefix
+    it "NoPrefix: Only common suffix" $
+        keysDiff "foo.key" "bar.key" `shouldBe` NoPrefix
     it "FstIsPref" $
         keysDiff "key" "key.nest" `shouldBe` FstIsPref "nest"
     it "SndIsPref" $
@@ -42,3 +44,5 @@ keysDiffSpec = describe "Key difference" $ do
         keysDiff "key.nest.foo" "key.nest.bar" `shouldBe` Diff "key.nest" "foo" "bar"
     it "Diff: Two diff components" $
         keysDiff "key.foo.nest" "key.bar.nest" `shouldBe` Diff "key" "foo.nest" "bar.nest"
+    it "Diff: Different diff length" $
+        keysDiff "key.foo" "key.bar.nest" `shouldBe` Diff "key" "foo" "bar.nest"
