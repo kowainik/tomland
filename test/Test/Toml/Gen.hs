@@ -19,6 +19,7 @@ module Test.Toml.Gen
        , genFloat
 
        , genList
+       , genSmallList
        , genNonEmpty
        , genSet
        , genHashSet
@@ -251,6 +252,9 @@ genNonEmpty = Gen.nonEmpty (Range.constant 1 5)
 
 genList :: Gen a -> Gen [a]
 genList = Gen.list range100
+
+genSmallList :: Gen a -> Gen [a]
+genSmallList = Gen.list $ Range.constant 0 10
 
 genIntSet :: Gen IntSet
 genIntSet = fromList <$> genList genInt
