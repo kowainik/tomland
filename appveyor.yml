@@ -1,6 +1,11 @@
 clone_folder: "c:\\WORK"
 clone_depth: 5
 
+# build only master branch
+branches:
+  only:
+    - master
+
 # Do not build feature branch with open Pull Requests
 skip_branch_with_pr: true
 
