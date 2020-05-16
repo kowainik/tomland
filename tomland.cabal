@@ -163,6 +163,9 @@ test-suite tomland-test
                            Test.Toml.Codec.BiMap.Conversion
                          Test.Toml.Codec.Combinator
                            Test.Toml.Codec.Combinator.Common
+                           Test.Toml.Codec.Combinator.List
+                           Test.Toml.Codec.Combinator.Map
+                           Test.Toml.Codec.Combinator.Monoid
                            Test.Toml.Codec.Combinator.Primitive
                            Test.Toml.Codec.Combinator.Set
                            Test.Toml.Codec.Combinator.Tuple

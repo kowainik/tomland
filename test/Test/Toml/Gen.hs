@@ -10,7 +10,8 @@
 module Test.Toml.Gen
        ( -- * Generators
          -- ** Primitive
-         genInt
+         genBool
+       , genInt
        , genInteger
        , genDouble
        , genWord
@@ -25,7 +26,7 @@ module Test.Toml.Gen
        , genHashSet
        , genIntSet
 
-       , genBool
+       , genMap
 
        , genText
        , genString
@@ -58,6 +59,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map.Strict (Map)
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), ZonedTime (..), fromGregorian,
@@ -76,6 +78,7 @@ import Toml.Type.Value (TValue (..), Value (..))
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Char as Char
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as L
 import qualified Hedgehog.Gen as Gen
@@ -215,6 +218,9 @@ genZoned = do
 range100 :: Range Int
 range100 = Range.constant 0 100
 
+genBool :: Gen Bool
+genBool = Gen.bool
+
 genInt :: Gen Int
 genInt = Gen.int Range.constantBounded
 
@@ -259,8 +265,8 @@ genSmallList = Gen.list $ Range.constant 0 10
 genIntSet :: Gen IntSet
 genIntSet = fromList <$> genList genInt
 
-genBool :: Gen Bool
-genBool = Gen.bool
+genMap :: Ord k => Gen k -> Gen v -> Gen (Map k v)
+genMap genK genV = Map.fromList <$> genSmallList (liftA2 (,) genK genV)
 
 -- | Generatates control sympol.
 genEscapeSequence :: Gen Text
