@@ -69,6 +69,7 @@ module Toml.Codec.BiMap.Conversion
       -- * Internal helpers
     , _LTextText
     , _NaturalInteger
+    , _NonEmptyList
     , _StringText
     , _ReadString
     , _BoundedInteger
@@ -334,15 +335,17 @@ list of values and 'AnyValue' as an array. Usually used as the
 'Toml.Codec.Combinator.List.arrayNonEmptyOf' combinator.
 -}
 _NonEmpty :: TomlBiMap a AnyValue -> TomlBiMap (NE.NonEmpty a) AnyValue
-_NonEmpty bi = _NonEmptyArray >>> _Array bi
+_NonEmpty bi = _NonEmptyList >>> _Array bi
 {-# INLINE _NonEmpty #-}
 
-_NonEmptyArray :: TomlBiMap (NE.NonEmpty a) [a]
-_NonEmptyArray = BiMap
+{- | Helper 'BiMap' for lists and 'NE.NonEmpty'.
+-}
+_NonEmptyList :: TomlBiMap (NE.NonEmpty a) [a]
+_NonEmptyList = BiMap
     { forward  = Right . NE.toList
     , backward = maybe (Left $ ArbitraryError "Empty array list, but expected NonEmpty") Right . NE.nonEmpty
     }
-{-# INLINE _NonEmptyArray #-}
+{-# INLINE _NonEmptyList #-}
 
 {- | Takes a 'BiMap' of a value and returns a 'BiMap' for a 'Set' of
 values and 'AnyValue' as an array. Usually used as the
