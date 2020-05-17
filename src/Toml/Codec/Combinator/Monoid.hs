@@ -8,21 +8,22 @@ wrapper data types. These codecs are especially handy when you are implementing
 the [Partial Options Monoid](https://medium.com/@jonathangfischoff/the-partial-options-monoid-pattern-31914a71fc67)
 pattern.
 
-+-----------------------+------------+----------------------------+
-|     Haskell Type      |   @TOML@   |        'TomlCodec'         |
-+=======================+============+============================+
-| __'All'__             | @a = true@ | @'all' "a"@                |
-+-----------------------+------------+----------------------------+
-| __'Any'__             | @a = true@ | @'any' "a"@                |
-+-----------------------+------------+----------------------------+
-| __@'Sum' 'Int'@__     | @a = 1@    | @'sum' 'Toml.int' "a"@     |
-+-----------------------+------------+----------------------------+
-| __@'Product' 'Int'@__ | @a = 0@    | @'product' 'Toml.int' "a"@ |
-+-----------------------+------------+----------------------------+
-| __@'First' 'Int'@__   | @a = 42@   | @'first' 'Toml.int' "a"@   |
-+-----------------------+------------+----------------------------+
-| __@'Last' 'Bool'@__   | @a = true@ | @'last' 'Toml.bool' "a"@   |
-+-----------------------+------------+----------------------------+
++-----------------------+------------+----------------------------+---------------------+
+|     Haskell Type      |   @TOML@   |        'TomlCodec'         | Default on          |
+|                       |            |                            | missing field       |
++=======================+============+============================+=====================+
+| __'All'__             | @a = true@ | @'all' "a"@                | @'All' 'True'@      |
++-----------------------+------------+----------------------------+---------------------+
+| __'Any'__             | @a = true@ | @'any' "a"@                | @'Any' 'False'@     |
++-----------------------+------------+----------------------------+---------------------+
+| __@'Sum' 'Int'@__     | @a = 11@   | @'sum' 'Toml.int' "a"@     | @'Sum' 0@           |
++-----------------------+------------+----------------------------+---------------------+
+| __@'Product' 'Int'@__ | @a = 11@   | @'product' 'Toml.int' "a"@ | @'Product' 1@       |
++-----------------------+------------+----------------------------+---------------------+
+| __@'First' 'Int'@__   | @a = 42@   | @'first' 'Toml.int' "a"@   | @'First' 'Nothing'@ |
++-----------------------+------------+----------------------------+---------------------+
+| __@'Last' 'Bool'@__   | @a = true@ | @'last' 'Toml.bool' "a"@   | @'Last' 'Nothing'@  |
++-----------------------+------------+----------------------------+---------------------+
 
 @since 1.3.0.0
 -}
@@ -42,7 +43,6 @@ module Toml.Codec.Combinator.Monoid
 
 import Prelude hiding (all, any, last, product, sum)
 
-import Data.Maybe (fromMaybe)
 import Data.Monoid (All (..), Any (..), First (..), Last (..), Product (..), Sum (..))
 
 import Toml.Codec.Combinator.Primitive (bool)
@@ -59,7 +59,7 @@ Decodes to @'All' 'True'@ when the key is not present.
 @since 1.2.1.0
 -}
 all :: Key -> TomlCodec All
-all = dimap (Just . getAll) (All . fromMaybe True) . dioptional . bool
+all = dimap (Just . getAll) (maybe mempty All) . dioptional . bool
 {-# INLINE all #-}
 
 {- | Codec for 'Any' wrapper for boolean values.
@@ -70,28 +70,32 @@ Decodes to @'Any' 'False'@ when the key is not present.
 @since 1.2.1.0
 -}
 any :: Key -> TomlCodec Any
-any = dimap (Just . getAny) (Any . fromMaybe False) . dioptional . bool
+any = dimap (Just . getAny) (maybe mempty Any) . dioptional . bool
 {-# INLINE any #-}
 
 {- | Codec for 'Sum' wrapper for given converter's values.
 
+Decodes to @'Sum' 0@ when the key is not present.
+
 @since 1.2.1.0
 -}
-sum :: (Key -> TomlCodec a) -> Key -> TomlCodec (Sum a)
-sum codec = diwrap . codec
+sum :: (Num a) => (Key -> TomlCodec a) -> Key -> TomlCodec (Sum a)
+sum codec = dimap (Just . getSum) (maybe mempty Sum) . dioptional . codec
 {-# INLINE sum #-}
 
 {- | Codec for 'Product' wrapper for given converter's values.
 
+Decodes to @'Product' 1@ when the key is not present.
+
 @since 1.2.1.0
 -}
-product :: (Key -> TomlCodec a) -> Key -> TomlCodec (Product a)
-product codec = diwrap . codec
+product :: (Num a) => (Key -> TomlCodec a) -> Key -> TomlCodec (Product a)
+product codec = dimap (Just . getProduct) (maybe mempty Product) . dioptional . codec
 {-# INLINE product #-}
 
 {- | Codec for 'First' wrapper for given converter's values.
 
-Decodes to @'Nothing'@ when the key is not present.
+Decodes to @'First' 'Nothing'@ when the key is not present.
 
 @since 1.2.1.0
 -}
@@ -101,7 +105,7 @@ first codec = diwrap . dioptional . codec
 
 {- | Codec for 'Last' wrapper for given converter's values.
 
-Decodes to @'Nothing'@ when the key is not present.
+Decodes to @'Last' 'Nothing'@ when the key is not present.
 
 @since 1.2.1.0
 -}
