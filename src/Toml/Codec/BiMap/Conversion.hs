@@ -52,6 +52,9 @@ module Toml.Codec.BiMap.Conversion
     , _ByteStringArray
     , _LByteStringArray
 
+      -- * Coerce
+    , _Coerce
+
       -- * Custom
     , _EnumBounded
     , _Read
@@ -83,6 +86,7 @@ import Control.Category ((>>>))
 import Control.Monad ((>=>))
 import Data.Bifunctor (bimap, first)
 import Data.ByteString (ByteString)
+import Data.Coerce (Coercible, coerce)
 import Data.Hashable (Hashable)
 import Data.Map (Map)
 import Data.Text (Text)
@@ -370,6 +374,32 @@ _HashSet bi = iso HS.toList HS.fromList >>> _Array bi
 _IntSet :: TomlBiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
 {-# INLINE _IntSet #-}
+
+----------------------------------------------------------------------------
+-- Coerce
+----------------------------------------------------------------------------
+
+{- | 'BiMap' for 'Coercible' values. It takes a 'TomlBiMap'
+for @a@ type and returns a 'TomlBiMap' @b@ if these types are coercible.
+
+It is supposed to be used to ease the work with @newtypes@.
+
+E.g.
+
+@
+__newtype__ Foo = Foo
+    { unFoo :: 'Int'
+    }
+
+fooBiMap :: 'TomlBiMap' Foo 'AnyValue'
+fooBiMap = '_Coerce' '_Int'
+@
+
+@since 1.3.0.0
+-}
+_Coerce :: (Coercible a b) => TomlBiMap a AnyValue -> TomlBiMap b AnyValue
+_Coerce = coerce
+{-# INLINE _Coerce #-}
 
 ----------------------------------------------------------------------------
 -- Custom

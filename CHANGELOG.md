@@ -31,6 +31,10 @@ The changelog is available [on GitHub][2].
 * [#237](https://github.com/kowainik/tomland/issues/237):
   Add `BiMap` `_Validate` and codecs `validate` and `validateIf` for custom
   validation.
+* [#289](https://github.com/kowainik/tomland/issues/289):
+  Add `_Coerce` `TomlBiMap`.
+* Fix `sum` and `product` behaviour on missing fields. Now it returns the
+  wrapper of `mempty` instead of failure.
 
 ## 1.2.1.0 — Nov 6, 2019
 
