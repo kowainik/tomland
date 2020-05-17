@@ -32,6 +32,8 @@ import qualified Toml.Type.PrefixTree as Prefix
 {- | Prepends given key to all errors that contain key. This function is used to
 give better error messages. So when error happens we know all pieces of table
 key, not only the last one.
+
+@since 0.2.0
 -}
 handleErrorInTable :: Key -> TomlDecodeError -> TomlEnv a
 handleErrorInTable key = \case
@@ -40,7 +42,10 @@ handleErrorInTable key = \case
     TypeMismatch name t1 t2 -> throwError $ TypeMismatch (key <> name) t1 t2
     e                       -> throwError e
 
--- | Codec for tables. Use it when when you have nested objects.
+{- | Codec for tables. Use it when when you have nested objects.
+
+@since 0.2.0
+-}
 table :: forall a . TomlCodec a -> Key -> TomlCodec a
 table codec key = Codec input output
   where

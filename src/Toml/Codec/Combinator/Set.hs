@@ -50,20 +50,29 @@ import qualified Data.HashSet as HS
 import qualified Data.Set as S
 
 
--- | Codec for sets. Takes converter for single value and
--- returns a set of values.
+{- | Codec for sets. Takes converter for single value and
+returns a set of values.
+
+@since 0.5.0
+-}
 arraySetOf :: Ord a => TomlBiMap a AnyValue -> Key -> TomlCodec (Set a)
 arraySetOf = match . _Set
 {-# INLINE arraySetOf #-}
 
--- | Codec for sets of ints. Takes converter for single value and
--- returns a set of ints.
+{- | Codec for sets of ints. Takes converter for single value and
+returns a set of ints.
+
+@since 0.5.0
+-}
 arrayIntSet :: Key -> TomlCodec IntSet
 arrayIntSet = match _IntSet
 {-# INLINE arrayIntSet #-}
 
--- | Codec for hash sets. Takes converter for single hashable value and
--- returns a set of hashable values.
+{- | Codec for hash sets. Takes converter for single hashable value and
+returns a set of hashable values.
+
+@since 0.5.0
+-}
 arrayHashSetOf
     :: (Hashable a, Eq a)
     => TomlBiMap a AnyValue

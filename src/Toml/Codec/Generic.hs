@@ -100,7 +100,7 @@ the instance of the 'HasCodec' typeclass.
 3. If the data type appears as an element of a list, you need to implement the instance
 of the 'HasItemCodec' typeclass.
 
-@since 1.1.1.0
+@since 1.1.0.0
 -}
 
 module Toml.Codec.Generic
@@ -154,12 +154,16 @@ import qualified Toml.Codec.Di as Toml
 
 
 {- | Generic codec for arbitrary data types. Uses field names as keys.
+
+@since 1.1.0.0
 -}
 genericCodec :: (Generic a, GenericCodec (Rep a)) => TomlCodec a
 genericCodec = Toml.dimap from to $ genericTomlCodec (GenericOptions id)
 {-# INLINE genericCodec #-}
 
 {- | Generic codec with options for arbitrary data types.
+
+@since 1.1.0.0
 -}
 genericCodecWithOptions
     :: forall a
@@ -170,6 +174,8 @@ genericCodecWithOptions = Toml.dimap from to . genericTomlCodec . toGenericOptio
 {-# INLINE genericCodecWithOptions #-}
 
 {- | Generic codec that uses 'stripTypeNameOptions'.
+
+@since 1.1.0.0
 -}
 stripTypeNameCodec
     :: forall a
@@ -185,6 +191,8 @@ stripTypeNameCodec = genericCodecWithOptions $ stripTypeNameOptions @a
 {- | Options to configure various parameters of generic encoding. Specifically:
 
 *  __'tomlOptionsFieldModifier'__: how to translate field names to TOML keys?
+
+@since 1.1.0.0
 -}
 data TomlOptions a = TomlOptions
     { tomlOptionsFieldModifier :: Typeable a => Proxy a -> String -> String
@@ -192,6 +200,8 @@ data TomlOptions a = TomlOptions
 
 {- | Same as 'TomlOptions' but with all data type information erased. This data
 type is used internally. Define your options using 'TomlOptions' data type.
+
+@since 1.1.0.0
 -}
 newtype GenericOptions = GenericOptions
     { genericOptionsFieldModifier :: String -> String
@@ -202,7 +212,10 @@ toGenericOptions TomlOptions{..} = GenericOptions
     { genericOptionsFieldModifier = tomlOptionsFieldModifier (Proxy @a)
     }
 
--- | Options that use 'stripTypeNamePrefix' as 'tomlOptionsFieldModifier'.
+{- | Options that use 'stripTypeNamePrefix' as 'tomlOptionsFieldModifier'.
+
+@since 1.1.0.0
+-}
 stripTypeNameOptions :: Typeable a => TomlOptions a
 stripTypeNameOptions = TomlOptions
     { tomlOptionsFieldModifier = stripTypeNamePrefix
@@ -221,6 +234,8 @@ stripTypeNameOptions = TomlOptions
 "bar"
 >>> stripTypeNamePrefix (Proxy @UserData) "name"
 "name"
+
+@since 1.1.0.0
 -}
 stripTypeNamePrefix :: forall a . Typeable a => Proxy a -> String -> String
 stripTypeNamePrefix _ fieldName =
@@ -245,10 +260,13 @@ typeName = show $ typeRep (Proxy @a)
 ----------------------------------------------------------------------------
 
 {- | Helper class to derive TOML codecs generically.
+
+@since 1.1.0.0
 -}
 class GenericCodec (f :: k -> Type) where
     genericTomlCodec :: GenericOptions -> TomlCodec (f p)
 
+-- | @since 1.1.0.0
 instance GenericCodec f => GenericCodec (D1 d f) where
     genericTomlCodec = Toml.dimap unM1 M1 . genericTomlCodec
     {-# INLINE genericTomlCodec #-}
@@ -256,13 +274,16 @@ instance GenericCodec f => GenericCodec (D1 d f) where
 type GenericSumTomlNotSupported =
     'Text "Generic TOML deriving for arbitrary sum types is not supported currently."
 
+-- | @since 1.1.0.0
 instance (TypeError GenericSumTomlNotSupported) => GenericCodec (f :+: g) where
     genericTomlCodec = error "Not supported"
 
+-- | @since 1.1.0.0
 instance GenericCodec f => GenericCodec (C1 c f) where
     genericTomlCodec = Toml.dimap unM1 M1 . genericTomlCodec
     {-# INLINE genericTomlCodec #-}
 
+-- | @since 1.1.0.0
 instance (GenericCodec f, GenericCodec g) => GenericCodec (f :*: g) where
     genericTomlCodec options = (:*:)
         <$> genericTomlCodec options .= fstG
@@ -275,6 +296,7 @@ instance (GenericCodec f, GenericCodec g) => GenericCodec (f :*: g) where
         sndG (_ :*: g) = g
     {-# INLINE genericTomlCodec #-}
 
+-- | @since 1.1.0.0
 instance (Selector s, HasCodec a) => GenericCodec (S1 s (Rec0 a)) where
     genericTomlCodec GenericOptions{..} = genericWrap $ hasCodec @a fieldName
       where
@@ -297,34 +319,97 @@ list. Lists in TOML can have two types: __primitive__ and __table of arrays__.
 
 * If 'hasItemCodec' returns 'Left': __primitive__ arrays codec is used.
 * If 'hasItemCodec' returns 'Right:' __table of arrays__ codec is used.
+
+@since 1.1.0.0
 -}
 class HasItemCodec a where
     hasItemCodec :: Either (TomlBiMap a AnyValue) (TomlCodec a)
 
-instance HasItemCodec Bool      where hasItemCodec = Left Toml._Bool
-instance HasItemCodec Int       where hasItemCodec = Left Toml._Int
-instance HasItemCodec Word      where hasItemCodec = Left Toml._Word
+-- | @since 1.1.0.0
+instance HasItemCodec Bool where
+    hasItemCodec = Left Toml._Bool
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec Int where
+    hasItemCodec = Left Toml._Int
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec Word where
+    hasItemCodec = Left Toml._Word
+    {-# INLINE hasItemCodec #-}
+
 -- | @since 1.2.0.0
-instance HasItemCodec Word8     where hasItemCodec = Left Toml._Word8
-instance HasItemCodec Integer   where hasItemCodec = Left Toml._Integer
-instance HasItemCodec Natural   where hasItemCodec = Left Toml._Natural
-instance HasItemCodec Double    where hasItemCodec = Left Toml._Double
-instance HasItemCodec Float     where hasItemCodec = Left Toml._Float
-instance HasItemCodec Text      where hasItemCodec = Left Toml._Text
-instance HasItemCodec L.Text    where hasItemCodec = Left Toml._LText
-instance HasItemCodec ZonedTime where hasItemCodec = Left Toml._ZonedTime
-instance HasItemCodec LocalTime where hasItemCodec = Left Toml._LocalTime
-instance HasItemCodec Day       where hasItemCodec = Left Toml._Day
-instance HasItemCodec TimeOfDay where hasItemCodec = Left Toml._TimeOfDay
-instance HasItemCodec IntSet    where hasItemCodec = Left Toml._IntSet
+instance HasItemCodec Word8 where
+    hasItemCodec = Left Toml._Word8
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec Integer where
+    hasItemCodec = Left Toml._Integer
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec Natural where
+    hasItemCodec = Left Toml._Natural
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec Double where
+    hasItemCodec = Left Toml._Double
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec Float where
+    hasItemCodec = Left Toml._Float
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec Text where
+    hasItemCodec = Left Toml._Text
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec L.Text where
+    hasItemCodec = Left Toml._LText
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec ZonedTime where
+    hasItemCodec = Left Toml._ZonedTime
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec LocalTime where
+    hasItemCodec = Left Toml._LocalTime
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec Day where
+    hasItemCodec = Left Toml._Day
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec TimeOfDay where
+    hasItemCodec = Left Toml._TimeOfDay
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.1.0.0
+instance HasItemCodec IntSet where
+    hasItemCodec = Left Toml._IntSet
+    {-# INLINE hasItemCodec #-}
 
 {- | If data type @a@ is not primitive then this instance returns codec for list
 under key equal to @a@ type name.
+
+@since 1.1.0.0
 -}
 instance (HasItemCodec a, Typeable a) => HasItemCodec [a] where
     hasItemCodec = case hasItemCodec @a of
         Left prim   -> Left $ Toml._Array prim
         Right codec -> Right $ Toml.list codec (fromString $ typeName @a)
+    {-# INLINE hasItemCodec #-}
 
 {- | Helper typeclass for generic deriving. This instance tells how the data
 type should be coded if it's a field of another data type.
@@ -333,75 +418,149 @@ __NOTE:__ If you implement TOML codecs for your data types manually, prefer more
 explicit @Toml.int@ or @Toml.text@ instead of implicit @Toml.hasCodec@.
 Implement instances of this typeclass only when using 'genericCodec' and when
 your custom data types are not covered here.
+
+@since 1.1.0.0
 -}
 class HasCodec a where
     hasCodec :: Key -> TomlCodec a
 
-instance HasCodec Bool      where hasCodec = Toml.bool
-instance HasCodec Int       where hasCodec = Toml.int
-instance HasCodec Word      where hasCodec = Toml.word
--- | @since 1.2.0.0
-instance HasCodec Word8     where hasCodec = Toml.word8
-instance HasCodec Integer   where hasCodec = Toml.integer
-instance HasCodec Natural   where hasCodec = Toml.natural
-instance HasCodec Double    where hasCodec = Toml.double
-instance HasCodec Float     where hasCodec = Toml.float
-instance HasCodec Text      where hasCodec = Toml.text
-instance HasCodec L.Text    where hasCodec = Toml.lazyText
-instance HasCodec ZonedTime where hasCodec = Toml.zonedTime
-instance HasCodec LocalTime where hasCodec = Toml.localTime
-instance HasCodec Day       where hasCodec = Toml.day
-instance HasCodec TimeOfDay where hasCodec = Toml.timeOfDay
-instance HasCodec IntSet    where hasCodec = Toml.arrayIntSet
+-- | @since 1.1.0.0
+instance HasCodec Bool where
+    hasCodec = Toml.bool
+    {-# INLINE hasCodec #-}
 
+-- | @since 1.1.0.0
+instance HasCodec Int where
+    hasCodec = Toml.int
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec Word where
+    hasCodec = Toml.word
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.2.0.0
+instance HasCodec Word8 where
+    hasCodec = Toml.word8
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec Integer where
+    hasCodec = Toml.integer
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec Natural where
+    hasCodec = Toml.natural
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec Double where
+    hasCodec = Toml.double
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec Float where
+    hasCodec = Toml.float
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec Text where
+    hasCodec = Toml.text
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec L.Text where
+    hasCodec = Toml.lazyText
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec ZonedTime where
+    hasCodec = Toml.zonedTime
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec LocalTime where
+    hasCodec = Toml.localTime
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec Day where
+    hasCodec = Toml.day
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec TimeOfDay where
+    hasCodec = Toml.timeOfDay
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
+instance HasCodec IntSet where
+    hasCodec = Toml.arrayIntSet
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.1.0.0
 instance HasCodec a => HasCodec (Maybe a) where
     hasCodec = Toml.dioptional . hasCodec @a
+    {-# INLINE hasCodec #-}
 
+-- | @since 1.1.0.0
 instance HasItemCodec a => HasCodec [a] where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arrayOf prim
         Right codec -> Toml.list codec
+    {-# INLINE hasCodec #-}
 
+-- | @since 1.1.0.0
 instance HasItemCodec a => HasCodec (NonEmpty a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arrayNonEmptyOf prim
         Right codec -> Toml.nonEmpty codec
+    {-# INLINE hasCodec #-}
 
 -- | @since 1.2.0.0
 instance (Ord a, HasItemCodec a) => HasCodec (Set a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arraySetOf prim
         Right codec -> Toml.set codec
+    {-# INLINE hasCodec #-}
 
 -- | @since 1.2.0.0
 instance (Hashable a, Eq a, HasItemCodec a) => HasCodec (HashSet a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arrayHashSetOf prim
         Right codec -> Toml.hashSet codec
+    {-# INLINE hasCodec #-}
 
 -- | @since 1.3.0.0
 instance HasCodec All where
-    hasCodec = Toml.diwrap . hasCodec @Bool
+    hasCodec = Toml.all
+    {-# INLINE hasCodec #-}
 
 -- | @since 1.3.0.0
 instance HasCodec Any where
-    hasCodec = Toml.diwrap . hasCodec @Bool
+    hasCodec = Toml.any
+    {-# INLINE hasCodec #-}
 
 -- | @since 1.3.0.0
-instance HasCodec a => HasCodec (Sum a) where
-    hasCodec = Toml.diwrap . hasCodec @a
+instance (Num a, HasCodec a) => HasCodec (Sum a) where
+    hasCodec = Toml.sum (hasCodec @a)
+    {-# INLINE hasCodec #-}
 
 -- | @since 1.3.0.0
-instance HasCodec a => HasCodec (Product a) where
-    hasCodec = Toml.diwrap . hasCodec @a
+instance (Num a, HasCodec a) => HasCodec (Product a) where
+    hasCodec = Toml.product (hasCodec @a)
+    {-# INLINE hasCodec #-}
 
 -- | @since 1.3.0.0
 instance HasCodec a => HasCodec (First a) where
-    hasCodec = Toml.diwrap . hasCodec @(Maybe a)
+    hasCodec = Toml.first (hasCodec @a)
+    {-# INLINE hasCodec #-}
 
 -- | @since 1.3.0.0
 instance HasCodec a => HasCodec (Last a) where
-    hasCodec = Toml.diwrap . hasCodec @(Maybe a)
+    hasCodec = Toml.last (hasCodec @a)
+    {-# INLINE hasCodec #-}
 
 {-
 TODO: uncomment when higher-kinded roles will be implemented

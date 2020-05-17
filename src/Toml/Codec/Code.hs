@@ -42,6 +42,8 @@ import qualified Data.Text.IO as TIO
 
 {- | Convert textual representation of @TOML@ into user data type by the
 provided codec.
+
+@since 0.0.0
 -}
 decode :: TomlCodec a -> Text -> Either TomlDecodeError a
 decode codec text = do
@@ -62,6 +64,8 @@ decodeFileEither codec filePath = decode codec <$> liftIO (TIO.readFile filePath
 
 {- | Similar to 'decodeFileEither', throws 'LoadTomlException' in case of parse
 errors ('TomlDecodeError').
+
+@since 0.3.1
 -}
 decodeFile :: forall a m . (MonadIO m) => TomlCodec a -> FilePath -> m a
 decodeFile codec filePath = decodeFileEither codec filePath >>= errorWhenLeft
@@ -71,7 +75,10 @@ decodeFile codec filePath = decodeFileEither codec filePath >>= errorWhenLeft
         prettyTomlDecodeError e
     errorWhenLeft (Right pc) = pure pc
 
--- | Convert data type to the textual representation of @TOML@ values.
+{- | Convert data type to the textual representation of @TOML@ values.
+
+@since 0.0.0
+-}
 encode :: TomlCodec a -> a -> Text
 encode codec obj = pretty $ execTomlCodec codec obj
 

@@ -11,6 +11,8 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Existential wrapper over 'Value' type and matching functions.
+
+@since 0.0.0
 -}
 
 module Toml.Type.AnyValue
@@ -42,7 +44,10 @@ import GHC.Generics (Generic)
 import Toml.Type.Value (TValue (..), TypeMismatchError (..), Value (..), sameValue)
 
 
--- | Existential wrapper for 'Value'.
+{- | Existential wrapper for 'Value'.
+
+@since 0.0.0
+-}
 data AnyValue = forall (t :: TValue) . AnyValue (Value t)
 
 instance Show AnyValue where

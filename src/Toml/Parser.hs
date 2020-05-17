@@ -4,6 +4,8 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Parser for text to TOML AST.
+
+@since 0.0.0
 -}
 
 module Toml.Parser
@@ -23,7 +25,10 @@ import qualified Data.Text as T
 import qualified Toml.Parser.Core as P (errorBundlePretty, parse)
 
 
--- | Pretty parse exception for parsing toml.
+{- | Pretty parse exception for parsing toml.
+
+@since 1.3.0.0
+-}
 newtype TomlParseError = TomlParseError
     { unTomlParseError :: Text
     } deriving stock (Show, Generic)
@@ -32,6 +37,8 @@ newtype TomlParseError = TomlParseError
 {- | Parses 'Data.Text.Text' as 'TOML' AST object. If you want to
 convert 'Data.Text.Text' to your custom haskell data type, use
 'Toml.Codec.Code.decode' or 'Toml.Codec.Code.decodeFile' functions.
+
+@since 0.0.0
 -}
 parse :: Text -> Either TomlParseError TOML
 parse t = case P.parse tomlP "" t of

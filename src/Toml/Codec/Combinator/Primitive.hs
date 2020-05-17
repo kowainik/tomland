@@ -84,27 +84,42 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Lazy as L
 
 
--- | Codec for boolean values.
+{- | Codec for boolean values.
+
+@since 0.0.0
+-}
 bool :: Key -> TomlCodec Bool
 bool = match _Bool
 {-# INLINE bool #-}
 
--- | Codec for integer values.
+{- | Codec for integer values.
+
+@since 0.1.0
+-}
 integer :: Key -> TomlCodec Integer
 integer = match _Integer
 {-# INLINE integer #-}
 
--- | Codec for integer values.
+{- | Codec for integer values.
+
+@since 0.0.0
+-}
 int :: Key -> TomlCodec Int
 int = match _Int
 {-# INLINE int #-}
 
--- | Codec for natural values.
+{- | Codec for natural values.
+
+@since 0.5.0
+-}
 natural :: Key -> TomlCodec Natural
 natural = match _Natural
 {-# INLINE natural #-}
 
--- | Codec for word values.
+{- | Codec for word values.
+
+@since 0.5.0
+-}
 word :: Key -> TomlCodec Word
 word = match _Word
 {-# INLINE word #-}
@@ -117,37 +132,58 @@ word8 :: Key -> TomlCodec Word8
 word8 = match _Word8
 {-# INLINE word8 #-}
 
--- | Codec for floating point values with double precision.
+{- | Codec for floating point values with double precision.
+
+@since 0.0.0
+-}
 double :: Key -> TomlCodec Double
 double = match _Double
 {-# INLINE double #-}
 
--- | Codec for floating point values.
+{- | Codec for floating point values.
+
+@since 0.5.0
+-}
 float :: Key -> TomlCodec Float
 float = match _Float
 {-# INLINE float #-}
 
--- | Codec for string values.
+{- | Codec for string values.
+
+@since 0.4.0
+-}
 string :: Key -> TomlCodec String
 string = match _String
 {-# INLINE string #-}
 
--- | Codec for text values.
+{- | Codec for text values.
+
+@since 0.3.0
+-}
 text :: Key -> TomlCodec Text
 text = match _Text
 {-# INLINE text #-}
 
--- | Codec for lazy text values.
+{- | Codec for lazy text values.
+
+@since 1.0.0
+-}
 lazyText :: Key -> TomlCodec L.Text
 lazyText = match _LText
 {-# INLINE lazyText #-}
 
--- | Codec for text values as 'ByteString'.
+{- | Codec for text values as 'ByteString'.
+
+@since 0.5.0
+-}
 byteString :: Key -> TomlCodec ByteString
 byteString = match _ByteString
 {-# INLINE byteString #-}
 
--- | Codec for text values as 'BL.ByteString'.
+{- | Codec for text values as 'BL.ByteString'.
+
+@since 0.5.0
+-}
 lazyByteString :: Key -> TomlCodec BL.ByteString
 lazyByteString = match _LByteString
 {-# INLINE lazyByteString #-}

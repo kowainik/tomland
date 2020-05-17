@@ -90,6 +90,8 @@ TOML
         ]
     }
 @
+
+@since 0.0.0
 -}
 data TOML = TOML
     { tomlPairs       :: !(HashMap Key AnyValue)
@@ -98,6 +100,7 @@ data TOML = TOML
     } deriving stock (Show, Eq, Generic)
       deriving anyclass (NFData)
 
+-- | @since 0.3
 instance Semigroup TOML where
     (<>) :: TOML -> TOML -> TOML
     TOML pairsA tablesA arraysA <> TOML pairsB tablesB arraysB = TOML
@@ -106,6 +109,7 @@ instance Semigroup TOML where
         (arraysA <> arraysB)
     {-# INLINE (<>) #-}
 
+-- | @since 0.3
 instance Monoid TOML where
     mempty :: TOML
     mempty = TOML mempty mempty mempty

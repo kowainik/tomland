@@ -101,7 +101,8 @@ import Toml.Parser.Key (keyP)
 import Toml.Type.AnyValue (AnyValue (..), applyAsToAny, matchBool, matchDay, matchDouble,
                            matchHours, matchInteger, matchLocal, matchText, matchZoned,
                            mkMatchError, toMArray)
-import Toml.Type.Key (Key (..), keyToText)
+import Toml.Type.Key (Key (..))
+import Toml.Type.Printer (prettyKey)
 import Toml.Type.Value (TValue (..), Value (..))
 
 import qualified Data.ByteString as BS
@@ -124,6 +125,8 @@ import qualified Toml.Parser.Core as P (errorBundlePretty, parse)
 
 {- | 'Prelude.Bool' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.bool' combinator.
+
+@since 0.4.0
 -}
 _Bool :: TomlBiMap Bool AnyValue
 _Bool = mkAnyValueBiMap matchBool Bool
@@ -131,6 +134,8 @@ _Bool = mkAnyValueBiMap matchBool Bool
 
 {- | 'Prelude.Integer' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.integer' combinator.
+
+@since 0.4.0
 -}
 _Integer :: TomlBiMap Integer AnyValue
 _Integer = mkAnyValueBiMap matchInteger Integer
@@ -138,6 +143,8 @@ _Integer = mkAnyValueBiMap matchInteger Integer
 
 {- | 'Prelude.Double' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.double' combinator.
+
+@since 0.4.0
 -}
 _Double :: TomlBiMap Double AnyValue
 _Double = mkAnyValueBiMap matchDouble Double
@@ -145,18 +152,25 @@ _Double = mkAnyValueBiMap matchDouble Double
 
 {- | 'Data.Text.Text' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.text' combinator.
+
+@since 0.4.0
 -}
 _Text :: TomlBiMap Text AnyValue
 _Text = mkAnyValueBiMap matchText Text
 {-# INLINE _Text #-}
 
--- | Helper bimap for 'Data.Text.Lazy.Text' and 'Data.Text.Text'.
+{- | Helper bimap for 'Data.Text.Lazy.Text' and 'Data.Text.Text'.
+
+@since 1.0.0
+-}
 _LTextText :: BiMap e TL.Text Text
 _LTextText = iso TL.toStrict TL.fromStrict
 {-# INLINE _LTextText #-}
 
 {- | 'Data.Text.Lazy.Text' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.lazyText' combinator.
+
+@since 1.0.0
 -}
 _LText :: TomlBiMap TL.Text AnyValue
 _LText = _LTextText >>> _Text
@@ -164,6 +178,8 @@ _LText = _LTextText >>> _Text
 
 {- | 'Data.Time.ZonedTime' bimap for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Time.zonedTime' combinator.
+
+@since 0.5.0
 -}
 _ZonedTime :: TomlBiMap ZonedTime AnyValue
 _ZonedTime = mkAnyValueBiMap matchZoned Zoned
@@ -171,6 +187,8 @@ _ZonedTime = mkAnyValueBiMap matchZoned Zoned
 
 {- | 'Data.Time.LocalTime' bimap for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Time.localTime' combinator.
+
+@since 0.5.0
 -}
 _LocalTime :: TomlBiMap LocalTime AnyValue
 _LocalTime = mkAnyValueBiMap matchLocal Local
@@ -178,6 +196,8 @@ _LocalTime = mkAnyValueBiMap matchLocal Local
 
 {- | 'Data.Time.Day' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Time.day' combinator.
+
+@since 0.5.0
 -}
 _Day :: TomlBiMap Day AnyValue
 _Day = mkAnyValueBiMap matchDay Day
@@ -185,25 +205,34 @@ _Day = mkAnyValueBiMap matchDay Day
 
 {- | 'Data.Time.TimeOfDay' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Time.timeOfDay' combinator.
+
+@since 0.5.0
 -}
 _TimeOfDay :: TomlBiMap TimeOfDay AnyValue
 _TimeOfDay = mkAnyValueBiMap matchHours Hours
 {-# INLINE _TimeOfDay #-}
 
--- | Helper 'BiMap' for 'String' and 'Data.Text.Text'.
+{- | Helper 'BiMap' for 'String' and 'Data.Text.Text'.
+
+@since 0.4.0
+-}
 _StringText :: BiMap e String Text
 _StringText = iso T.pack T.unpack
 {-# INLINE _StringText #-}
 
 {- | 'String' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.string' combinator.
+
+@since 0.4.0
 -}
 _String :: TomlBiMap String AnyValue
 _String = _StringText >>> _Text
 {-# INLINE _String #-}
 
+{- | Helper 'BiMap' for 'Natural' and 'Prelude.Integer'.
 
--- | Helper 'BiMap' for 'Natural' and 'Prelude.Integer'.
+@since 0.5.0
+-}
 _NaturalInteger :: TomlBiMap Natural Integer
 _NaturalInteger = BiMap (Right . toInteger) eitherInteger
   where
@@ -214,12 +243,17 @@ _NaturalInteger = BiMap (Right . toInteger) eitherInteger
 
 {- | 'Natural' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.natural' combinator.
+
+@since 0.5.0
 -}
 _Natural :: TomlBiMap Natural AnyValue
 _Natural = _NaturalInteger >>> _Integer
 {-# INLINE _Natural #-}
 
--- | Helper 'BiMap' for 'Prelude.Integer' and integral, bounded values.
+{- | Helper 'BiMap' for 'Prelude.Integer' and integral, bounded values.
+
+@since 0.5.0
+-}
 _BoundedInteger :: (Integral a, Bounded a, Show a) => TomlBiMap a Integer
 _BoundedInteger = BiMap (Right . toInteger) eitherBounded
   where
@@ -236,6 +270,8 @@ _BoundedInteger = BiMap (Right . toInteger) eitherBounded
 
 {- | 'Word' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.word' combinator.
+
+@since 0.5.0
 -}
 _Word :: TomlBiMap Word AnyValue
 _Word = _BoundedInteger >>> _Integer
@@ -252,6 +288,8 @@ _Word8 = _BoundedInteger >>> _Integer
 
 {- | 'Int' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.int' combinator.
+
+@since 0.5.0
 -}
 _Int :: TomlBiMap Int AnyValue
 _Int = _BoundedInteger >>> _Integer
@@ -259,12 +297,17 @@ _Int = _BoundedInteger >>> _Integer
 
 {- | 'Float' 'BiMap' for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Primitive.float' combinator.
+
+@since 0.5.0
 -}
 _Float :: TomlBiMap Float AnyValue
 _Float = iso realToFrac realToFrac >>> _Double
 {-# INLINE _Float #-}
 
--- | Helper 'BiMap' for 'Data.Text.Text' and strict 'ByteString'
+{- | Helper 'BiMap' for 'Data.Text.Text' and strict 'ByteString'
+
+@since 0.5.0
+-}
 _ByteStringText :: TomlBiMap ByteString Text
 _ByteStringText = prism T.encodeUtf8 eitherText
   where
@@ -274,12 +317,17 @@ _ByteStringText = prism T.encodeUtf8 eitherText
 
 {- | UTF-8 encoded 'ByteString' 'BiMap' for 'AnyValue'.
 Usually used as the 'Toml.Codec.Combinator.Primitive.byteString' combinator.
+
+@since 0.5.0
 -}
 _ByteString :: TomlBiMap ByteString AnyValue
 _ByteString = _ByteStringText >>> _Text
 {-# INLINE _ByteString #-}
 
--- | Helper 'BiMap' for 'Data.Text.Text' and lazy 'BL.ByteString'.
+{- | Helper 'BiMap' for 'Data.Text.Text' and lazy 'BL.ByteString'.
+
+@since 0.5.0
+-}
 _LByteStringText :: TomlBiMap BL.ByteString Text
 _LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) eitherText
   where
@@ -289,6 +337,8 @@ _LByteStringText = prism (TL.encodeUtf8 . TL.fromStrict) eitherText
 
 {- | UTF-8 encoded lazy 'BL.ByteString' 'BiMap' for 'AnyValue'.
 Usually used as the 'Toml.Codec.Combinator.Primitive.lazyByteString' combinator.
+
+@since 0.5.0
 -}
 _LByteString :: TomlBiMap BL.ByteString AnyValue
 _LByteString = _LByteStringText >>> _Text
@@ -320,6 +370,8 @@ _LByteStringArray = iso BL.unpack BL.pack >>>  _Array _Word8
 
 {- | Takes a 'BiMap' of a value and returns a 'BiMap' for a list of values and 'AnyValue'
 as an array. Usually used as the 'Toml.Codec.Combinator.List.arrayOf' combinator.
+
+@since 0.4.0
 -}
 _Array :: forall a . TomlBiMap a AnyValue -> TomlBiMap [a] AnyValue
 _Array elementBimap = BiMap toAnyValue fromAnyValue
@@ -338,12 +390,16 @@ _Array elementBimap = BiMap toAnyValue fromAnyValue
 {- | Takes a 'BiMap' of a value and returns a 'BiMap' for a 'NonEmpty'
 list of values and 'AnyValue' as an array. Usually used as the
 'Toml.Codec.Combinator.List.arrayNonEmptyOf' combinator.
+
+@since 0.5.0
 -}
 _NonEmpty :: TomlBiMap a AnyValue -> TomlBiMap (NE.NonEmpty a) AnyValue
 _NonEmpty bi = _NonEmptyList >>> _Array bi
 {-# INLINE _NonEmpty #-}
 
 {- | Helper 'BiMap' for lists and 'NE.NonEmpty'.
+
+@since 1.3.0.0
 -}
 _NonEmptyList :: TomlBiMap (NE.NonEmpty a) [a]
 _NonEmptyList = BiMap
@@ -355,6 +411,8 @@ _NonEmptyList = BiMap
 {- | Takes a 'BiMap' of a value and returns a 'BiMap' for a 'Set' of
 values and 'AnyValue' as an array. Usually used as the
 'Toml.Codec.Combinator.Set.arraySetOf' combinator.
+
+@since 0.5.0
 -}
 _Set :: (Ord a) => TomlBiMap a AnyValue -> TomlBiMap (S.Set a) AnyValue
 _Set bi = iso S.toList S.fromList >>> _Array bi
@@ -363,6 +421,8 @@ _Set bi = iso S.toList S.fromList >>> _Array bi
 {- | Takes a 'BiMap' of a value and returns a 'BiMap' for a 'HashSet' of
 values and 'AnyValue' as an array. Usually used as the
 'Toml.Codec.Combinator.Set.arrayHashSetOf' combinator.
+
+@since 0.5.0
 -}
 _HashSet :: (Eq a, Hashable a) => TomlBiMap a AnyValue -> TomlBiMap (HS.HashSet a) AnyValue
 _HashSet bi = iso HS.toList HS.fromList >>> _Array bi
@@ -370,6 +430,8 @@ _HashSet bi = iso HS.toList HS.fromList >>> _Array bi
 
 {- | 'IS.IntSet' bimap for 'AnyValue'. Usually used as the
 'Toml.Codec.Combinator.Set.arrayIntSet' combinator.
+
+@since 0.5.0
 -}
 _IntSet :: TomlBiMap IS.IntSet AnyValue
 _IntSet = iso IS.toList IS.fromList >>> _Array _Int
@@ -405,13 +467,18 @@ _Coerce = coerce
 -- Custom
 ----------------------------------------------------------------------------
 
--- | Helper 'BiMap' for 'String' and types with 'Read' and 'Show' instances.
+{- | Helper 'BiMap' for 'String' and types with 'Read' and 'Show' instances.
+
+@since 0.5.0
+-}
 _ReadString :: (Show a, Read a) => TomlBiMap a String
 _ReadString = BiMap (Right . show) (first (ArbitraryError . T.pack) . readEither)
 {-# INLINE _ReadString #-}
 
 {- | 'BiMap' for 'AnyValue' and values with a 'Read' and 'Show' instances.
 Usually used as the 'Toml.Codec.Combinator.Custom.read' combinator.
+
+@since 0.5.0
 -}
 _Read :: (Show a, Read a) => TomlBiMap a AnyValue
 _Read = _ReadString >>> _String
@@ -419,6 +486,8 @@ _Read = _ReadString >>> _String
 
 {- | Creates 'BiMap' for 'Data.Text.Text' to 'AnyValue' with custom functions.
 Usually used as the 'Toml.Codec.Combinator.Custom.textBy' combinator.
+
+@since 0.5.0
 -}
 _TextBy
     :: forall a .
@@ -451,7 +520,7 @@ _Validate p BiMap{..} = BiMap forward backwardWithValidation
 
 {- | Helper 'BiMap' for '_EnumBounded' and 'Data.Text.Text'.
 
-@since 1.1.1.0
+@since 1.1.0.0
 -}
 _EnumBoundedText :: forall a. (Show a, Enum a, Bounded a) => TomlBiMap a Text
 _EnumBoundedText = BiMap
@@ -475,7 +544,7 @@ _EnumBoundedText = BiMap
 'Enum' and 'Bounded' instances. Usually used as the
 'Toml.Codec.Combinator.Custom.enumBounded' combinator.
 
-@since 1.1.1.0
+@since 1.1.0.0
 -}
 _EnumBounded :: (Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
 _EnumBounded = _EnumBoundedText >>> _Text
@@ -493,7 +562,7 @@ _EnumBounded = _EnumBoundedText >>> _Text
 -}
 _KeyText :: TomlBiMap Key Text
 _KeyText = BiMap
-    { forward = Right . keyToText
+    { forward = Right . prettyKey
     , backward = textToKey
     }
 
@@ -504,7 +573,7 @@ as an argument for 'Toml.Codec.Combinator.Map.tableMap'.
 -}
 _KeyString :: TomlBiMap Key String
 _KeyString = BiMap
-    { forward = Right . T.unpack . keyToText
+    { forward = Right . T.unpack . prettyKey
     , backward = textToKey . T.pack
     }
 
@@ -517,19 +586,28 @@ textToKey t = case P.parse keyP "" t of
 -- General purpose bimaps
 ----------------------------------------------------------------------------
 
--- | 'BiMap' for 'Either' and its 'Left' part.
+{- | 'BiMap' for 'Either' and its 'Left' part.
+
+@since 0.4.0
+-}
 _Left :: (Show l, Show r) => TomlBiMap (Either l r) l
 _Left = prism Left $ \case
     Left l -> Right l
     x -> wrongConstructor "Left" x
 
--- | 'BiMap' for 'Either' and its 'Right' part.
+{- | 'BiMap' for 'Either' and its 'Right' part.
+
+@since 0.4.0
+-}
 _Right :: (Show l, Show r) => TomlBiMap (Either l r) r
 _Right = prism Right $ \case
     Right r -> Right r
     x -> wrongConstructor "Right" x
 
--- | 'BiMap' for 'Maybe' and its 'Just' part.
+{- | 'BiMap' for 'Maybe' and its 'Just' part.
+
+@since 0.5.0
+-}
 _Just :: Show r => TomlBiMap (Maybe r) r
 _Just = prism Just $ \case
     Just r -> Right r

@@ -31,7 +31,8 @@ import Toml.Codec.BiMap.Conversion (_EnumBounded, _Read, _TextBy, _Validate)
 import Toml.Codec.Combinator.Common (match)
 import Toml.Codec.Types (TomlCodec)
 import Toml.Type.AnyValue (AnyValue)
-import Toml.Type.Key (Key, keyToText)
+import Toml.Type.Key (Key)
+import Toml.Type.Printer (prettyKey)
 
 
 {- | Codec for text values with custom error messages for parsing.
@@ -87,6 +88,7 @@ But the @foo = "jif"@ will lead to the following error:
 tomland decode error:  Unsupported format: jif
 @
 
+@since 1.0.0
 -}
 textBy :: (a -> Text) -> (Text -> Either Text a) -> Key -> TomlCodec a
 textBy to from = match (_TextBy to from)
@@ -123,6 +125,8 @@ But the @foo = ".gif"@ will lead to the following error:
 @
 tomland decode error:  Prelude.read: no parse
 @
+
+@since 0.5.0
 -}
 read :: (Show a, Read a) => Key -> TomlCodec a
 read = match _Read
@@ -140,7 +144,7 @@ will look like this:
 tomland decode error:  Value is 'Jif' but expected one of: Jpeg, Png, Gif
 @
 
-@since 1.1.1.0
+@since 1.1.0.0
 -}
 enumBounded :: (Bounded a, Enum a, Show a) => Key -> TomlCodec a
 enumBounded = match _EnumBounded
@@ -230,4 +234,4 @@ validateIf p biMap k = validate validateEither biMap k
     validateEither a =
         if p a
         then Right a
-        else Left $ "Value does not pass the validation for key: " <> keyToText k
+        else Left $ "Value does not pass the validation for key: " <> prettyKey k

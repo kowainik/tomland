@@ -4,6 +4,8 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Forward and backward mapping functions and combinators (similar to profunctors).
+
+@since 1.3.0.0
 -}
 
 module Toml.Codec.Di
@@ -65,6 +67,8 @@ exampleCodec = Example
     \<$\> Toml.bool "foo" '.=' foo
     \<*\> 'dimap' unEmail Email (Toml.text "bar") '.=' bar
 @
+
+@since 0.2.0
 -}
 dimap
     :: (b -> a)    -- ^ Mapper for consumer
@@ -95,6 +99,8 @@ exampleCodec = Example
     \<$\> Toml.bool "foo" '.=' foo
     \<*\> 'dioptional' (Toml.int "bar") '.=' bar
 @
+
+@since 0.5.0
 -}
 dioptional
     :: TomlCodec a
@@ -124,6 +130,8 @@ exampleCodec = Example
     \<$\> Toml.bool "foo" '.=' foo
     \<*\> 'diwrap' (Toml.int "bar") '.=' bar
 @
+
+@since 1.0.0
 -}
 diwrap
     :: forall b a .

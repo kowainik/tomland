@@ -4,6 +4,8 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Contains general underlying monad for bidirectional conversion.
+
+@since 1.3.0.0
 -}
 
 module Toml.Codec.Types
@@ -27,7 +29,10 @@ import Toml.Codec.Error (TomlDecodeError)
 import Toml.Type (TOML (..))
 
 
--- | Immutable environment for TOML conversion.
+{- | Immutable environment for TOML conversion.
+
+@since 1.3.0.0
+-}
 type TomlEnv = ExceptT TomlDecodeError (Reader TOML)
 
 {- | Mutable context for TOML conversion.
@@ -37,11 +42,15 @@ MaybeT (State TOML) a
     = State TOML (Maybe a)
     = TOML -> (Maybe a, TOML)
 @
+
+@since 1.3.0.0
 -}
 type TomlState = MaybeT (State TOML)
 
 {- | Specialied 'Codec' type alias for bidirectional TOML serialization. Keeps
 'TOML' object as both environment and state.
+
+@since 0.5.0
 -}
 type TomlCodec a = Codec a a
 
@@ -65,6 +74,8 @@ Type parameter @i@ if fictional. Here some trick is used. This trick is
 implemented in the [codec](http://hackage.haskell.org/package/codec) package and
 described in more details in related blog post:
 <https://blog.poisson.chat/posts/2016-10-12-bidirectional-serialization.html>.
+
+@since 0.0.0
 -}
 data Codec i o = Codec
     { -- | Extract value of type @o@ from monadic context 'TomlEnv'.
@@ -78,6 +89,7 @@ data Codec i o = Codec
     , codecWrite :: i -> TomlState o
     }
 
+-- | @since 0.0.0
 instance Functor (Codec i) where
     fmap :: (oA -> oB) -> Codec i oA -> Codec i oB
     fmap f codec = Codec
@@ -86,6 +98,7 @@ instance Functor (Codec i) where
         }
     {-# INLINE fmap #-}
 
+-- | @since 0.0.0
 instance Applicative (Codec i) where
     pure :: o -> Codec i o
     pure a = Codec
@@ -101,6 +114,7 @@ instance Applicative (Codec i) where
         }
     {-# INLINE (<*>) #-}
 
+-- | @since 0.0.0
 instance Monad (Codec i) where
     (>>=) :: Codec i oA -> (oA -> Codec i oB) -> Codec i oB
     codec >>= f = Codec

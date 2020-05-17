@@ -5,7 +5,7 @@ module Test.Toml.Codec.Combinator.Map
 import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Codec.Combinator.Common (codecRoundtrip)
-import Toml.Type.Key (keyToText)
+import Toml.Type.Printer (prettyKey)
 
 import qualified Test.Toml.Gen as Gen
 import qualified Toml.Codec.BiMap.Conversion as Toml
@@ -20,4 +20,4 @@ mapSpec = parallel $ describe "Combinator.Map: Roundtrip tests" $ do
         (Gen.genMap Gen.genInt Gen.genText)
     codecRoundtrip "Map Text Int (tableMap)"
         (Toml.tableMap Toml._KeyText Toml.int)
-        (Gen.genMap (keyToText <$> Gen.genKey) Gen.genInt)
+        (Gen.genMap (prettyKey <$> Gen.genKey) Gen.genInt)

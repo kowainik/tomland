@@ -12,6 +12,8 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 GADT value for TOML.
+
+@since 0.0.0
 -}
 
 module Toml.Type.Value
@@ -37,7 +39,10 @@ import Data.Type.Equality ((:~:) (..))
 import GHC.Generics (Generic)
 
 
--- | Needed for GADT parameterization
+{- | Needed for GADT parameterization
+
+@since 0.0.0
+-}
 data TValue
     = TBool
     | TInteger
@@ -51,11 +56,17 @@ data TValue
     deriving stock (Eq, Show, Read, Generic)
     deriving anyclass (NFData)
 
--- | Convert 'TValue' constructors to 'String' without @T@ prefix.
+{- | Convert 'TValue' constructors to 'String' without @T@ prefix.
+
+@since 0.0.0
+-}
 showType :: TValue -> String
 showType = drop 1 . show
 
--- | Value in @key = value@ pair.
+{- | Value in @key = value@ pair.
+
+@since 0.0.0
+-}
 data Value (t :: TValue) where
     {- | Boolean value:
 
@@ -184,6 +195,7 @@ arr6 = [ 1, 2.0 ] # INVALID
     -}
     Array  :: [Value t] -> Value 'TArray
 
+-- | @since 0.0.0
 deriving stock instance Show (Value t)
 
 instance NFData (Value t) where
@@ -222,7 +234,10 @@ instance Eq (Value t) where
     (Hours a)    == (Hours b)    = a == b
     (Array a1)   == (Array a2)   = eqValueList a1 a2
 
--- | Compare list of 'Value' of possibly different types.
+{- | Compare list of 'Value' of possibly different types.
+
+@since 0.0.0
+-}
 eqValueList :: [Value a] -> [Value b] -> Bool
 eqValueList [] [] = True
 eqValueList (x:xs) (y:ys) = case sameValue x y of
@@ -230,8 +245,12 @@ eqValueList (x:xs) (y:ys) = case sameValue x y of
     Left _     -> False
 eqValueList _ _ = False
 
--- | Reifies type of 'Value' into 'TValue'. Unfortunately, there's no way to
--- guarantee that 'valueType' will return @t@ for object with type @Value \'t@.
+{- | Reifies type of 'Value' into 'TValue'. Unfortunately, there's no
+way to guarantee that 'valueType' will return @t@ for object with type
+@Value \'t@.
+
+@since 0.0.0
+-}
 valueType :: Value t -> TValue
 valueType (Bool _)    = TBool
 valueType (Integer _) = TInteger
@@ -247,12 +266,16 @@ valueType (Array _)   = TArray
 -- Typechecking values
 ----------------------------------------------------------------------------
 
--- | Data type that holds expected vs. actual type.
+{- | Data type that holds expected vs. actual type.
+
+@since 0.1.0
+-}
 data TypeMismatchError = TypeMismatchError
   { typeExpected :: !TValue
   , typeActual   :: !TValue
   } deriving stock (Eq)
 
+-- | @since 0.1.0
 instance Show TypeMismatchError where
     show TypeMismatchError{..} = "Expected type '" ++ showType typeExpected
                               ++ "' but actual type: '" ++ showType typeActual ++ "'"
@@ -260,6 +283,8 @@ instance Show TypeMismatchError where
 {- | Checks whether two values are the same. This function is used for type
 checking where first argument is expected type and second argument is actual
 type.
+
+@since 0.0.0
 -}
 sameValue :: Value a -> Value b -> Either TypeMismatchError (a :~: b)
 sameValue Bool{}    Bool{}    = Right Refl
