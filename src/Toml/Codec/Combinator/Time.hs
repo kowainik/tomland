@@ -4,7 +4,9 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 TOML-specific combinators for converting between TOML and Haskell date and time
-data types.
+data types. TOML specification describes date and time primitives you
+can use in your configuration. @tomland@ provides mapping of those
+primitives to types from the @time@ library.
 
 +-----------------+----------------------------+-------------------+
 |  Haskell Type   |           @TOML@           |    'TomlCodec'    |

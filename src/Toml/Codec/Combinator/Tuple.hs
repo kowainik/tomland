@@ -4,6 +4,10 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 TOML-specific combinators for converting between TOML and Haskell tuples.
+It's recommended to create your custom data types and implement codecs
+for them, but if you need to have tuples (e.g. for decoding different
+constructors of sum types), you can find codecs from this module
+helpful.
 
 +-------------------------------+---------------+------------------------+
 |         Haskell Type          |    @TOML@     |   'TomlCodec'          |

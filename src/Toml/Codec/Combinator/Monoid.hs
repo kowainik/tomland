@@ -4,7 +4,9 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 TOML-specific combinators for converting between TOML and Haskell 'Monoid'
-wrapper data types.
+wrapper data types. These codecs are especially handy when you are implementing
+the [Partial Options Monoid](https://medium.com/@jonathangfischoff/the-partial-options-monoid-pattern-31914a71fc67)
+pattern.
 
 +-----------------------+------------+----------------------------+
 |     Haskell Type      |   @TOML@   |        'TomlCodec'         |
@@ -52,6 +54,8 @@ import Toml.Type.Key (Key)
 {- | Codec for 'All' wrapper for boolean values.
 Returns @'All' 'True'@ on missing fields.
 
+Decodes to @'All' 'True'@ when the key is not present.
+
 @since 1.2.1.0
 -}
 all :: Key -> TomlCodec All
@@ -60,6 +64,8 @@ all = dimap (Just . getAll) (All . fromMaybe True) . dioptional . bool
 
 {- | Codec for 'Any' wrapper for boolean values.
 Returns @'Any' 'False'@ on missing fields.
+
+Decodes to @'Any' 'False'@ when the key is not present.
 
 @since 1.2.1.0
 -}
@@ -85,6 +91,8 @@ product codec = diwrap . codec
 
 {- | Codec for 'First' wrapper for given converter's values.
 
+Decodes to @'Nothing'@ when the key is not present.
+
 @since 1.2.1.0
 -}
 first :: (Key -> TomlCodec a) -> Key -> TomlCodec (First a)
@@ -92,6 +100,8 @@ first codec = diwrap . dioptional . codec
 {-# INLINE first #-}
 
 {- | Codec for 'Last' wrapper for given converter's values.
+
+Decodes to @'Nothing'@ when the key is not present.
 
 @since 1.2.1.0
 -}
