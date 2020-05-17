@@ -49,6 +49,8 @@ And then you can create codec for your type using 'match' function:
 myType :: 'Key' -> 'TomlCodec' MyType
 myType = 'match' _MyType
 @
+
+@since 0.4.0
 -}
 match :: forall a . TomlBiMap a AnyValue -> Key -> TomlCodec a
 match BiMap{..} key = Codec input output
@@ -64,7 +66,10 @@ match BiMap{..} key = Codec input output
         a <$ modify (insertKeyAnyVal key anyVal)
 
 
--- | Throw error on 'Left', or perform a given action with 'Right'.
+{- | Throw error on 'Left', or perform a given action with 'Right'.
+
+@since 1.3.0.0
+-}
 whenLeftBiMapError
     :: (MonadError TomlDecodeError m)
     => Either TomlBiMapError a
@@ -74,6 +79,9 @@ whenLeftBiMapError val action = case val of
     Right a  -> action a
     Left err -> throwError $ BiMapError err
 
--- | Run 'codecRead' function with given 'TOML' inside 'Control.Monad.Reader.ReaderT' context.
+{- | Run 'codecRead' function with given 'TOML' inside 'Control.Monad.Reader.ReaderT' context.
+
+@since 1.3.0.0
+-}
 codecReadTOML :: TOML -> TomlCodec a -> TomlEnv a
 codecReadTOML toml codec = local (const toml) (codecRead codec)

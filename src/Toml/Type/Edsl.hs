@@ -39,6 +39,8 @@ exampleToml = 'mkToml' $ __do__
         , 'empty'
         ]
 @
+
+@since 0.3
 -}
 
 module Toml.Type.Edsl
@@ -58,30 +60,48 @@ import Toml.Type.TOML (TOML (..), insertKeyVal, insertTable, insertTableArrays)
 import Toml.Type.Value (Value)
 
 
--- | Monad for creating TOML.
+{- | Monad for creating TOML.
+
+@since 0.3
+-}
 type TDSL = State TOML ()
 
--- | Creates 'TOML' from the 'TDSL'.
+{- | Creates 'TOML' from the 'TDSL'.
+
+@since 0.3
+-}
 mkToml :: TDSL -> TOML
 mkToml env = execState env mempty
 {-# INLINE mkToml #-}
 
--- | Creates an empty 'TDSL'.
+{- | Creates an empty 'TDSL'.
+
+@since 0.3
+-}
 empty :: TDSL
 empty = put mempty
 {-# INLINE empty #-}
 
--- | Adds key-value pair to the 'TDSL'.
+{- | Adds key-value pair to the 'TDSL'.
+
+@since 0.3
+-}
 (=:) :: Key -> Value a -> TDSL
 (=:) k v = modify $ insertKeyVal k v
 {-# INLINE (=:) #-}
 
--- | Adds table to the 'TDSL'.
+{- | Adds table to the 'TDSL'.
+
+@since 0.3
+-}
 table :: Key -> TDSL -> TDSL
 table k = modify . insertTable k . mkToml
 {-# INLINE table #-}
 
--- | Adds array of tables to the 'TDSL'.
+{- | Adds array of tables to the 'TDSL'.
+
+@since 1.0.0
+-}
 tableArray :: Key -> NonEmpty TDSL -> TDSL
 tableArray k = modify . insertTableArrays k . fmap mkToml
 {-# INLINE tableArray #-}

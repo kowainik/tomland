@@ -6,6 +6,8 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Contains functions for pretty printing @toml@ types.
+
+@since 0.0.0
 -}
 
 module Toml.Type.Printer
@@ -17,6 +19,7 @@ module Toml.Type.Printer
        ) where
 
 import Data.Bifunctor (first)
+import Data.Coerce (coerce)
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import Data.List (sortBy)
@@ -35,15 +38,20 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
 
 
-{- | Configures the pretty printer. -}
+{- | Configures the pretty printer.
+
+@since 0.5.0
+-}
 data PrintOptions = PrintOptions
     { {- | How table keys should be sorted, if at all.
 
-      @since 1.1.1.0
+      @since 1.1.0.0
       -}
       printOptionsSorting :: !(Maybe (Key -> Key -> Ordering))
 
       {- | Number of spaces by which to indent.
+
+      @since 1.1.0.0
       -}
     , printOptionsIndent  :: !Int
     }
@@ -52,6 +60,8 @@ data PrintOptions = PrintOptions
 
 1. Sorts all keys and tables by name.
 2. Indents with 2 spaces.
+
+@since 0.5.0
 -}
 defaultOptions :: PrintOptions
 defaultOptions = PrintOptions (Just compare) 2
@@ -83,11 +93,16 @@ title = "TOML Example"
 [example.owner]
   name = \"Kowainik\"
 @
+
+@since 0.0.0
 -}
 pretty :: TOML -> Text
 pretty = prettyOptions defaultOptions
 
--- | Converts 'TOML' type into 'Data.Text.Text' using provided 'PrintOptions'
+{- | Converts 'TOML' type into 'Data.Text.Text' using provided 'PrintOptions'
+
+@since 0.5.0
+-}
 prettyOptions :: PrintOptions -> TOML -> Text
 prettyOptions options = Text.unlines . prettyTomlInd options 0 ""
 
@@ -103,9 +118,13 @@ prettyTomlInd options i prefix TOML{..} = concat
     , prettyTableArrays options i prefix tomlTableArrays
     ]
 
--- | Converts a key to text
+{- | Converts a key to text
+
+@since 0.0.0
+-}
 prettyKey :: Key -> Text
-prettyKey = Text.intercalate "." . map unPiece . NonEmpty.toList . unKey
+prettyKey = Text.intercalate "." . NonEmpty.toList . coerce
+{-# INLINE prettyKey #-}
 
 -- | Returns pretty formatted  key-value pairs of the 'TOML'.
 prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> [Text]

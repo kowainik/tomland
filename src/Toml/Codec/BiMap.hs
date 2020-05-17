@@ -67,12 +67,15 @@ following picture:
 clearly by this illustration:
 
 ![bimap-cat](https://user-images.githubusercontent.com/4276606/50771234-13a01580-129b-11e9-93da-6c5dd0f7f160.png)
+
+@since 0.4.0
 -}
 data BiMap e a b = BiMap
     { forward  :: a -> Either e b
     , backward :: b -> Either e a
     }
 
+-- | @since 0.4.0
 instance Cat.Category (BiMap e) where
     id :: BiMap e a a
     id = BiMap Right Right
@@ -85,7 +88,10 @@ instance Cat.Category (BiMap e) where
         }
     {-# INLINE (.) #-}
 
--- | Inverts bidirectional mapping.
+{- | Inverts bidirectional mapping.
+
+@since 0.4.0
+-}
 invert :: BiMap e a b -> BiMap e b a
 invert (BiMap f g) = BiMap g f
 {-# INLINE invert #-}
@@ -105,6 +111,8 @@ predOdd (Odd n) = Even (n - 1)
 _EvenOdd :: 'BiMap' e Even Odd
 _EvenOdd = 'iso' succEven predOdd
 @
+
+@since 0.4.0
 -}
 iso :: (a -> b) -> (b -> a) -> BiMap e a b
 iso f g = BiMap (Right . f) (Right . g)
@@ -129,6 +137,8 @@ _Client = Toml.'prism' Client $ \\__case__
     Client n -> Right n
     other    -> Toml.'wrongConstructor' \"Client\" other
 @
+
+@since 0.4.0
 -}
 prism
     :: (field -> object)
@@ -143,10 +153,16 @@ prism review preview = BiMap preview (Right . review)
 -- TOML BiMap
 ----------------------------------------------------------------------------
 
--- | 'BiMap' specialized to TOML error.
+{- | 'BiMap' specialized to TOML error.
+
+@since 1.0.0
+-}
 type TomlBiMap = BiMap TomlBiMapError
 
--- | Type of errors for TOML 'BiMap'.
+{- | Type of errors for TOML 'BiMap'.
+
+@since 1.0.0
+-}
 data TomlBiMapError
     = WrongConstructor -- ^ Error for cases with wrong constructors. For
                        -- example, you're trying to convert 'Left' but
@@ -160,7 +176,10 @@ data TomlBiMapError
     deriving stock (Eq, Show, Generic)
     deriving anyclass (NFData)
 
--- | Converts 'TomlBiMapError' into pretty human-readable text.
+{- | Converts 'TomlBiMapError' into pretty human-readable text.
+
+@since 1.0.0
+-}
 prettyBiMapError :: TomlBiMapError -> Text
 prettyBiMapError = \case
     WrongConstructor expected actual -> T.unlines
@@ -175,7 +194,10 @@ prettyBiMapError = \case
         ]
     ArbitraryError text  -> text
 
--- | Helper to construct WrongConstuctor error.
+{- | Helper to construct WrongConstuctor error.
+
+@since 1.0.0
+-}
 wrongConstructor
     :: Show a
     => Text  -- ^ Name of the expected constructor
@@ -193,6 +215,8 @@ tShow = T.pack . show
 
 {- | Smart constructor for 'BiMap' from a Haskell value (some
 primitive like 'Int' or 'Text') to 'AnyValue'.
+
+@since 0.4.0
 -}
 mkAnyValueBiMap
     :: forall a (tag :: TValue)

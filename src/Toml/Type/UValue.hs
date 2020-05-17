@@ -6,6 +6,8 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Intermediate untype value representation used for parsing.
+
+@since 0.0.0
 -}
 
 module Toml.Type.UValue
@@ -21,8 +23,11 @@ import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Value (TypeMismatchError, Value (..), sameValue)
 
 
--- | Untyped value of @TOML@. You shouldn't use this type in your code. Use
--- 'Value' instead.
+{- | Untyped value of @TOML@. You shouldn't use this type in your
+code. Use 'Value' instead.
+
+@since 0.0.0
+-}
 data UValue
     = UBool !Bool
     | UInteger !Integer
@@ -35,6 +40,7 @@ data UValue
     | UArray ![UValue]
     deriving stock (Show)
 
+-- | @since 0.0.0
 instance Eq UValue where
     (UBool b1)    == (UBool b2)    = b1 == b2
     (UInteger i1) == (UInteger i2) = i1 == i2
@@ -49,7 +55,10 @@ instance Eq UValue where
     (UArray a1)   == (UArray a2)   = a1 == a2
     _             == _             = False
 
--- | Ensures that 'UValue's represents type-safe version of @toml@.
+{- | Ensures that 'UValue's represents type-safe version of @toml@.
+
+@since 0.0.0
+-}
 typeCheck :: UValue -> Either TypeMismatchError AnyValue
 typeCheck (UBool b)    = rightAny $ Bool b
 typeCheck (UInteger n) = rightAny $ Integer n

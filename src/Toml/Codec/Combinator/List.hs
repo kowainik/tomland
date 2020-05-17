@@ -50,19 +50,28 @@ import Toml.Type.TOML (TOML (..), insertTableArrays)
 import qualified Data.HashMap.Strict as HashMap
 
 
--- | Codec for list of values. Takes converter for single value and
--- returns a list of values.
+{- | Codec for list of values. Takes converter for single value and
+returns a list of values.
+
+@since 0.1.0
+-}
 arrayOf :: TomlBiMap a AnyValue -> Key -> TomlCodec [a]
 arrayOf = match . _Array
 {-# INLINE arrayOf #-}
 
--- | Codec for non- empty lists of values. Takes converter for single value and
--- returns a non-empty list of values.
+{- | Codec for non- empty lists of values. Takes converter for single value and
+returns a non-empty list of values.
+
+@since 0.5.0
+-}
 arrayNonEmptyOf :: TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
 arrayNonEmptyOf = match . _NonEmpty
 {-# INLINE arrayNonEmptyOf #-}
 
--- | 'Codec' for list of values. Represented in TOML as array of tables.
+{- | 'Codec' for list of values. Represented in TOML as array of tables.
+
+@since 1.0.0
+-}
 list :: forall a . TomlCodec a -> Key -> TomlCodec [a]
 list codec key = Codec
     { codecRead = (toList <$> codecRead nonEmptyCodec) `catchError` \case
@@ -79,6 +88,8 @@ list codec key = Codec
 
 {- | 'Codec' for 'NonEmpty' list of values. Represented in TOML as array of
 tables.
+
+@since 1.0.0
 -}
 nonEmpty :: forall a . TomlCodec a -> Key -> TomlCodec (NonEmpty a)
 nonEmpty codec key = Codec input output

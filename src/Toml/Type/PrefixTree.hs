@@ -7,6 +7,8 @@ SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Implementation of prefix tree for TOML AST.
+
+@since 0.0.0
 -}
 
 module Toml.Type.PrefixTree
@@ -40,10 +42,16 @@ import Toml.Type.Key (pattern (:||), Key, KeysDiff (..), Piece, Prefix, keysDiff
 import qualified Data.HashMap.Strict as HashMap
 
 
--- | Map of layer names and corresponding 'PrefixTree's.
+{- | Map of layer names and corresponding 'PrefixTree's.
+
+@since 0.0.0
+-}
 type PrefixMap a = HashMap Piece (PrefixTree a)
 
--- | Data structure to represent table tree for @toml@.
+{- | Data structure to represent table tree for @toml@.
+
+@since 0.0.0
+-}
 data PrefixTree a
     = Leaf             -- ^ End of a key.
         !Key           -- ^ End piece of the key.
@@ -55,20 +63,30 @@ data PrefixTree a
     deriving stock (Show, Eq, Generic)
     deriving anyclass (NFData)
 
+-- | @since 0.3
 instance Semigroup (PrefixTree a) where
     a <> b = foldl' (\tree (k, v) -> insertT k v tree) a (toListT b)
 
 
--- | Creates a 'PrefixTree' of one key-value element.
+{- | Creates a 'PrefixTree' of one key-value element.
+
+@since 0.0.0
+-}
 singleT :: Key -> a -> PrefixTree a
 singleT = Leaf
 {-# INLINE singleT #-}
 
--- | Creates a 'PrefixMap' of one key-value element.
+{- | Creates a 'PrefixMap' of one key-value element.
+
+@since 0.0.0
+-}
 single :: Key -> a -> PrefixMap a
 single k@(p :|| _) = HashMap.singleton p . singleT k
 
--- | Inserts key-value element into the given 'PrefixTree'.
+{- | Inserts key-value element into the given 'PrefixTree'.
+
+@since 0.0.0
+-}
 insertT :: Key -> a -> PrefixTree a -> PrefixTree a
 insertT newK newV (Leaf k v) =
     case keysDiff k newK of
@@ -90,13 +108,19 @@ insertT newK newV (Branch pref mv prefMap) =
                                                 , (s, Leaf k2 newV)
                                                 ]
 
--- | Inserts key-value element into the given 'PrefixMap'.
+{- | Inserts key-value element into the given 'PrefixMap'.
+
+@since 0.0.0
+-}
 insert :: Key -> a -> PrefixMap a -> PrefixMap a
 insert k@(p :|| _) v prefMap = case HashMap.lookup p prefMap of
     Just tree -> HashMap.insert p (insertT k v tree) prefMap
     Nothing   -> HashMap.insert p (singleT k v) prefMap
 
--- | Looks up the value at a key in the 'PrefixTree'.
+{- | Looks up the value at a key in the 'PrefixTree'.
+
+@since 0.0.0
+-}
 lookupT :: Key -> PrefixTree a -> Maybe a
 lookupT lk (Leaf k v) = if lk == k then Just v else Nothing
 lookupT lk (Branch pref mv prefMap) =
@@ -107,18 +131,27 @@ lookupT lk (Branch pref mv prefMap) =
         SndIsPref _ -> Nothing
         FstIsPref k -> lookup k prefMap
 
--- | Looks up the value at a key in the 'PrefixMap'.
+{- | Looks up the value at a key in the 'PrefixMap'.
+
+@since 0.0.0
+-}
 lookup :: Key -> PrefixMap a -> Maybe a
 lookup k@(p :|| _) prefMap = HashMap.lookup p prefMap >>= lookupT k
 
--- | Constructs 'PrefixMap' structure from the given list of 'Key' and value pairs.
+{- | Constructs 'PrefixMap' structure from the given list of 'Key' and value pairs.
+
+@since 0.0.0
+-}
 fromList :: [(Key, a)] -> PrefixMap a
 fromList = foldl' insertPair mempty
   where
     insertPair :: PrefixMap a -> (Key, a) -> PrefixMap a
     insertPair prefMap (k, v) = insert k v prefMap
 
--- | Converts 'PrefixTree' to the list of pairs.
+{- | Converts 'PrefixTree' to the list of pairs.
+
+@since 0.0.0
+-}
 toListT :: PrefixTree a -> [(Key, a)]
 toListT (Leaf k v) = [(k, v)]
 toListT (Branch pref ma prefMap) = case ma of
@@ -126,6 +159,9 @@ toListT (Branch pref ma prefMap) = case ma of
     Nothing -> id
     $ map (\(k, v) -> (pref <> k, v)) $ toList prefMap
 
--- | Converts 'PrefixMap' to the list of pairs.
+{- | Converts 'PrefixMap' to the list of pairs.
+
+@since 0.0.0
+-}
 toList :: PrefixMap a -> [(Key, a)]
 toList = concatMap (\(p, tr) -> first (p <|) <$> toListT tr) . HashMap.toList

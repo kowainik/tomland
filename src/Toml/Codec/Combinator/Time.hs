@@ -38,22 +38,34 @@ import Toml.Codec.Types (TomlCodec)
 import Toml.Type.Key (Key)
 
 
--- | Codec for zoned time values.
+{- | Codec for zoned time values.
+
+@since 0.5.0
+-}
 zonedTime :: Key -> TomlCodec ZonedTime
 zonedTime = match _ZonedTime
 {-# INLINE zonedTime #-}
 
--- | Codec for local time values.
+{- | Codec for local time values.
+
+@since 0.5.0
+-}
 localTime :: Key -> TomlCodec LocalTime
 localTime = match _LocalTime
 {-# INLINE localTime #-}
 
--- | Codec for day values.
+{- | Codec for day values.
+
+@since 0.5.0
+-}
 day :: Key -> TomlCodec Day
 day = match _Day
 {-# INLINE day #-}
 
--- | Codec for time of day values.
+{- | Codec for time of day values.
+
+@since 0.5.0
+-}
 timeOfDay :: Key -> TomlCodec TimeOfDay
 timeOfDay = match _TimeOfDay
 {-# INLINE timeOfDay #-}

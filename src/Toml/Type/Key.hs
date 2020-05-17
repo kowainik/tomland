@@ -7,6 +7,8 @@ Maintainer: Kowainik <xrom.xkov@gmail.com>
 
 Implementation of key type. The type is used for key-value pairs and
 table names.
+
+@since 1.3.0.0
 -}
 
 module Toml.Type.Key
@@ -16,7 +18,6 @@ module Toml.Type.Key
     , Piece (..)
     , pattern (:||)
     , (<|)
-    , keyToText
 
       -- * Key difference
     , KeysDiff (..)
@@ -35,7 +36,10 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
 
 
--- | Represents the key piece of some layer.
+{- | Represents the key piece of some layer.
+
+@since 0.0.0
+-}
 newtype Piece = Piece
     { unPiece :: Text
     } deriving stock (Generic)
@@ -53,13 +57,18 @@ is represented like
 @
 Key (Piece "site" :| [Piece "\\"google.com\\""])
 @
+
+@since 0.0.0
 -}
 newtype Key = Key
     { unKey :: NonEmpty Piece
     } deriving stock (Generic)
       deriving newtype (Show, Eq, Ord, Hashable, NFData, Semigroup)
 
--- | Type synonym for 'Key'.
+{- | Type synonym for 'Key'.
+
+@since 0.0.0
+-}
 type Prefix = Key
 
 {- | Split a dot-separated string into 'Key'. Empty string turns into a 'Key'
@@ -68,6 +77,8 @@ with single element — empty 'Piece'.
 This instance is not safe for now. Use carefully. If you try to use as a key
 string like this @site.\"google.com\"@ you will have list of three components
 instead of desired two.
+
+@since 0.1.0
 -}
 instance IsString Key where
     fromString :: String -> Key
@@ -91,12 +102,10 @@ pattern x :|| xs <- Key (x :| xs)
 (<|) p k = Key (p NonEmpty.<| unKey k)
 {-# INLINE (<|) #-}
 
--- | Convert 'Key' to human-readable 'Text'.
-keyToText :: Key -> Text
-keyToText = Text.intercalate "." . NonEmpty.toList . coerce
-{-# INLINE keyToText #-}
+{- | Data represent difference between two keys.
 
--- | Data represent difference between two keys.
+@since 0.0.0
+-}
 data KeysDiff
     = Equal      -- ^ Keys are equal
     | NoPrefix   -- ^ Keys don't have any common part.
@@ -110,7 +119,10 @@ data KeysDiff
         !Key     -- ^ Rest of the second key.
     deriving stock (Show, Eq)
 
--- | Find key difference between two keys.
+{- | Find key difference between two keys.
+
+@since 0.0.0
+-}
 keysDiff :: Key -> Key -> KeysDiff
 keysDiff (x :|| xs) (y :|| ys)
     | x == y    = listSame xs ys []
