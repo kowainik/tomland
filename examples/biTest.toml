@@ -4,13 +4,13 @@ testF = 1.23
 testS = "foobar"
 testA = [   "abacaba", "foo", 'bar'    ]
 
-testEven = 5
+testEven = 6
 # testEven = 5
 
 testN = "newtype"
 # testStatus = "username"
 
-testC = "Light"
+testC = "Light+"
 # testC = "Dark"
 # testC = "HighContrast"
 

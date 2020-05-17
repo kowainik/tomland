@@ -3,14 +3,16 @@ Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Contains TOML-specific combinators for converting between TOML and user data
-types.
+Contains TOML-specific custom combinators for converting between TOML and
+special user data types.
+
+See examples below of the situations you may need the following combinators.
 
 @since 1.3.0.0
 -}
 
 module Toml.Codec.Combinator.Custom
-    ( -- * Additional codecs for custom types
+    ( -- * 'Text' combinators
       textBy
     , read
     , enumBounded
@@ -32,20 +34,111 @@ import Toml.Type.AnyValue (AnyValue)
 import Toml.Type.Key (Key, keyToText)
 
 
--- | Codec for text values with custom error messages for parsing.
+{- | Codec for text values with custom error messages for parsing.
+
+__Example:__
+
+We have the following type that represents the image format:
+
+@
+__data__ Format
+    | Jpeg
+    | Png
+    | Gif
+    __deriving__ ('Show', 'Read', 'Enum')
+@
+
+But we want to be able to decode and encode this data type through the custom
+text representation, that can be formilised in the following functions:
+
+@
+showFormat :: Format -> 'Text'
+showFormat = \case
+    Jpeg -> ".jpeg"
+    Png  -> ".png"
+    Gif  -> ".gif"
+
+parseFormat :: 'Text' -> 'Either' 'Text' Format
+parseFormat = __\case__
+    ".jpeg" -> 'Right' Jpeg
+    ".png"  -> 'Right' Png
+    ".gif"  -> 'Right' Gif
+    other   -> 'Left' $ "Unsupported format: " <> other
+@
+
+To write the codec for @Format@ data type using the above rules we can use
+'textBy' combinator:
+
+@
+formatCodec :: 'Key' -> 'TomlCodec' Format
+formatCodec = 'textBy' showFormat parseFormat
+@
+
+And now with the @formatCodec "foo"@ we can have the following line in our
+@TOML@ perfectly encoded:
+
+@
+foo = ".gif"
+@
+
+But the @foo = "jif"@ will lead to the following error:
+
+@
+tomland decode error:  Unsupported format: jif
+@
+
+-}
 textBy :: (a -> Text) -> (Text -> Either Text a) -> Key -> TomlCodec a
 textBy to from = match (_TextBy to from)
 {-# INLINE textBy #-}
 
 
--- | Codec for values with a 'Read' and 'Show' instance.
+{- | Codec for values with a 'Read' and 'Show' instance.
+
+__Example:__
+
+We have the following type that represents the image format:
+
+@
+__data__ Format
+    | Jpeg
+    | Png
+    | Gif
+    deriving (Show, Read, Enum)
+@
+
+And we want to be able to decode and encode this data type through the 'Show'
+and 'Read' instances.
+
+To write the codec for @Format@ data type using the existing instances we can
+use 'read' combinator. And now with the @Toml.'read' "foo"@ we can have the
+following line in our @TOML@ perfectly encoded:
+
+@
+foo = "Gif"
+@
+
+But the @foo = ".gif"@ will lead to the following error:
+
+@
+tomland decode error:  Prelude.read: no parse
+@
+-}
 read :: (Show a, Read a) => Key -> TomlCodec a
 read = match _Read
 {-# INLINE read #-}
 
 {- | Codec for general nullary sum data types with a 'Bounded', 'Enum', and
-'Show' instance. This codec provides much better error messages than 'read' for
-nullary sum types.
+'Show' instance. This codec is similar to 'read' but provides much better error
+messages than 'read' for nullary sum types.
+
+E.g. for the same @Format@ example from 'read' function, but with the
+@Toml.'enumBounded' "foo"@ codec the error for @foo = "jif"@ in the @TOML@ file
+will look like this:
+
+@
+tomland decode error:  Value is 'Jif' but expected one of: Jpeg, Png, Gif
+@
 
 @since 1.1.1.0
 -}

@@ -57,6 +57,7 @@ module Toml.Codec.Combinator
     , last
 
       -- * Additional codecs for custom types
+      -- $custom
     , textBy
     , read
     , enumBounded
@@ -93,3 +94,13 @@ import Toml.Codec.Combinator.Set (arrayHashSetOf, arrayIntSet, arraySetOf, hashS
 import Toml.Codec.Combinator.Table (table)
 import Toml.Codec.Combinator.Time (day, localTime, timeOfDay, zonedTime)
 import Toml.Codec.Combinator.Tuple (pair, triple)
+
+{- $custom
+This module provides additional combinators that could help in the situation
+when some additional manipulations for the standard combinators is required.
+
+/For example,/ 'validate' allows to perform some custom validation on the codec
+before encoding. And 'enumBounded' is an automatical codec that uses 'Enum' and
+'Bounded' instances of the data type only and provides descriptive error
+messages at the same time.
+-}

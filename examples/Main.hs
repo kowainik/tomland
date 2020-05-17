@@ -46,7 +46,7 @@ data ColorScheme
     = Light
     | Dark
     | HighContrast
-    deriving stock (Show, Enum, Bounded)
+    deriving stock (Show, Read, Enum, Bounded)
 
 data UserStatus
     = Registered Text Text
