@@ -5,7 +5,7 @@ module Test.Toml.Type.PrefixTree
     ) where
 
 import Hedgehog (forAll, (===))
-import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, shouldBe)
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, parallel, shouldBe)
 import Test.Hspec.Hedgehog (hedgehog)
 
 import Test.Toml.Gen (genKey, genPrefixMap, genVal)
@@ -53,7 +53,7 @@ prefixTreeUnitSpec = describe "Unit tests for basic cases" $ do
         Prefix.lookup ab t `shouldBe` Just False
 
 prefixTreePropertySpec :: Spec
-prefixTreePropertySpec = describe "Property tests on laws and expected behaviour" $ do
+prefixTreePropertySpec = parallel $ describe "Laws and behaviour property tests" $ do
     insertLookupSpec
     insertInsertSpec
     assocSemigroup      genPrefixMap

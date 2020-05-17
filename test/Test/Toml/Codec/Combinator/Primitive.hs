@@ -2,7 +2,7 @@ module Test.Toml.Codec.Combinator.Primitive
     ( primitiveSpec
     ) where
 
-import Test.Hspec (Spec, describe)
+import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Codec.Combinator.Common (Batman (..), batmanDoubleCodec, batmanFloatCodec,
                                           codecRoundtrip)
@@ -12,7 +12,7 @@ import qualified Toml.Codec.Combinator.Primitive as Toml
 
 
 primitiveSpec :: Spec
-primitiveSpec = describe "Combinator.Primitive: Roundtrip tests" $ do
+primitiveSpec = parallel $ describe "Combinator.Primitive: Roundtrip tests" $ do
     codecRoundtrip "Bool             " Toml.bool                Gen.genBool
     codecRoundtrip "Integer          " Toml.integer             Gen.genInteger
     codecRoundtrip "Int              " Toml.int                 Gen.genInt

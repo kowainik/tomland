@@ -9,7 +9,7 @@ import Prelude hiding (id, (.))
 import Control.Category (id, (.))
 import Data.Word (Word8)
 import Hedgehog (Gen, PropertyT, forAll, (===))
-import Test.Hspec (Spec, describe, it)
+import Test.Hspec (Spec, describe, it, parallel)
 import Test.Hspec.Hedgehog (hedgehog)
 
 import Test.Toml.Codec.BiMap.Conversion (conversionSpec)
@@ -19,7 +19,7 @@ import Toml.Codec.BiMap.Conversion (_BoundedInteger, _ReadString, _StringText)
 
 
 biMapSpec :: Spec
-biMapSpec = describe "Tagged Partial Bidirectional Isomorphism: tests" $ do
+biMapSpec = parallel $ describe "Tagged Partial Bidirectional Isomorphism: tests" $ do
     conversionSpec
     categoryLaws
 

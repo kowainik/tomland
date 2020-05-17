@@ -5,14 +5,14 @@ module Test.Toml.Type.TOML
     ( tomlSpec
     ) where
 
-import Test.Hspec (Spec, describe)
+import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Gen (genToml)
 import Test.Toml.Property (assocSemigroup, leftIdentityMonoid, rightIdentityMonoid)
 
 
 tomlSpec :: Spec
-tomlSpec = describe "TOML laws" $ do
+tomlSpec = parallel $ describe "TOML laws" $ do
     assocSemigroup genToml
     rightIdentityMonoid genToml
     leftIdentityMonoid genToml

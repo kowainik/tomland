@@ -2,7 +2,7 @@ module Test.Toml.Codec.Combinator.Map
     ( mapSpec
     ) where
 
-import Test.Hspec (Spec, describe)
+import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Codec.Combinator.Common (codecRoundtrip)
 import Toml.Type.Key (keyToText)
@@ -14,7 +14,7 @@ import qualified Toml.Codec.Combinator.Primitive as Toml
 
 
 mapSpec :: Spec
-mapSpec = describe "Combinator.Map: Roundtrip tests" $ do
+mapSpec = parallel $ describe "Combinator.Map: Roundtrip tests" $ do
     codecRoundtrip "Map Int Text (map)     "
         (Toml.map (Toml.int "key") (Toml.text "val"))
         (Gen.genMap Gen.genInt Gen.genText)

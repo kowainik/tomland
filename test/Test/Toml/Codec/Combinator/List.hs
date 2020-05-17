@@ -2,7 +2,7 @@ module Test.Toml.Codec.Combinator.List
     ( listSpec
     ) where
 
-import Test.Hspec (Spec, describe)
+import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Codec.Combinator.Common (codecRoundtrip)
 
@@ -13,7 +13,7 @@ import qualified Toml.Codec.Combinator.Primitive as Toml
 
 
 listSpec :: Spec
-listSpec = describe "Combinator.List: Roundtrip tests" $ do
+listSpec = parallel $ describe "Combinator.List: Roundtrip tests" $ do
     codecRoundtrip "[Int] (Array)       "
         (Toml.arrayOf Toml._Int)
         (Gen.genList Gen.genInt)
