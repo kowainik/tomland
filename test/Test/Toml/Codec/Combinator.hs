@@ -2,7 +2,7 @@ module Test.Toml.Codec.Combinator
     ( combinatorSpec
     ) where
 
-import Test.Hspec (Spec, describe)
+import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Codec.Combinator.Custom (customSpec)
 import Test.Toml.Codec.Combinator.List (listSpec)
@@ -16,7 +16,7 @@ import Test.Toml.Codec.Combinator.Tuple (tupleSpec)
 
 
 combinatorSpec :: Spec
-combinatorSpec = describe "Combinator spec" $ do
+combinatorSpec = parallel $ describe "Combinator spec" $ do
     customSpec
     listSpec
     mapSpec

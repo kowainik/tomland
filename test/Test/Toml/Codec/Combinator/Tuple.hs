@@ -3,7 +3,7 @@ module Test.Toml.Codec.Combinator.Tuple
     ) where
 
 import Control.Applicative (liftA2, liftA3)
-import Test.Hspec (Spec, describe)
+import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Codec.Combinator.Common (codecRoundtrip)
 
@@ -13,7 +13,7 @@ import qualified Toml.Codec.Combinator.Tuple as Toml
 
 
 tupleSpec :: Spec
-tupleSpec = describe "Combinator.Tuple: Roundtrip tests" $ do
+tupleSpec = parallel $ describe "Combinator.Tuple: Roundtrip tests" $ do
     codecRoundtrip
         "(Int, Text)      "
         (const $ Toml.pair (Toml.int "a") (Toml.text "b"))

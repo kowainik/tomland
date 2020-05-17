@@ -3,7 +3,7 @@ module Test.Toml.Codec.BiMap.Conversion
     ) where
 
 import Hedgehog (Gen, PropertyT, assert, forAll, tripping, (===))
-import Test.Hspec (Spec, describe, it)
+import Test.Hspec (Spec, describe, it, parallel)
 import Test.Hspec.Hedgehog (hedgehog)
 
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
@@ -15,7 +15,7 @@ import qualified Toml.Codec.BiMap.Conversion as B
 
 
 conversionSpec :: Spec
-conversionSpec = describe "BiMap Rountrip Property tests" $ do
+conversionSpec = parallel $ describe "BiMap Rountrip Property tests" $ do
     describe "Primitive" $ do
         it "Bool"            $ testBiMap B._Bool G.genBool
         it "Int"             $ testBiMap B._Int G.genInt

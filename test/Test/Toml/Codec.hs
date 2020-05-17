@@ -2,7 +2,7 @@ module Test.Toml.Codec
     ( codecSpec
     ) where
 
-import Test.Hspec (Spec, describe)
+import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Codec.BiMap (biMapSpec)
 import Test.Toml.Codec.Combinator (combinatorSpec)
@@ -12,7 +12,7 @@ import Test.Toml.Codec.SmallType (smallTypeSpec)
 
 
 codecSpec :: Spec
-codecSpec = describe "Codec: unit and property tests for bidirectional codecs" $ do
+codecSpec = parallel $ describe "Codec: unit and property tests for bidirectional codecs" $ do
     biMapSpec
     combinatorSpec
     diSpec

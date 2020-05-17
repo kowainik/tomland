@@ -3,7 +3,7 @@ module Test.Toml.Codec.Generic
     ) where
 
 import Hedgehog (forAll, tripping, (===))
-import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it)
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, parallel)
 import Test.Hspec.Hedgehog (hedgehog)
 
 import Test.Toml.Codec.SmallType (SmallType, genSmallType, smallTypeCodec)
@@ -13,7 +13,7 @@ import Toml.Codec.Types (TomlCodec)
 
 
 genericSpec :: Spec
-genericSpec = describe "Generic codecs tests" $ do
+genericSpec = parallel $ describe "Generic codecs tests" $ do
     genericRoundtripSpec
     genericDecodeSpec
 
