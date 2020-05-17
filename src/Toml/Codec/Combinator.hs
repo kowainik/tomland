@@ -73,8 +73,15 @@ module Toml.Codec.Combinator
     , hashSet
 
       -- * Combinators for 'Map's
-    , map
+    ,  -- ** 'Map' codecs
+      map
     , tableMap
+      -- ** 'HashMap' codecs
+    , hashMap
+    , tableHashMap
+      -- ** 'IntMap' codecs
+    , intMap
+    , tableIntMap
 
       -- * General construction of codecs
     , match
@@ -85,7 +92,7 @@ import Prelude hiding (all, any, last, map, product, read, sum)
 import Toml.Codec.Combinator.Common (match)
 import Toml.Codec.Combinator.Custom (enumBounded, read, textBy, validate, validateIf)
 import Toml.Codec.Combinator.List (arrayNonEmptyOf, arrayOf, list, nonEmpty)
-import Toml.Codec.Combinator.Map (map, tableMap)
+import Toml.Codec.Combinator.Map (hashMap, intMap, map, tableHashMap, tableIntMap, tableMap)
 import Toml.Codec.Combinator.Monoid (all, any, first, last, product, sum)
 import Toml.Codec.Combinator.Primitive (bool, byteString, byteStringArray, double, float, int,
                                         integer, lazyByteString, lazyByteStringArray, lazyText,
