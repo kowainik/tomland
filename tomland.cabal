@@ -163,13 +163,18 @@ test-suite tomland-test
                            Test.Toml.Codec.BiMap.Conversion
                          Test.Toml.Codec.Combinator
                            Test.Toml.Codec.Combinator.Common
+                           Test.Toml.Codec.Combinator.Custom
                            Test.Toml.Codec.Combinator.List
                            Test.Toml.Codec.Combinator.Map
                            Test.Toml.Codec.Combinator.Monoid
                            Test.Toml.Codec.Combinator.Primitive
                            Test.Toml.Codec.Combinator.Set
+                           Test.Toml.Codec.Combinator.Table
+                           Test.Toml.Codec.Combinator.Time
                            Test.Toml.Codec.Combinator.Tuple
+                         Test.Toml.Codec.Di
                          Test.Toml.Codec.Generic
+                         Test.Toml.Codec.SmallType
 
                        Test.Toml.Parser
                          Test.Toml.Parser.Examples
@@ -193,7 +198,6 @@ test-suite tomland-test
                          Test.Toml.Type.TOML
 
                        -- helpers
-                       Test.Toml.BigType
                        Test.Toml.Gen
                        Test.Toml.Property
 

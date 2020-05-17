@@ -1,10 +1,7 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
 module Test.Toml.Codec.BiMap.Conversion
     ( conversionSpec
     ) where
 
-import Data.Time (ZonedTime (..))
 import Hedgehog (Gen, PropertyT, assert, forAll, tripping, (===))
 import Test.Hspec (Spec, describe, it)
 import Test.Hspec.Hedgehog (hedgehog)
@@ -35,10 +32,10 @@ conversionSpec = describe "BiMap Rountrip Property tests" $ do
         it "String"          $ testBiMap B._String G.genString
 
     describe "Time" $ do
-        it "ZonedTime" $ testBiMap B._ZonedTime G.genZoned
-        it "LocalTime" $ testBiMap B._LocalTime G.genLocal
+        it "ZonedTime" $ testBiMap B._ZonedTime G.genZonedTime
+        it "LocalTime" $ testBiMap B._LocalTime G.genLocalTime
         it "Day"       $ testBiMap B._Day G.genDay
-        it "TimeOfDay" $ testBiMap B._TimeOfDay G.genHours
+        it "TimeOfDay" $ testBiMap B._TimeOfDay G.genTimeOfDay
 
     describe "Arrays" $ do
         it "Array (Int)"      $ testBiMap (B._Array B._Int) (G.genList G.genInt)
@@ -76,8 +73,3 @@ testDouble = hedgehog $ do
     then assert $
         fmap isNaN (forward B._Double x >>= backward B._Double) == Right True
     else (forward B._Double x >>= backward B._Double) === Right x
-
--- Orphan instances
-
-instance Eq ZonedTime where
-  (ZonedTime a b) == (ZonedTime c d) = a == c && b == d
