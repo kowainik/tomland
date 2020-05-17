@@ -3,6 +3,7 @@ module Test.Toml.Codec.Combinator.Common
 
       -- * Double helpers
     , Batman (..)
+    , _BatmanDouble
     , batmanDoubleCodec
     , batmanFloatCodec
     ) where
@@ -11,8 +12,10 @@ import Hedgehog (Gen, forAll, tripping)
 import Test.Hspec (Arg, Expectation, SpecWith, it)
 import Test.Hspec.Hedgehog (hedgehog)
 
+import Toml.Codec.BiMap (TomlBiMap)
 import Toml.Codec.Code (decode, encode)
 import Toml.Codec.Types (TomlCodec)
+import Toml.Type.AnyValue (AnyValue)
 import Toml.Type.Key (Key)
 
 
@@ -48,8 +51,11 @@ instance RealFloat a => Eq (Batman a) where
             then isNaN b
             else a == b
 
+_BatmanDouble :: TomlBiMap (Batman Double) AnyValue
+_BatmanDouble = Toml._Coerce Toml._Double
+
 batmanDoubleCodec :: Key -> TomlCodec (Batman Double)
-batmanDoubleCodec = Toml.diwrap . Toml.double
+batmanDoubleCodec = Toml.match _BatmanDouble
 
 batmanFloatCodec :: Key -> TomlCodec (Batman Float)
 batmanFloatCodec = Toml.diwrap . Toml.float

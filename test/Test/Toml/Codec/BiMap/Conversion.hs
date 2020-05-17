@@ -2,10 +2,11 @@ module Test.Toml.Codec.BiMap.Conversion
     ( conversionSpec
     ) where
 
-import Hedgehog (Gen, PropertyT, assert, forAll, tripping, (===))
+import Hedgehog (Gen, PropertyT, forAll, tripping)
 import Test.Hspec (Spec, describe, it, parallel)
 import Test.Hspec.Hedgehog (hedgehog)
 
+import Test.Toml.Codec.Combinator.Common (Batman (..), _BatmanDouble)
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
 
 import qualified Hedgehog.Gen as Gen
@@ -23,7 +24,7 @@ conversionSpec = parallel $ describe "BiMap Rountrip Property tests" $ do
         it "Word8"           $ testBiMap B._Word8 G.genWord8
         it "Integer"         $ testBiMap B._Integer G.genInteger
         it "Natural"         $ testBiMap B._Natural G.genNatural
-        it "Double"          testDouble
+        it "Double"          $ testBiMap _BatmanDouble (Batman <$> G.genDouble)
         it "Float"           $ testBiMap B._Float G.genFloat
         it "Text"            $ testBiMap B._Text G.genText
         it "LazyText"        $ testBiMap B._LText G.genLText
@@ -64,12 +65,3 @@ testBiMap
 testBiMap bimap gen = hedgehog $ do
     x <- forAll gen
     tripping x (forward bimap) (backward bimap =<<)
-
--- Double needs a special test because NaN /= NaN
-testDouble :: PropertyT IO ()
-testDouble = hedgehog $ do
-    x <- forAll G.genDouble
-    if isNaN x
-    then assert $
-        fmap isNaN (forward B._Double x >>= backward B._Double) == Right True
-    else (forward B._Double x >>= backward B._Double) === Right x
