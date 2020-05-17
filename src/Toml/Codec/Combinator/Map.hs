@@ -9,20 +9,35 @@ Maintainer: Kowainik <xrom.xkov@gmail.com>
 TOML-specific combinators for converting between TOML and Haskell Map-like data
 types.
 
-+--------------------------+-----------------------------+-------------------------------------------------+
-|       Haskell Type       |           @TOML@            |                   'TomlCodec'                   |
-+==========================+=============================+=================================================+
-| __@'Map' 'Int' 'Text'@__ | @x = [{k = 42, v = "foo"}]@ | @'map' ('Toml.int' "k") ('Toml.text' "v") "x"@  |
-+--------------------------+-----------------------------+-------------------------------------------------+
-| __@'Map' 'Text' 'Int'@__ | @x = [{a = 42, b = 11}]@    | @'tableMap' 'Toml._KeyText' 'Toml.int' "x"@     |
-+--------------------------+-----------------------------+-------------------------------------------------+
++------------------------------+--------------------------------+----------------------------------------------------+
+|         Haskell Type         |             @TOML@             |                    'TomlCodec'                     |
++==============================+================================+====================================================+
+| __@'Map' 'Int' 'Text'@__     | @x = [{k = 42, v = "foo"}]@    | @'map' ('Toml.int' "k") ('Toml.text' "v") "x"@     |
++------------------------------+--------------------------------+----------------------------------------------------+
+| __@'Map' 'Text' 'Int'@__     | @x = [{a = 42, b = 11}]@       | @'tableMap' 'Toml._KeyText' 'Toml.int' "x"@        |
++------------------------------+--------------------------------+----------------------------------------------------+
+| __@'HashMap' 'Int' 'Text'@__ | @x = [{k = 42, v = "foo"}]@    | @'hashMap' ('Toml.int' "k") ('Toml.text' "v") "x"@ |
++------------------------------+--------------------------------+----------------------------------------------------+
+| __@'HashMap' 'Text' 'Int'@__ | @x = [{a = 42, b = 11}]@       | @'tableHashMap' 'Toml._KeyText' 'Toml.int' "x"@    |
++------------------------------+--------------------------------+----------------------------------------------------+
+| __@'IntMap' 'Text'@__        | @x = [{k = 42, v = "foo"}]@    | @'intMap' ('Toml.int' "k") ('Toml.text' "v") "x"@  |
++------------------------------+--------------------------------+----------------------------------------------------+
+| __@'IntMap' 'Text'@__        | @x = [{1 = "one", 2 = "two"}]@ | @'tableIntMap' 'Toml._KeyInt' 'Toml.text' "x"@     |
++------------------------------+--------------------------------+----------------------------------------------------+
 
 @since 1.3.0.0
 -}
 
 module Toml.Codec.Combinator.Map
-    ( map
+    ( -- * 'Map' codecs
+      map
     , tableMap
+      -- * 'HashMap' codecs
+    , hashMap
+    , tableHashMap
+      -- * 'IntMap' codecs
+    , intMap
+    , tableIntMap
     ) where
 
 import Prelude hiding (map)
@@ -32,6 +47,9 @@ import Control.Monad (forM, forM_)
 import Control.Monad.Reader (asks, local)
 import Control.Monad.State (execState, gets, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
+import Data.Hashable (Hashable)
+import Data.HashMap.Strict (HashMap)
+import Data.IntMap.Strict (IntMap)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
@@ -44,6 +62,7 @@ import Toml.Type.Key (pattern (:||), Key)
 import Toml.Type.TOML (TOML (..), insertTable, insertTableArrays)
 
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.IntMap.Strict as IntMap
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 
@@ -77,39 +96,11 @@ map :: forall k v .
     -> TomlCodec v  -- ^ Codec for 'Map' values
     -> Key          -- ^ TOML key where 'Map' is stored
     -> TomlCodec (Map k v)  -- ^ Codec for the 'Map'
-map keyCodec valCodec key = Codec input output
-  where
-    input :: TomlEnv (Map k v)
-    input = do
-        mTables <- asks $ HashMap.lookup key . tomlTableArrays
-        case mTables of
-            Nothing -> pure Map.empty
-            Just tomls -> fmap Map.fromList $ forM (NE.toList tomls) $ \toml -> do
-                k <- codecReadTOML toml keyCodec
-                v <- codecReadTOML toml valCodec
-                pure (k, v)
-
-    output :: Map k v -> TomlState (Map k v)
-    output dict = do
-        let tomls = fmap
-                (\(k, v) -> execTomlCodec keyCodec k <> execTomlCodec valCodec v)
-                (Map.toList dict)
-
-        mTables <- gets $ HashMap.lookup key . tomlTableArrays
-
-        let updateAction :: TOML -> TOML
-            updateAction = case mTables of
-                Nothing -> case tomls of
-                    []   -> id
-                    t:ts -> insertTableArrays key (t :| ts)
-                Just (t :| ts) ->
-                    insertTableArrays key $ t :| (ts ++ tomls)
-
-        dict <$ modify updateAction
+map = internalMap Map.empty Map.toList Map.fromList
 
 {- | This 'TomlCodec' helps you to convert TOML key-value pairs
 directly to 'Map' using TOML keys as 'Map' keys. It can be convenient
-if your 'Map' keys are types like 'Text' and you want to work with raw
+if your 'Map' keys are types like 'Text' or 'Int' and you want to work with raw
 TOML keys directly.
 
 For example, if you have TOML like this:
@@ -192,19 +183,186 @@ tableMap
     -> Key
     -- ^ Table name for 'Map'
     -> TomlCodec (Map k v)
-tableMap keyBiMap valCodec tableName = Codec input output
+tableMap = internalTableMap Map.empty Map.toList Map.fromList
+
+{- | Bidirectional codec for 'HashMap'. It takes birectional converter for keys and
+values and produces bidirectional codec for 'HashMap'. It works with array of
+tables, so you need to specify 'HashMap's in TOML files like this:
+
+@
+myHashMap =
+    [ { name = "foo", payload = 42 }
+    , { name = "bar", payload = 69 }
+    ]
+@
+
+'TomlCodec' for such TOML field can look like this:
+
+@
+Toml.'hashMap' (Toml.'text' "name") (Toml.'int' "payload") "myHashMap"
+@
+
+If there's no key with the name @"myHashMap"@ then empty 'HashMap' is returned.
+
+@since 1.3.0.0
+-}
+hashMap
+    :: forall k v
+    .  (Eq k, Hashable k)
+    => TomlCodec k  -- ^ Codec for 'HashMap' keys
+    -> TomlCodec v  -- ^ Codec for 'HashMap' values
+    -> Key          -- ^ TOML key where 'HashMap' is stored
+    -> TomlCodec (HashMap k v)  -- ^ Codec for the 'HashMap'
+hashMap = internalMap HashMap.empty HashMap.toList HashMap.fromList
+
+{- | This 'TomlCodec' helps to convert TOML key-value pairs
+directly to 'HashMap' using TOML keys as 'HashMap' keys.
+It can be convenient if your 'HashMap' keys are types like 'Text' or 'Int' and
+you want to work with raw TOML keys directly.
+
+For example, if you can write your 'HashMap' in @TOML@ like this:
+
+@
+[myHashMap]
+key1 = "value1"
+key2 = "value2"
+@
+
+@since 1.3.0.0
+-}
+tableHashMap
+    :: forall k v
+    .  (Eq k, Hashable k)
+    => TomlBiMap Key k
+    -- ^ Bidirectional converter between TOML 'Key's and 'HashMap' keys
+    -> (Key -> TomlCodec v)
+    -- ^ Codec for 'HashMap' values for the corresponding 'Key'
+    -> Key
+    -- ^ Table name for 'HashMap'
+    -> TomlCodec (HashMap k v)
+tableHashMap = internalTableMap HashMap.empty HashMap.toList HashMap.fromList
+
+{- | Bidirectional codec for 'IntMap'. It takes birectional converter for keys and
+values and produces bidirectional codec for 'IntMap'. It works with array of
+tables, so you need to specify 'IntMap's in TOML files like this:
+
+@
+myIntMap =
+    [ { name = "foo", payload = 42 }
+    , { name = "bar", payload = 69 }
+    ]
+@
+
+'TomlCodec' for such TOML field can look like this:
+
+@
+Toml.'intMap' (Toml.'text' "name") (Toml.'int' "payload") "myIntMap"
+@
+
+If there's no key with the name @"myIntMap"@ then empty 'IntMap' is returned.
+
+@since 1.3.0.0
+-}
+intMap
+    :: forall v
+    .  TomlCodec Int  -- ^ Codec for 'IntMap' keys
+    -> TomlCodec v  -- ^ Codec for 'IntMap' values
+    -> Key          -- ^ TOML key where 'IntMap' is stored
+    -> TomlCodec (IntMap v)  -- ^ Codec for the 'IntMap'
+intMap = internalMap IntMap.empty IntMap.toList IntMap.fromList
+
+{- | This 'TomlCodec' helps to convert TOML key-value pairs
+directly to 'IntMap' using TOML 'Int' keys as 'IntMap' keys.
+
+For example, if you can write your 'IntMap' in @TOML@ like this:
+
+@
+[myIntMap]
+1 = "value1"
+2 = "value2"
+@
+
+@since 1.3.0.0
+-}
+tableIntMap
+    :: forall v
+    .  TomlBiMap Key Int
+    -- ^ Bidirectional converter between TOML 'Key's and 'IntMap' keys
+    -> (Key -> TomlCodec v)
+    -- ^ Codec for 'IntMap' values for the corresponding 'Key'
+    -> Key
+    -- ^ Table name for 'IntMap'
+    -> TomlCodec (IntMap v)
+tableIntMap = internalTableMap IntMap.empty IntMap.toList IntMap.fromList
+
+
+----------------------------------------------------------------------------
+-- Internal
+----------------------------------------------------------------------------
+
+internalMap :: forall map k v
+    .  map  -- ^ empty map
+    -> (map -> [(k, v)])  -- ^ toList function
+    -> ([(k, v)] -> map)  -- ^ fromList function
+    -> TomlCodec k  -- ^ Codec for Map keys
+    -> TomlCodec v  -- ^ Codec for Map values
+    -> Key          -- ^ TOML key where Map is stored
+    -> TomlCodec map  -- ^ Codec for the Map
+internalMap emptyMap toListMap fromListMap keyCodec valCodec key = Codec input output
   where
-    input :: TomlEnv (Map k v)
+    input :: TomlEnv map
+    input = do
+        mTables <- asks $ HashMap.lookup key . tomlTableArrays
+        case mTables of
+            Nothing -> pure emptyMap
+            Just tomls -> fmap fromListMap $ forM (NE.toList tomls) $ \toml -> do
+                k <- codecReadTOML toml keyCodec
+                v <- codecReadTOML toml valCodec
+                pure (k, v)
+
+    output :: map -> TomlState map
+    output dict = do
+        let tomls = fmap
+                (\(k, v) -> execTomlCodec keyCodec k <> execTomlCodec valCodec v)
+                (toListMap dict)
+
+        mTables <- gets $ HashMap.lookup key . tomlTableArrays
+
+        let updateAction :: TOML -> TOML
+            updateAction = case mTables of
+                Nothing -> case tomls of
+                    []   -> id
+                    t:ts -> insertTableArrays key (t :| ts)
+                Just (t :| ts) ->
+                    insertTableArrays key $ t :| (ts ++ tomls)
+
+        dict <$ modify updateAction
+
+internalTableMap
+    :: forall map k v
+    .  map  -- ^ empty map
+    -> (map -> [(k, v)])  -- ^ toList function
+    -> ([(k, v)] -> map)  -- ^ fromList function
+    -> TomlBiMap Key k
+    -- ^ Bidirectional converter between TOML 'Key's and Map keys
+    -> (Key -> TomlCodec v)
+    -- ^ Codec for Map values for the corresponding 'Key'
+    -> Key
+    -- ^ Table name for Map
+    -> TomlCodec map
+internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName = Codec input output
+  where
+    input :: TomlEnv map
     input = asks (Prefix.lookup tableName . tomlTables) >>= \case
-        Nothing -> pure Map.empty
+        Nothing -> pure emptyMap
         Just toml -> local (const toml) $ do
             valKeys <- asks (HashMap.keys . tomlPairs)
             tableKeys <- asks (fmap (:|| []) . HashMap.keys . tomlTables)
-            fmap Map.fromList $ forM (valKeys <> tableKeys) $ \key ->
+            fmap fromListMap $ forM (valKeys <> tableKeys) $ \key ->
                 whenLeftBiMapError (forward keyBiMap key) $ \k ->
                     (k,) <$> codecRead (valCodec key)
 
-    output :: Map k v -> TomlState (Map k v)
+    output :: map -> TomlState map
     output m = do
         mTable <- gets $ Prefix.lookup tableName . tomlTables
         let toml = fromMaybe mempty mTable
@@ -212,6 +370,6 @@ tableMap keyBiMap valCodec tableName = Codec input output
         m <$ modify (insertTable tableName newToml)
       where
         updateMapTable :: TomlState ()
-        updateMapTable = forM_ (Map.toList m) $ \(k, v) -> case backward keyBiMap k of
+        updateMapTable = forM_ (toListMap m) $ \(k, v) -> case backward keyBiMap k of
             Left _    -> empty
             Right key -> codecWrite (valCodec key) v

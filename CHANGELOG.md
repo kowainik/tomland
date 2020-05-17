@@ -35,6 +35,10 @@ The changelog is available [on GitHub][2].
   Add `_Coerce` `TomlBiMap`.
 * Fix `sum` and `product` behaviour on missing fields. Now it returns the
   wrapper of `mempty` instead of failure.
+* Add `_KeyInt` `BiMap`for key-as-int approach.
+* [#243](https://github.com/kowainik/tomland/issues/243):
+  Implement `hashMap`, `tableHashMap`, `intMap`, `tableIntMap` codec
+  combinators.
 
 ## 1.2.1.0 — Nov 6, 2019
 

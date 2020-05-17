@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 module Test.Toml.Codec.BiMap.Conversion
     ( conversionSpec
     ) where
@@ -7,7 +9,8 @@ import Test.Hspec (Spec, describe, it, parallel)
 import Test.Hspec.Hedgehog (hedgehog)
 
 import Test.Toml.Codec.Combinator.Common (Batman (..), _BatmanDouble)
-import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
+import Toml.Codec.BiMap (BiMap (..), TomlBiMap, tShow)
+import Toml.Type.Key (pattern (:||), Piece (..))
 
 import qualified Hedgehog.Gen as Gen
 
@@ -56,6 +59,7 @@ conversionSpec = parallel $ describe "BiMap Rountrip Property tests" $ do
     describe "Key" $ do
         it "KeyText"   $ testBiMap B._KeyText G.genKey
         it "KeyString" $ testBiMap B._KeyString G.genKey
+        it "KeyInt"    $ testBiMap B._KeyInt ((:|| []) . Piece . tShow <$> G.genInt)
 
 testBiMap
     :: (Show a, Show b, Eq a)
