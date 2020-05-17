@@ -579,14 +579,14 @@ _KeyString = BiMap
     }
 
 {- | Bidirectional converter between 'Key' and 'Int'. Usually used
-as an argument for 'Toml.Codec.Combinator.Map.tableMap'.
+as an argument for 'Toml.Codec.Combinator.Map.tableIntMap'.
 
 @since 1.3.0.0
 -}
 _KeyInt :: TomlBiMap Key Int
 _KeyInt = BiMap
-    { forward = first (ArbitraryError . T.pack) . readEither . T.unpack . keyToText
-    , backward = textToKey . T.pack . show
+    { forward = first (ArbitraryError . T.pack) . readEither . T.unpack . prettyKey
+    , backward = textToKey . tShow
     }
 
 textToKey :: Text -> Either TomlBiMapError Key
