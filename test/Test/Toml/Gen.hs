@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE PatternSynonyms     #-}
@@ -36,9 +38,9 @@ module Test.Toml.Gen
 
          -- ** Dates
        , genDay
-       , genHours
-       , genLocal
-       , genZoned
+       , genTimeOfDay
+       , genLocalTime
+       , genZonedTime
 
          -- ** @TOML@ specific
        , genVal
@@ -194,21 +196,21 @@ genDay = do
     d <- Gen.int (Range.constant 1 28)
     pure $ fromGregorian y m d
 
-genHours :: Gen TimeOfDay
-genHours = do
+genTimeOfDay :: Gen TimeOfDay
+genTimeOfDay = do
     secs <- MkFixed <$> Gen.integral (Range.constant 0 61)
     mins <- Gen.int (Range.constant 0 59)
     hours <- Gen.int (Range.constant 0 23)
     pure $ TimeOfDay hours mins secs
 
-genLocal :: Gen LocalTime
-genLocal = do
+genLocalTime :: Gen LocalTime
+genLocalTime = do
     day <- genDay
-    LocalTime day <$> genHours
+    LocalTime day <$> genTimeOfDay
 
-genZoned :: Gen ZonedTime
-genZoned = do
-    local <- genLocal
+genZonedTime :: Gen ZonedTime
+genZonedTime = do
+    local <- genLocalTime
     zMin <- Gen.int (Range.constant (-720) 720)
     let zTime = minutesToTimeZone zMin
     pure $ ZonedTime local zTime
@@ -326,10 +328,10 @@ noneArrayList =
     , AnyValue . Integer <$> genInteger
     , AnyValue . Double  <$> genDouble
     , AnyValue . Text    <$> genText
-    , AnyValue . Zoned   <$> genZoned
-    , AnyValue . Local   <$> genLocal
+    , AnyValue . Zoned   <$> genZonedTime
+    , AnyValue . Local   <$> genLocalTime
     , AnyValue . Day     <$> genDay
-    , AnyValue . Hours   <$> genHours
+    , AnyValue . Hours   <$> genTimeOfDay
     ]
 
 genArrayFrom :: Gen AnyValue -> Gen (Value 'TArray)
@@ -376,3 +378,8 @@ genNotEscape gen = gen >>= \t ->
     if | Text.null t -> pure t
        | Text.last t == '\\' -> Gen.discard
        | otherwise -> pure t
+
+-- Orphan instances
+
+instance Eq ZonedTime where
+  (ZonedTime a b) == (ZonedTime c d) = a == c && b == d
