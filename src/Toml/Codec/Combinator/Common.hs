@@ -5,8 +5,11 @@ Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Contains TOML-specific combinators for converting between TOML and user data
-types.
+This module implements common utilities for writing custom codecs
+without diving into internal implementation details. Most of the time
+you don't need to implement your own codecs and can reuse existing
+ones. But if you need something that library doesn't provide, you can
+find functions in this module useful.
 
 @since 1.3.0.0
 -}
@@ -61,6 +64,7 @@ match BiMap{..} key = Codec input output
         a <$ modify (insertKeyAnyVal key anyVal)
 
 
+-- | Throw error on 'Left', or perform a given action with 'Right'.
 whenLeftBiMapError
     :: (MonadError TomlDecodeError m)
     => Either TomlBiMapError a
