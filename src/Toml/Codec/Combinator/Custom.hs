@@ -42,7 +42,7 @@ We have the following type that represents the image format:
 
 @
 __data__ Format
-    | Jpeg
+    = Jpeg
     | Png
     | Gif
     __deriving__ ('Show', 'Read', 'Enum')
@@ -101,7 +101,7 @@ We have the following type that represents the image format:
 
 @
 __data__ Format
-    | Jpeg
+    = Jpeg
     | Png
     | Gif
     deriving (Show, Read, Enum)
@@ -133,7 +133,7 @@ read = match _Read
 messages than 'read' for nullary sum types.
 
 E.g. for the same @Format@ example from 'read' function, but with the
-@Toml.'enumBounded' "foo"@ codec the error for @foo = "jif"@ in the @TOML@ file
+@Toml.'enumBounded' "foo"@ codec the error for @foo = \"Jif\"@ in the @TOML@ file
 will look like this:
 
 @
