@@ -39,6 +39,7 @@ The changelog is available [on GitHub][2].
 * [#243](https://github.com/kowainik/tomland/issues/243):
   Implement `hashMap`, `tableHashMap`, `intMap`, `tableIntMap` codec
   combinators.
+* Add `intSet` codec.
 
 ## 1.2.1.0 — Nov 6, 2019
 

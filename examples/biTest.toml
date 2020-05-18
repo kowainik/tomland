@@ -3,6 +3,8 @@ testI = -42
 testF = 1.23
 testS = "foobar"
 testA = [   "abacaba", "foo", 'bar'    ]
+testNE = [ "nonEmpty" ]
+testNET = [ {a = 1} ]
 
 testEven = 6
 # testEven = 5
@@ -20,6 +22,8 @@ either.Right = "Right"
 either = 3.5
 # Also works!
 # either = "fo  o"
+
+intset = [1, 1]
 
 payloads =
     [ { name = "foo", payload = 42 }

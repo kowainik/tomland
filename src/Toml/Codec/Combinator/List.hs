@@ -6,6 +6,36 @@ Maintainer: Kowainik <xrom.xkov@gmail.com>
 TOML-specific combinators for converting between TOML and Haskell list-like data
 types.
 
+There are two way to represent list-like structures with the @tomland@ library.
+
+* Ordinary array lists of primitives:
+
+    @
+    foo = [100, 200, 300]
+    @
+
+* Lists via tables:
+
+    @
+    foo =
+        [ {x = 100}
+        , {x = 200}
+        , {x = 300}
+        ]
+
+    __OR__
+
+    [[foo]]
+        x = 100
+    [[foo]]
+        x = 200
+    [[foo]]
+        x = 300
+    @
+
+You can find both types of the codecs in this module for different list-like
+structures. See the following table for the better understanding:
+
 +-------------------------+----------------------------------+-------------------------------------+
 |      Haskell Type       |              @TOML@              |             'TomlCodec'             |
 +=========================+==================================+=====================================+
@@ -22,7 +52,8 @@ types.
 -}
 
 module Toml.Codec.Combinator.List
-    ( arrayOf
+    ( -- * Array lists
+      arrayOf
     , arrayNonEmptyOf
 
       -- * Table lists
@@ -53,6 +84,20 @@ import qualified Data.HashMap.Strict as HashMap
 {- | Codec for list of values. Takes converter for single value and
 returns a list of values.
 
+__Example:__
+
+Haskell @['Int']@ can look like this in your @TOML@ file:
+
+@
+foo = [1, 2, 3]
+@
+
+If the key is not present in @TOML@ the following decode error will be spotted:
+
+@
+tomland decode error:  Key foo is not found
+@
+
 @since 0.1.0
 -}
 arrayOf :: TomlBiMap a AnyValue -> Key -> TomlCodec [a]
@@ -62,6 +107,26 @@ arrayOf = match . _Array
 {- | Codec for non- empty lists of values. Takes converter for single value and
 returns a non-empty list of values.
 
+__Example:__
+
+Haskell @'NonEmpty' 'Int'@ can look like this in your @TOML@ file:
+
+@
+foo = [1, 2, 3]
+@
+
+If you try to decode an empty @TOML@ list you will see the error:
+
+@
+tomland decode error:  Empty array list, but expected NonEmpty
+@
+
+If the key is not present in @TOML@ the following decode error will be spotted:
+
+@
+tomland decode error:  Key foo is not found
+@
+
 @since 0.5.0
 -}
 arrayNonEmptyOf :: TomlBiMap a AnyValue -> Key -> TomlCodec (NonEmpty a)
@@ -69,6 +134,20 @@ arrayNonEmptyOf = match . _NonEmpty
 {-# INLINE arrayNonEmptyOf #-}
 
 {- | 'Codec' for list of values. Represented in TOML as array of tables.
+
+__Example:__
+
+Haskell @['Int']@ can look like this in your @TOML@ file:
+
+@
+foo =
+  [ {a = 1}
+  , {a = 2}
+  , {a = 3}
+  ]
+@
+
+Decodes to an empty list @[]@ when the key is not present.
 
 @since 1.0.0
 -}
@@ -88,6 +167,36 @@ list codec key = Codec
 
 {- | 'Codec' for 'NonEmpty' list of values. Represented in TOML as array of
 tables.
+
+__Example:__
+
+Haskell @'NonEmpty' 'Int'@ can look like this in your @TOML@ file:
+
+@
+foo =
+  [ {a = 1}
+  , {a = 2}
+  , {a = 3}
+  ]
+@
+
+If you try to decode an empty @TOML@ list you will see the error:
+
+@
+tomland decode error:  Table [foo] is not found
+@
+
+or
+
+@
+tomland decode error:  Key foo.a is not found
+@
+
+If the key is not present in @TOML@ the following decode error will be spotted:
+
+@
+tomland decode error:  Key foo is not found
+@
 
 @since 1.0.0
 -}

@@ -17,6 +17,7 @@ import qualified Toml.Codec.Combinator.Set as Toml
 setSpec :: Spec
 setSpec = parallel $ describe "Combinator.Set: Roundtrip tests" $ do
     codecRoundtrip "IntSet (Array)      " Toml.arrayIntSet Gen.genIntSet
+    codecRoundtrip "IntSet (Table)      " (Toml.intSet $ Toml.int "a") Gen.genIntSet
     codecRoundtrip "Set Int (Array)     " (Toml.arraySetOf Toml._Int) (Gen.genSet Gen.genInt)
     codecRoundtrip "Set Int (Table)     "
         (Toml.set $ Toml.int "a")
