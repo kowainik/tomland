@@ -118,9 +118,18 @@ module Toml.Codec.Generic
        , HasCodec (..)
        , HasItemCodec (..)
        , GenericCodec (..)
+
+         -- * 'ByteString' newtypes
+         -- $bytestring
+       , ByteStringAsText (..)
+       , ByteStringAsBytes (..)
+       , LByteStringAsText (..)
+       , LByteStringAsBytes (..)
        ) where
 
+import Data.ByteString (ByteString)
 import Data.Char (isLower, toLower)
+import Data.Coerce (coerce)
 import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
@@ -141,11 +150,12 @@ import GHC.TypeLits (ErrorMessage (..), TypeError)
 import Numeric.Natural (Natural)
 
 import Toml.Codec.BiMap (TomlBiMap)
-import Toml.Codec.Di ((.=))
+import Toml.Codec.Di (diwrap, (.=))
 import Toml.Codec.Types (TomlCodec)
 import Toml.Type.AnyValue (AnyValue)
 import Toml.Type.Key (Key)
 
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.Lazy as L
 
 import qualified Toml.Codec.BiMap.Conversion as Toml
@@ -375,6 +385,26 @@ instance HasItemCodec L.Text where
     hasItemCodec = Left Toml._LText
     {-# INLINE hasItemCodec #-}
 
+-- | @since 1.3.0.0
+instance HasItemCodec ByteStringAsText where
+    hasItemCodec = Left $ coerce Toml._ByteString
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.3.0.0
+instance HasItemCodec ByteStringAsBytes where
+    hasItemCodec = Left $ coerce Toml._ByteStringArray
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.3.0.0
+instance HasItemCodec LByteStringAsText where
+    hasItemCodec = Left $ coerce Toml._LByteString
+    {-# INLINE hasItemCodec #-}
+
+-- | @since 1.3.0.0
+instance HasItemCodec LByteStringAsBytes where
+    hasItemCodec = Left $ coerce Toml._LByteStringArray
+    {-# INLINE hasItemCodec #-}
+
 -- | @since 1.1.0.0
 instance HasItemCodec ZonedTime where
     hasItemCodec = Left Toml._ZonedTime
@@ -472,6 +502,26 @@ instance HasCodec Text where
 -- | @since 1.1.0.0
 instance HasCodec L.Text where
     hasCodec = Toml.lazyText
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.3.0.0
+instance HasCodec ByteStringAsText where
+    hasCodec = diwrap . Toml.byteString
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.3.0.0
+instance HasCodec ByteStringAsBytes where
+    hasCodec = diwrap . Toml.byteStringArray
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.3.0.0
+instance HasCodec LByteStringAsText where
+    hasCodec = diwrap . Toml.lazyByteString
+    {-# INLINE hasCodec #-}
+
+-- | @since 1.3.0.0
+instance HasCodec LByteStringAsBytes where
+    hasCodec = diwrap . Toml.lazyByteStringArray
     {-# INLINE hasCodec #-}
 
 -- | @since 1.1.0.0
@@ -606,3 +656,62 @@ instance (Generic a, GenericCodec (Rep a)) => HasCodec (TomlTable a) where
 instance (Generic a, GenericCodec (Rep a)) => HasItemCodec (TomlTable a) where
     hasItemCodec = Right $ Toml.diwrap $ genericCodec @a
 -}
+
+{- $bytestring
+There are two ways to encode 'ByteString' in TOML:
+
+1. Via text.
+2. Via an array of integers (aka array of bytes).
+
+To handle all these cases, @tomland@ provides helpful newtypes, specifically:
+
+* 'ByteStringAsText'
+* 'ByteStringAsBytes'
+* 'LByteStringAsText'
+* 'LByteStringAsBytes'
+-}
+
+{- TODO: uncomment when the same GHC issue as above is resolved:
+As a bonus, on GHC >= 8.6 you can use these newtypes with the @DerivingVia@
+extensions for your own 'ByteString' types.
+
+@
+__newtype__ MyByteString = MyByteString
+    { unMyByteString :: 'ByteString'
+    } __deriving__ 'HasCodec' __via__ 'ByteStringAsBytes'
+@
+-}
+
+{- | Newtype wrapper over 'ByteString' to be used for text values.
+
+@since 1.3.0.0
+-}
+newtype ByteStringAsText = ByteStringAsText
+    { unByteStringAsText :: ByteString
+    } deriving newtype (Show, Eq)
+
+{- | Newtype wrapper over 'ByteString' to be used for array of integers
+representation.
+
+@since 1.3.0.0
+-}
+newtype ByteStringAsBytes = ByteStringAsBytes
+    { unByteStringAsBytes :: ByteString
+    } deriving newtype (Show, Eq)
+
+{- | Newtype wrapper over lazy 'LBS.ByteString' to be used for text values.
+
+@since 1.3.0.0
+-}
+newtype LByteStringAsText = LByteStringAsText
+    { unLByteStringAsText :: LBS.ByteString
+    } deriving newtype (Show, Eq)
+
+{- | Newtype wrapper over lazy 'LBS.ByteString' to be used for array of integers
+representation.
+
+@since 1.3.0.0
+-}
+newtype LByteStringAsBytes = LByteStringAsBytes
+    { unLByteStringAsBytes :: LBS.ByteString
+    } deriving newtype (Show, Eq)

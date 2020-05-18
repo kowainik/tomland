@@ -15,7 +15,7 @@ import Hedgehog (Gen)
 import Test.Hspec (Spec, describe)
 
 import Test.Toml.Codec.Combinator.Common (codecRoundtrip)
-import Toml.Codec (TomlCodec, (.=))
+import Toml.Codec (ByteStringAsBytes (..), TomlCodec, (.=))
 
 import qualified Hedgehog.Gen as Gen
 import qualified Test.Toml.Gen as Gen
@@ -33,6 +33,7 @@ data SmallType = SmallType
     , smallTypeDay       :: !Day
     , smallTypeMaybeWord :: !(Maybe Word)
     , smallTypeListInt   :: ![Int]
+    , smallTypeBS        :: !ByteStringAsBytes
     } deriving stock (Eq, Show, Generic)
 
 smallTypeCodec :: TomlCodec SmallType
@@ -43,6 +44,7 @@ smallTypeCodec = SmallType
     <*> Toml.day "day" .= smallTypeDay
     <*> Toml.dioptional (Toml.word "maybe.word") .= smallTypeMaybeWord
     <*> Toml.arrayOf Toml._Int "list.int" .= smallTypeListInt
+    <*> Toml.diwrap (Toml.byteStringArray "bs") .= smallTypeBS
 
 genSmallType :: Gen SmallType
 genSmallType = do
@@ -52,4 +54,5 @@ genSmallType = do
     smallTypeDay       <- Gen.genDay
     smallTypeMaybeWord <- Gen.maybe Gen.genWord
     smallTypeListInt   <- Gen.genSmallList Gen.genInt
+    smallTypeBS        <- ByteStringAsBytes <$> Gen.genByteString
     pure SmallType{..}

@@ -40,6 +40,10 @@ The changelog is available [on GitHub][2].
   Implement `hashMap`, `tableHashMap`, `intMap`, `tableIntMap` codec
   combinators.
 * Add `intSet` codec.
+* [#251](https://github.com/kowainik/tomland/issues/251):
+  Implement `ByteStringAsText`, `ByteStringAsBytes`, `LByteStringAsText`,
+  `LByteStringAsBytes` newtypes. Add corresponding `HasCodec` instances for
+  these data types.
 
 ## 1.2.1.0 — Nov 6, 2019
 
