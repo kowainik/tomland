@@ -149,7 +149,6 @@ executable play-tomland
                      , text
                      , time
                      , unordered-containers
-                     , validation-selective
 
   hs-source-dirs:      examples
   ghc-options:         -threaded -Wall

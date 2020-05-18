@@ -154,7 +154,7 @@ list codec key = Codec
     { codecRead = \toml -> case codecRead nonEmptyCodec toml of
         Success ne -> Success $ toList ne
         Failure [TableArrayNotFound errKey]
-          | errKey == key -> pure []
+            | errKey == key -> pure []
         Failure errs -> Failure errs
     , codecWrite = \case
         [] -> pure []

@@ -12,6 +12,7 @@ This module includes coding functions like 'decode' and 'encode'.
 module Toml.Codec.Code
        ( -- * Decode
          decode
+       , decodeValidation
        , decodeFileEither
        , decodeFile
          -- * Encode
@@ -41,12 +42,32 @@ import qualified Data.Text.IO as TIO
 {- | Convert textual representation of @TOML@ into user data type by the
 provided codec.
 
-@since 0.0.0
+@since 1.3.0.0
 -}
-decode :: TomlCodec a -> Text -> Validation [TomlDecodeError] a
-decode codec text = case parse text of
+decodeValidation :: TomlCodec a -> Text -> Validation [TomlDecodeError] a
+decodeValidation codec text = case parse text of
     Left err   -> Failure [ParseError err]
     Right toml -> runTomlCodec codec toml
+
+{- | Convert textual representation of @TOML@ into user data type by the
+provided codec.
+
+@since 0.0.0
+-}
+decode :: TomlCodec a -> Text -> Either [TomlDecodeError] a
+decode codec = validationToEither . decodeValidation codec
+
+{- | Similar to 'decodeValidation', but takes a path to a file with textual @TOML@
+values from which it decodes them with the provided codec.
+
+@since 1.3.0.0
+-}
+decodeFileValidation
+    :: forall a m . (MonadIO m)
+    => TomlCodec a
+    -> FilePath
+    -> m (Validation [TomlDecodeError] a)
+decodeFileValidation codec = fmap (decodeValidation codec) . liftIO . TIO.readFile
 
 {- | Similar to 'decode', but takes a path to a file with textual @TOML@
 values from which it decodes them with the provided codec.
@@ -58,8 +79,7 @@ decodeFileEither
     => TomlCodec a
     -> FilePath
     -> m (Either [TomlDecodeError] a)
-decodeFileEither codec filePath = validationToEither . decode codec <$>
-    liftIO (TIO.readFile filePath)
+decodeFileEither codec = fmap validationToEither . decodeFileValidation codec
 
 {- | Similar to 'decodeFileEither', throws 'LoadTomlException' in case of parse
 errors ('TomlDecodeError').
@@ -97,7 +117,7 @@ encodeToFile codec filePath obj = content <$ liftIO (TIO.writeFile filePath cont
 
 -- | Convert toml into user data type.
 runTomlCodec :: TomlCodec a -> TOML -> Validation [TomlDecodeError] a
-runTomlCodec codec = codecRead codec
+runTomlCodec = codecRead
 
 -- | Runs 'codecWrite' of 'TomlCodec' and returns intermediate TOML AST.
 execTomlCodec :: TomlCodec a -> a -> TOML

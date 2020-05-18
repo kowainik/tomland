@@ -14,7 +14,6 @@ import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (fromGregorian)
 import GHC.Generics (Generic)
-import Validation (Validation (..))
 
 import Toml (TomlCodec, TomlParseError (..), pretty, (.=), (<!>))
 import Toml.Type (TOML (..), Value (..))
@@ -192,8 +191,8 @@ main = do
     TIO.putStrLn "=== Testing bidirectional conversion ==="
     biFile <- TIO.readFile "examples/biTest.toml"
     TIO.putStrLn $ case Toml.decode testT biFile of
-        Failure msgs -> Toml.prettyTomlDecodeErrors msgs
-        Success test -> Toml.encode testT test
+        Left msgs  -> Toml.prettyTomlDecodeErrors msgs
+        Right test -> Toml.encode testT test
 
 myToml :: TOML
 myToml = mkToml $ do
