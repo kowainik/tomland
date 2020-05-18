@@ -13,15 +13,13 @@ module Toml.Codec.Di
     , dioptional
     , diwrap
     , dimatch
-    , (<!>)
     , (.=)
-
     ) where
 
-import Control.Applicative (Alternative (..), optional)
+import Control.Applicative (Alternative (..))
 import Data.Coerce (Coercible, coerce)
 
-import Toml.Codec.Types (Codec (..), TomlCodec)
+import Toml.Codec.Types (Codec (..), TomlCodec, (<!>))
 
 
 {- | This is an instance of @Profunctor@ for 'Codec'. But since there's no
@@ -76,7 +74,7 @@ dimap
     -> TomlCodec a  -- ^ Source 'Codec' object
     -> TomlCodec b  -- ^ Target 'Codec' object
 dimap f g codec = Codec
-    { codecRead  = g <$> codecRead codec
+    { codecRead  = fmap g . codecRead codec
     , codecWrite = fmap g . codecWrite codec . f
     }
 {-# INLINE dimap #-}
@@ -106,7 +104,7 @@ dioptional
     :: TomlCodec a
     -> TomlCodec (Maybe a)
 dioptional Codec{..} = Codec
-    { codecRead  = optional codecRead
+    { codecRead  = fmap Just . codecRead <!> \_ -> pure Nothing
     , codecWrite = traverse codecWrite
     }
 {-# INLINE dioptional #-}
@@ -180,7 +178,7 @@ dimatch
     -> TomlCodec a  -- ^ Source 'Codec' object
     -> TomlCodec b  -- ^ Target 'Codec' object
 dimatch match ctor codec = Codec
-    { codecRead = ctor <$> codecRead codec
+    { codecRead = fmap ctor . codecRead codec
     , codecWrite = \c -> case match c of
         Nothing -> empty
         Just d  -> ctor <$> codecWrite codec d
@@ -210,9 +208,3 @@ infixl 5 .=
 (.=) :: Codec field a -> (object -> field) -> Codec object a
 codec .= getter = codec { codecWrite = codecWrite codec . getter }
 {-# INLINE (.=) #-}
-
--- | Alternative instance for function arrow but without 'empty'.
-infixl 3 <!>
-(<!>) :: Alternative f => (a -> f x) -> (a -> f x) -> (a -> f x)
-f <!> g = \a -> f a <|> g a
-{-# INLINE (<!>) #-}

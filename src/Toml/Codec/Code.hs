@@ -23,15 +23,13 @@ module Toml.Codec.Code
        ) where
 
 import Control.Exception (throwIO)
-import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (MonadIO (..))
-import Control.Monad.Reader (runReader)
 import Control.Monad.State (execState)
 import Control.Monad.Trans.Maybe (MaybeT (..))
-import Data.Bifunctor (first)
 import Data.Text (Text)
+import Validation (Validation (..), validationToEither)
 
-import Toml.Codec.Error (LoadTomlException (..), TomlDecodeError (..), prettyTomlDecodeError)
+import Toml.Codec.Error (LoadTomlException (..), TomlDecodeError (..), prettyTomlDecodeErrors)
 import Toml.Codec.Types (Codec (..), TomlCodec)
 import Toml.Parser (parse)
 import Toml.Type (TOML (..))
@@ -45,10 +43,10 @@ provided codec.
 
 @since 0.0.0
 -}
-decode :: TomlCodec a -> Text -> Either TomlDecodeError a
-decode codec text = do
-    toml <- first ParseError (parse text)
-    runTomlCodec codec toml
+decode :: TomlCodec a -> Text -> Validation [TomlDecodeError] a
+decode codec text = case parse text of
+    Left err   -> Failure [ParseError err]
+    Right toml -> runTomlCodec codec toml
 
 {- | Similar to 'decode', but takes a path to a file with textual @TOML@
 values from which it decodes them with the provided codec.
@@ -59,8 +57,9 @@ decodeFileEither
     :: forall a m . (MonadIO m)
     => TomlCodec a
     -> FilePath
-    -> m (Either TomlDecodeError a)
-decodeFileEither codec filePath = decode codec <$> liftIO (TIO.readFile filePath)
+    -> m (Either [TomlDecodeError] a)
+decodeFileEither codec filePath = validationToEither . decode codec <$>
+    liftIO (TIO.readFile filePath)
 
 {- | Similar to 'decodeFileEither', throws 'LoadTomlException' in case of parse
 errors ('TomlDecodeError').
@@ -70,9 +69,9 @@ errors ('TomlDecodeError').
 decodeFile :: forall a m . (MonadIO m) => TomlCodec a -> FilePath -> m a
 decodeFile codec filePath = decodeFileEither codec filePath >>= errorWhenLeft
   where
-    errorWhenLeft :: Either TomlDecodeError a -> m a
-    errorWhenLeft (Left e)   = liftIO $ throwIO $ LoadTomlException filePath $
-        prettyTomlDecodeError e
+    errorWhenLeft :: Either [TomlDecodeError] a -> m a
+    errorWhenLeft (Left errs) = liftIO $ throwIO $ LoadTomlException filePath $
+        prettyTomlDecodeErrors errs
     errorWhenLeft (Right pc) = pure pc
 
 {- | Convert data type to the textual representation of @TOML@ values.
@@ -94,8 +93,8 @@ encodeToFile codec filePath obj = content <$ liftIO (TIO.writeFile filePath cont
     content = encode codec obj
 
 -- | Convert toml into user data type.
-runTomlCodec :: TomlCodec a -> TOML -> Either TomlDecodeError a
-runTomlCodec codec = runReader (runExceptT $ codecRead codec)
+runTomlCodec :: TomlCodec a -> TOML -> Validation [TomlDecodeError] a
+runTomlCodec codec = codecRead codec
 
 -- | Runs 'codecWrite' of 'TomlCodec' and returns intermediate TOML AST.
 execTomlCodec :: TomlCodec a -> a -> TOML

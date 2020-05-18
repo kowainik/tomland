@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo   #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TupleSections   #-}
 
@@ -68,8 +69,7 @@ module Toml.Codec.Combinator.Map
 import Prelude hiding (map)
 
 import Control.Applicative (empty)
-import Control.Monad (forM, forM_)
-import Control.Monad.Reader (asks, local)
+import Control.Monad (forM_)
 import Control.Monad.State (execState, gets, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import Data.Hashable (Hashable)
@@ -78,10 +78,12 @@ import Data.IntMap.Strict (IntMap)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
+import Data.Traversable (for)
+import Validation (Validation (..))
 
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
 import Toml.Codec.Code (execTomlCodec)
-import Toml.Codec.Combinator.Common (codecReadTOML, whenLeftBiMapError)
+import Toml.Codec.Combinator.Common (whenLeftBiMapError)
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
 import Toml.Type.Key (pattern (:||), Key)
 import Toml.Type.TOML (TOML (..), insertTable, insertTableArrays)
@@ -336,14 +338,12 @@ internalMap :: forall map k v
 internalMap emptyMap toListMap fromListMap keyCodec valCodec key = Codec input output
   where
     input :: TomlEnv map
-    input = do
-        mTables <- asks $ HashMap.lookup key . tomlTableArrays
-        case mTables of
-            Nothing -> pure emptyMap
-            Just tomls -> fmap fromListMap $ forM (NE.toList tomls) $ \toml -> do
-                k <- codecReadTOML toml keyCodec
-                v <- codecReadTOML toml valCodec
-                pure (k, v)
+    input = \t -> case HashMap.lookup key $ tomlTableArrays t of
+        Nothing -> Success emptyMap
+        Just tomls -> fmap fromListMap $ for (NE.toList tomls) $ \toml -> do
+            k <- codecRead keyCodec toml
+            v <- codecRead valCodec toml
+            pure (k, v)
 
     output :: map -> TomlState map
     output dict = do
@@ -378,14 +378,14 @@ internalTableMap
 internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName = Codec input output
   where
     input :: TomlEnv map
-    input = asks (Prefix.lookup tableName . tomlTables) >>= \case
-        Nothing -> pure emptyMap
-        Just toml -> local (const toml) $ do
-            valKeys <- asks (HashMap.keys . tomlPairs)
-            tableKeys <- asks (fmap (:|| []) . HashMap.keys . tomlTables)
-            fmap fromListMap $ forM (valKeys <> tableKeys) $ \key ->
+    input = \t -> case Prefix.lookup tableName $ tomlTables t of
+        Nothing -> Success emptyMap
+        Just toml ->
+            let valKeys = HashMap.keys $ tomlPairs toml
+                tableKeys = fmap (:|| []) $ HashMap.keys $ tomlTables toml
+            in fmap fromListMap $ for (valKeys <> tableKeys) $ \key ->
                 whenLeftBiMapError (forward keyBiMap key) $ \k ->
-                    (k,) <$> codecRead (valCodec key)
+                    (k,) <$> codecRead (valCodec key) toml
 
     output :: map -> TomlState map
     output m = do
