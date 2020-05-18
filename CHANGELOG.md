@@ -47,6 +47,9 @@ The changelog is available [on GitHub][2].
   Implement `ByteStringAsText`, `ByteStringAsBytes`, `LByteStringAsText`,
   `LByteStringAsBytes` newtypes. Add corresponding `HasCodec` instances for
   these data types.
+* [#302](https://github.com/kowainik/tomland/issues/302):
+   `nonEmpty` codec throws `TableArrayNotFound` instead of `TableNotFound`.
+* Add `TableArrayNotFound` constructor to `TomlDecodeError`.
 
 ## 1.2.1.0 — Nov 6, 2019
 
