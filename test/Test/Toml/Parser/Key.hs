@@ -35,3 +35,12 @@ keySpecs = describe "keyP" $ do
             parseKey "site.\"google.com\"" ("site" :|| ["\"google.com\""])
         xit "ignores whitespaces around dot-separated parts" $
             parseKey "a . b . c. d" ("a" :|| ["b", "c", "d"])
+    context "when the key is symbols only" $ do
+        it "parses Haskell comments" $
+            parseKey "--" "--"
+        it "parses Haskell comments with dots" $
+            parseKey "--.--" $ "--" :|| [ "--" ]
+        it "parses underscores" $ do
+            parseKey "_"   "_"
+            parseKey "__"  "__"
+            parseKey "___" "___"
