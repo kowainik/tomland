@@ -2,3 +2,4 @@ resolver: lts-15.11
 
 extra-deps:
   - hspec-hedgehog-0.0.1.2
+  - validation-selective-0.1.0.0

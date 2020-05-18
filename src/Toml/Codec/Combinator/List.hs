@@ -61,17 +61,15 @@ module Toml.Codec.Combinator.List
     , nonEmpty
     ) where
 
-import Control.Monad (forM)
-import Control.Monad.Except (catchError, throwError)
-import Control.Monad.Reader (asks)
 import Control.Monad.State (gets, modify)
 import Data.List.NonEmpty (NonEmpty (..), toList)
+import Validation (Validation (..))
 
 import Toml.Codec.BiMap (TomlBiMap)
 import Toml.Codec.BiMap.Conversion (_Array, _NonEmpty)
 import Toml.Codec.Code (execTomlCodec)
-import Toml.Codec.Combinator.Common (codecReadTOML, match)
-import Toml.Codec.Combinator.Table (handleErrorInTable)
+import Toml.Codec.Combinator.Common (match)
+import Toml.Codec.Combinator.Table (handleTableErrors)
 import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
 import Toml.Type.AnyValue (AnyValue (..))
@@ -153,9 +151,11 @@ Decodes to an empty list @[]@ when the key is not present.
 -}
 list :: forall a . TomlCodec a -> Key -> TomlCodec [a]
 list codec key = Codec
-    { codecRead = (toList <$> codecRead nonEmptyCodec) `catchError` \case
-        TableArrayNotFound errKey | errKey == key -> pure []
-        err -> throwError err
+    { codecRead = \toml -> case codecRead nonEmptyCodec toml of
+        Success ne -> Success $ toList ne
+        Failure [TableArrayNotFound errKey]
+            | errKey == key -> pure []
+        Failure errs -> Failure errs
     , codecWrite = \case
         [] -> pure []
         l@(x:xs) -> l <$ codecWrite nonEmptyCodec (x :| xs)
@@ -204,12 +204,10 @@ nonEmpty :: forall a . TomlCodec a -> Key -> TomlCodec (NonEmpty a)
 nonEmpty codec key = Codec input output
   where
     input :: TomlEnv (NonEmpty a)
-    input = do
-        mTables <- asks $ HashMap.lookup key . tomlTableArrays
-        case mTables of
-            Nothing    -> throwError $ TableArrayNotFound key
-            Just tomls -> forM tomls $ \toml ->
-                codecReadTOML toml codec `catchError` handleErrorInTable key
+    input = \t -> case HashMap.lookup key $ tomlTableArrays t of
+        Nothing    -> Failure [TableArrayNotFound key]
+        Just tomls -> traverse (handleTableErrors codec key) tomls
+
 
     -- adds all TOML objects to the existing list if there are some
     output :: NonEmpty a -> TomlState (NonEmpty a)

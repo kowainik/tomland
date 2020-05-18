@@ -12,6 +12,7 @@ Core error types, including 'TomlDecodeError' and 'LoadTomlException'.
 
 module Toml.Codec.Error
     ( TomlDecodeError (..)
+    , prettyTomlDecodeErrors
     , prettyTomlDecodeError
 
     , LoadTomlException (..)
@@ -47,19 +48,17 @@ data TomlDecodeError
       -}
     | TypeMismatch !Key !Text !TValue  -- ^ Expected type vs actual type
     | ParseError !TomlParseError  -- ^ Exception during parsing
-    deriving stock (Eq, Generic)
+    deriving stock (Show, Eq, Generic)
     deriving anyclass (NFData)
 
-instance Show TomlDecodeError where
-    show = Text.unpack . prettyTomlDecodeError
+{- | Converts 'TomlDecodeError's into pretty human-readable text.
 
-instance Semigroup TomlDecodeError where
-    TrivialError <> e = e
-    e <> _ = e
-
-instance Monoid TomlDecodeError where
-    mempty = TrivialError
-    mappend = (<>)
+@since 1.3.0.0
+-}
+prettyTomlDecodeErrors :: [TomlDecodeError] -> Text
+prettyTomlDecodeErrors errs = Text.unlines $
+    ("tomland errors number: " <> Text.pack (show $ length errs))
+    : map prettyTomlDecodeError errs
 
 {- | Converts 'TomlDecodeError' into pretty human-readable text.
 
@@ -73,8 +72,8 @@ prettyTomlDecodeError de = "tomland decode error:  " <> case de of
     TableNotFound name -> "Table [" <> prettyKey name <> "] is not found"
     TableArrayNotFound name -> "Table array [[" <> prettyKey name <> "]] is not found"
     TypeMismatch name expected actual -> "Type for key " <> prettyKey name <> " doesn't match."
-        <> "\n  Expected: " <> expected
-        <> "\n  Actual:   " <> Text.pack (showType actual)
+        <> "\n    Expected: " <> expected
+        <> "\n    Actual:   " <> Text.pack (showType actual)
     ParseError (TomlParseError msg) ->
         "Parse error during conversion from TOML to custom user type: \n  " <> msg
 

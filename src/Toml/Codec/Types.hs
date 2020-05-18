@@ -16,14 +16,15 @@ module Toml.Codec.Types
 
          -- * Codec
        , Codec (..)
+
+         -- * Function alternative
+       , (<!>)
        ) where
 
-import Control.Applicative (Alternative (..))
-import Control.Monad (MonadPlus (..))
-import Control.Monad.Except (ExceptT)
-import Control.Monad.Reader (Reader)
+import Control.Applicative (Alternative (..), liftA2)
 import Control.Monad.State (State)
 import Control.Monad.Trans.Maybe (MaybeT (..))
+import Validation (Validation (..))
 
 import Toml.Codec.Error (TomlDecodeError)
 import Toml.Type (TOML (..))
@@ -33,7 +34,7 @@ import Toml.Type (TOML (..))
 
 @since 1.3.0.0
 -}
-type TomlEnv = ExceptT TomlDecodeError (Reader TOML)
+type TomlEnv a = TOML -> Validation [TomlDecodeError] a
 
 {- | Mutable context for TOML conversion.
 
@@ -93,7 +94,7 @@ data Codec i o = Codec
 instance Functor (Codec i) where
     fmap :: (oA -> oB) -> Codec i oA -> Codec i oB
     fmap f codec = Codec
-        { codecRead  = f <$> codecRead codec
+        { codecRead  = fmap f . codecRead codec
         , codecWrite = fmap f . codecWrite codec
         }
     {-# INLINE fmap #-}
@@ -102,47 +103,35 @@ instance Functor (Codec i) where
 instance Applicative (Codec i) where
     pure :: o -> Codec i o
     pure a = Codec
-        { codecRead  = pure a
+        { codecRead  = \_ -> Success a
         , codecWrite = \_ -> pure a
         }
     {-# INLINE pure #-}
 
     (<*>) :: Codec i (oA -> oB) -> Codec i oA -> Codec i oB
     codecf <*> codeca = Codec
-        { codecRead  = codecRead codecf <*> codecRead codeca
+        { codecRead  = liftA2 (<*>) (codecRead codecf) (codecRead codeca)
         , codecWrite = \c -> codecWrite codecf c <*> codecWrite codeca c
         }
     {-# INLINE (<*>) #-}
 
--- | @since 0.0.0
-instance Monad (Codec i) where
-    (>>=) :: Codec i oA -> (oA -> Codec i oB) -> Codec i oB
-    codec >>= f = Codec
-        { codecRead  = codecRead codec >>= \a -> codecRead (f a)
-        , codecWrite = \c -> codecWrite codec c >>= \a -> codecWrite (f a) c
-        }
-    {-# INLINE (>>=) #-}
-
 instance Alternative (Codec i) where
     empty :: Codec i o
     empty = Codec
-        { codecRead  = empty
-        , codecWrite = const empty
+        { codecRead  = \_ -> empty
+        , codecWrite = \_ -> empty
         }
     {-# INLINE empty #-}
 
     (<|>) :: Codec i o -> Codec i o -> Codec i o
     codec1 <|> codec2 = Codec
-        { codecRead  = codecRead codec1 <|> codecRead codec2
+        { codecRead  = codecRead codec1 <!> codecRead codec2
         , codecWrite = \c -> codecWrite codec1 c <|> codecWrite codec2 c
         }
     {-# INLINE (<|>) #-}
 
-instance MonadPlus (Codec i) where
-    mzero :: Codec i o
-    mzero = empty
-    {-# INLINE mzero #-}
-
-    mplus :: Codec i o -> Codec i o -> Codec i o
-    mplus = (<|>)
-    {-# INLINE mplus #-}
+-- | Alternative instance for function arrow but without 'empty'.
+infixl 3 <!>
+(<!>) :: Alternative f => (a -> f x) -> (a -> f x) -> (a -> f x)
+f <!> g = \a -> f a <|> g a
+{-# INLINE (<!>) #-}

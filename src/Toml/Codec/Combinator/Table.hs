@@ -32,16 +32,15 @@ module Toml.Codec.Combinator.Table
     ( -- * Tables
       table
       -- * Error Helpers
-    , handleErrorInTable
+    , handleTableErrors
+    , mapTableErrors
     ) where
 
-import Control.Monad.Except (catchError, throwError)
-import Control.Monad.Reader (asks)
 import Control.Monad.State (execState, gets, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import Data.Maybe (fromMaybe)
+import Validation (Validation (..))
 
-import Toml.Codec.Combinator.Common (codecReadTOML)
 import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
 import Toml.Type.Key (Key)
@@ -50,19 +49,30 @@ import Toml.Type.TOML (TOML (..), insertTable)
 import qualified Toml.Type.PrefixTree as Prefix
 
 
+
+{- | Maps errors in tables with 'mapTableErrors'
+
+@since 1.3.0.0
+-}
+handleTableErrors :: TomlCodec a -> Key -> TOML -> Validation [TomlDecodeError] a
+handleTableErrors codec key toml = case codecRead codec toml of
+    Success res  -> Success res
+    Failure errs -> Failure $ mapTableErrors key errs
+
 {- | Prepends given key to all errors that contain key. This function is used to
 give better error messages. So when error happens we know all pieces of table
 key, not only the last one.
 
 @since 0.2.0
 -}
-handleErrorInTable :: Key -> TomlDecodeError -> TomlEnv a
-handleErrorInTable key = \case
-    KeyNotFound name        -> throwError $ KeyNotFound (key <> name)
-    TableNotFound name      -> throwError $ TableNotFound (key <> name)
-    TableArrayNotFound name -> throwError $ TableArrayNotFound (key <> name)
-    TypeMismatch name t1 t2 -> throwError $ TypeMismatch (key <> name) t1 t2
-    e                       -> throwError e
+mapTableErrors :: Key -> [TomlDecodeError] -> [TomlDecodeError]
+mapTableErrors key = map (\case
+    KeyNotFound name        -> KeyNotFound (key <> name)
+    TableNotFound name      -> TableNotFound (key <> name)
+    TableArrayNotFound name -> TableArrayNotFound (key <> name)
+    TypeMismatch name t1 t2 -> TypeMismatch (key <> name) t1 t2
+    e                       -> e
+    )
 
 {- | Codec for tables. Use it when when you have nested objects.
 
@@ -72,11 +82,9 @@ table :: forall a . TomlCodec a -> Key -> TomlCodec a
 table codec key = Codec input output
   where
     input :: TomlEnv a
-    input = do
-        mTable <- asks $ Prefix.lookup key . tomlTables
-        case mTable of
-            Nothing   -> throwError $ TableNotFound key
-            Just toml -> codecReadTOML toml codec `catchError` handleErrorInTable key
+    input = \t -> case Prefix.lookup key $ tomlTables t of
+        Nothing   -> Failure [TableNotFound key]
+        Just toml -> handleTableErrors codec key toml
 
     output :: a -> TomlState a
     output a = do

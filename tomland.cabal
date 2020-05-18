@@ -44,7 +44,7 @@ source-repository head
   location:            https://github.com/kowainik/tomland.git
 
 common common-options
-  build-depends:       base >= 4.10 && < 4.15
+  build-depends:       base >= 4.11 && < 4.15
 
   ghc-options:         -Wall
                        -Wcompat
@@ -126,6 +126,7 @@ library
                      , time >= 1.8 && < 1.11
                      , transformers ^>= 0.5
                      , unordered-containers ^>= 0.2.7
+                     , validation-selective ^>= 0.1.0.0
 
 executable readme
   import:              common-options

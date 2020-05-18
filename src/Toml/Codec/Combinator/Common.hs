@@ -17,13 +17,11 @@ find functions in this module useful.
 module Toml.Codec.Combinator.Common
     ( match
     , whenLeftBiMapError
-    , codecReadTOML
     ) where
 
-import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.Reader (asks, local)
 import Control.Monad.State (modify)
 import Control.Monad.Trans.Maybe (MaybeT (..))
+import Validation (Validation (..))
 
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap, TomlBiMapError)
 import Toml.Codec.Error (TomlDecodeError (..))
@@ -56,8 +54,8 @@ match :: forall a . TomlBiMap a AnyValue -> Key -> TomlCodec a
 match BiMap{..} key = Codec input output
   where
     input :: TomlEnv a
-    input = asks (HashMap.lookup key . tomlPairs) >>= \case
-        Nothing     -> throwError $ KeyNotFound key
+    input = \toml -> case HashMap.lookup key (tomlPairs toml) of
+        Nothing     -> Failure [KeyNotFound key]
         Just anyVal -> whenLeftBiMapError (backward anyVal) pure
 
     output :: a -> TomlState a
@@ -71,17 +69,9 @@ match BiMap{..} key = Codec input output
 @since 1.3.0.0
 -}
 whenLeftBiMapError
-    :: (MonadError TomlDecodeError m)
-    => Either TomlBiMapError a
-    -> (a -> m b)
-    -> m b
+    :: Either TomlBiMapError a
+    -> (a -> Validation [TomlDecodeError] b)
+    -> Validation [TomlDecodeError] b
 whenLeftBiMapError val action = case val of
     Right a  -> action a
-    Left err -> throwError $ BiMapError err
-
-{- | Run 'codecRead' function with given 'TOML' inside 'Control.Monad.Reader.ReaderT' context.
-
-@since 1.3.0.0
--}
-codecReadTOML :: TOML -> TomlCodec a -> TomlEnv a
-codecReadTOML toml codec = local (const toml) (codecRead codec)
+    Left err -> Failure [BiMapError err]
