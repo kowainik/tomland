@@ -122,11 +122,14 @@ module Toml.Codec.Generic
 
 import Data.Char (isLower, toLower)
 import Data.Hashable (Hashable)
+import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
+import Data.IntMap.Strict (IntMap)
 import Data.IntSet (IntSet)
 import Data.Kind (Type)
 import Data.List (stripPrefix)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map.Strict (Map)
 import Data.Monoid (All (..), Any (..), First (..), Last (..), Product (..), Sum (..))
 import Data.Proxy (Proxy (..))
 import Data.Set (Set)
@@ -530,6 +533,60 @@ instance (Hashable a, Eq a, HasItemCodec a) => HasCodec (HashSet a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arrayHashSetOf prim
         Right codec -> Toml.hashSet codec
+    {-# INLINE hasCodec #-}
+
+{- | Encodes 'Map' as array of tables with the @key@ and @val@ TOML
+key names for 'Map' keys and values. E.g. if you have a type
+@'Map' 'Int' 'Text'@, the 'HasCodec' instance for 'Generic' deriving
+will work with the following TOML representation:
+
+@
+fieldName =
+    [ { key = 10, val = "book" }
+    , { key = 42, val = "food" }
+    ]
+@
+
+@since 1.3.0.0
+-}
+instance (Ord k, HasCodec k, HasCodec v) => HasCodec (Map k v) where
+    hasCodec = Toml.map (hasCodec @k "key") (hasCodec @v "val")
+    {-# INLINE hasCodec #-}
+
+{- | Encodes 'HashMap' as array of tables with the @key@ and @val@ TOML
+key names for 'HashMap' keys and values. E.g. if you have a type
+@'HashMap' 'Text' 'Int'@, the 'HasCodec' instance for 'Generic'
+deriving will work with the following TOML representation:
+
+@
+fieldName =
+    [ { key = "foo", val = 15 }
+    , { key = "bar", val = 7  }
+    ]
+@
+
+@since 1.3.0.0
+-}
+instance (Hashable k, Eq k, HasCodec k, HasCodec v) => HasCodec (HashMap k v) where
+    hasCodec = Toml.hashMap (hasCodec @k "key") (hasCodec @v "val")
+    {-# INLINE hasCodec #-}
+
+{- | Encodes 'IntMap' as array of tables with the @key@ and @val@ TOML
+key names for 'IntMap' keys and values. E.g. if you have a type
+@'IntMap' 'Text'@, the 'HasCodec' instance for 'Generic' deriving will
+work with the following TOML representation:
+
+@
+fieldName =
+    [ { key = 10, val = "foo" }
+    , { key = 42, val = "bar" }
+    ]
+@
+
+@since 1.3.0.0
+-}
+instance (HasCodec v) => HasCodec (IntMap v) where
+    hasCodec = Toml.intMap (hasCodec @Int "key") (hasCodec @v "val")
     {-# INLINE hasCodec #-}
 
 -- | @since 1.3.0.0

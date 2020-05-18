@@ -12,6 +12,9 @@ The changelog is available [on GitHub][2].
   Add `pair` and `triple` codecs for tuples.
 * [#252](https://github.com/kowainik/tomland/issues/252):
   Move to `hspec-*` family of libraries from `tasty-*`.
+* [#242](https://github.com/kowainik/tomland/issues/242):
+  Add `HasCodec` instances for `Map`, `HashMap` and `IntMap` for
+  `Generic` deriving.
 * [#261](https://github.com/kowainik/tomland/issues/261):
   Implement `tableMap` codec to use TOML keys as `Map` keys.
 * [#256](https://github.com/kowainik/tomland/issues/256),
