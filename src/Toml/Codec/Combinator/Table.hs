@@ -6,11 +6,32 @@ Maintainer: Kowainik <xrom.xkov@gmail.com>
 Contains TOML-specific combinators for converting between TOML and user data
 types.
 
+Tables can be represented in @TOML@ in one of the following ways:
+
+@
+foo =
+    { x = ...
+    , y = ...
+    , ...
+    }
+@
+
+__Or__
+
+@
+[foo]
+    x = ...
+    y = ...
+    ...
+@
+
 @since 1.3.0.0
 -}
 
 module Toml.Codec.Combinator.Table
-    ( table
+    ( -- * Tables
+      table
+      -- * Error Helpers
     , handleErrorInTable
     ) where
 

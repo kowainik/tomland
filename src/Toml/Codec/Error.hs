@@ -19,13 +19,13 @@ module Toml.Codec.Error
 
 import Control.DeepSeq (NFData)
 import Control.Exception (Exception)
-import Data.Foldable (toList)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Toml.Codec.BiMap (TomlBiMapError, prettyBiMapError)
 import Toml.Parser (TomlParseError (..))
-import Toml.Type.Key (Key (..), unPiece)
+import Toml.Type.Key (Key (..))
+import Toml.Type.Printer (prettyKey)
 import Toml.Type.Value (TValue, showType)
 
 import qualified Data.Text as Text
@@ -64,16 +64,13 @@ prettyTomlDecodeError :: TomlDecodeError -> Text
 prettyTomlDecodeError de = "tomland decode error:  " <> case de of
     TrivialError -> "'empty' parser from 'Alternative' is used"
     BiMapError biError -> prettyBiMapError biError
-    KeyNotFound name -> "Key " <> joinKey name <> " is not found"
-    TableNotFound name -> "Table [" <> joinKey name <> "] is not found"
-    TypeMismatch name expected actual -> "Type for key " <> joinKey name <> " doesn't match."
+    KeyNotFound name -> "Key " <> prettyKey name <> " is not found"
+    TableNotFound name -> "Table [" <> prettyKey name <> "] is not found"
+    TypeMismatch name expected actual -> "Type for key " <> prettyKey name <> " doesn't match."
         <> "\n  Expected: " <> expected
         <> "\n  Actual:   " <> Text.pack (showType actual)
     ParseError (TomlParseError msg) ->
         "Parse error during conversion from TOML to custom user type: \n  " <> msg
-  where
-    joinKey :: Key -> Text
-    joinKey = Text.intercalate "." . map unPiece . toList . unKey
 
 {- | File loading error data type.
 

@@ -7,6 +7,8 @@ import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
 import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
+import Data.IntSet (IntSet)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.Set (Set)
 import Data.Text (Text)
@@ -107,6 +109,8 @@ data Test = Test
     , testF      :: !Double
     , testS      :: !Text
     , testA      :: ![Text]
+    , testNE     :: !(NonEmpty Text)
+    , testNET    :: !(NonEmpty Int)
     , testM      :: !(Maybe Bool)
     , testX      :: !TestInside
     , testY      :: !(Maybe TestInside)
@@ -121,6 +125,7 @@ data Test = Test
     , users      :: ![User]
     , susers     :: !(Set User)
     , husers     :: !(HashSet User)
+    , intset     :: !IntSet
     , payloads   :: !(Map Text Int)
     , colours    :: !(Map Text Colour)
     }
@@ -133,6 +138,8 @@ testT = Test
     <*> Toml.double "testF" .= testF
     <*> Toml.text "testS" .= testS
     <*> Toml.arrayOf Toml._Text "testA" .= testA
+    <*> Toml.arrayNonEmptyOf Toml._Text "testNE" .= testNE
+    <*> Toml.nonEmpty (Toml.int "a") "testNET" .= testNET
     <*> Toml.dioptional (Toml.bool "testM") .= testM
     <*> Toml.table insideCodec "testX" .= testX
     <*> Toml.dioptional (Toml.table insideCodec "testY") .= testY
@@ -147,6 +154,7 @@ testT = Test
     <*> Toml.list userCodec "user" .= users
     <*> Toml.set userCodec "suser" .= susers
     <*> Toml.hashSet userCodec "huser" .= husers
+    <*> Toml.arrayIntSet "intset" .= intset
     <*> Toml.map (Toml.text "name") (Toml.int "payload") "payloads" .= payloads
     <*> Toml.tableMap Toml._KeyText colourCodec "colours" .= colours
   where

@@ -9,21 +9,46 @@ Maintainer: Kowainik <xrom.xkov@gmail.com>
 TOML-specific combinators for converting between TOML and Haskell Map-like data
 types.
 
+There are two way to represent map-like structures with the @tomland@ library.
+
+* Map structure with the key and value represented as key-value pairs:
+
+    @
+    foo =
+        [ {myKey = "name", myVal = 42}
+        , {myKey = "otherName", myVal = 100}
+        ]
+    @
+
+* Map structure as a table with the @TOML@ key as the map key:
+
+    @
+    [foo] =
+        name = 42
+        otherName = 100
+    @
+
+You can find both types of the codecs in this module for different map-like
+structures. See the following table for the heads up:
+
 +------------------------------+--------------------------------+----------------------------------------------------+
 |         Haskell Type         |             @TOML@             |                    'TomlCodec'                     |
 +==============================+================================+====================================================+
 | __@'Map' 'Int' 'Text'@__     | @x = [{k = 42, v = "foo"}]@    | @'map' ('Toml.int' "k") ('Toml.text' "v") "x"@     |
 +------------------------------+--------------------------------+----------------------------------------------------+
-| __@'Map' 'Text' 'Int'@__     | @x = [{a = 42, b = 11}]@       | @'tableMap' 'Toml._KeyText' 'Toml.int' "x"@        |
+| __@'Map' 'Text' 'Int'@__     | @x = {a = 42, b = 11}@         | @'tableMap' 'Toml._KeyText' 'Toml.int' "x"@        |
 +------------------------------+--------------------------------+----------------------------------------------------+
 | __@'HashMap' 'Int' 'Text'@__ | @x = [{k = 42, v = "foo"}]@    | @'hashMap' ('Toml.int' "k") ('Toml.text' "v") "x"@ |
 +------------------------------+--------------------------------+----------------------------------------------------+
-| __@'HashMap' 'Text' 'Int'@__ | @x = [{a = 42, b = 11}]@       | @'tableHashMap' 'Toml._KeyText' 'Toml.int' "x"@    |
+| __@'HashMap' 'Text' 'Int'@__ | @x = {a = 42, b = 11}@         | @'tableHashMap' 'Toml._KeyText' 'Toml.int' "x"@    |
 +------------------------------+--------------------------------+----------------------------------------------------+
 | __@'IntMap' 'Text'@__        | @x = [{k = 42, v = "foo"}]@    | @'intMap' ('Toml.int' "k") ('Toml.text' "v") "x"@  |
 +------------------------------+--------------------------------+----------------------------------------------------+
-| __@'IntMap' 'Text'@__        | @x = [{1 = "one", 2 = "two"}]@ | @'tableIntMap' 'Toml._KeyInt' 'Toml.text' "x"@     |
+| __@'IntMap' 'Text'@__        | @x = {1 = "one", 2 = "two"}@   | @'tableIntMap' 'Toml._KeyInt' 'Toml.text' "x"@     |
 +------------------------------+--------------------------------+----------------------------------------------------+
+
+__Note:__ in case of the missing key on the @TOML@ side an empty map structure
+is returned.
 
 @since 1.3.0.0
 -}
