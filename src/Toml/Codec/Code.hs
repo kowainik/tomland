@@ -70,8 +70,11 @@ decodeFile :: forall a m . (MonadIO m) => TomlCodec a -> FilePath -> m a
 decodeFile codec filePath = decodeFileEither codec filePath >>= errorWhenLeft
   where
     errorWhenLeft :: Either [TomlDecodeError] a -> m a
-    errorWhenLeft (Left errs) = liftIO $ throwIO $ LoadTomlException filePath $
-        prettyTomlDecodeErrors errs
+    errorWhenLeft (Left errs) =
+        liftIO
+        $ throwIO
+        $ LoadTomlException filePath
+        $ prettyTomlDecodeErrors errs
     errorWhenLeft (Right pc) = pure pc
 
 {- | Convert data type to the textual representation of @TOML@ values.
