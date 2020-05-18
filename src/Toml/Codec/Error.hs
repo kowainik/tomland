@@ -40,6 +40,11 @@ data TomlDecodeError
     | BiMapError !TomlBiMapError
     | KeyNotFound !Key  -- ^ No such key
     | TableNotFound !Key  -- ^ No such table
+    | TableArrayNotFound !Key
+      {- ^ No such table array
+
+      @since 1.3.0.0
+      -}
     | TypeMismatch !Key !Text !TValue  -- ^ Expected type vs actual type
     | ParseError !TomlParseError  -- ^ Exception during parsing
     deriving stock (Eq, Generic)
@@ -66,6 +71,7 @@ prettyTomlDecodeError de = "tomland decode error:  " <> case de of
     BiMapError biError -> prettyBiMapError biError
     KeyNotFound name -> "Key " <> prettyKey name <> " is not found"
     TableNotFound name -> "Table [" <> prettyKey name <> "] is not found"
+    TableArrayNotFound name -> "Table array [[" <> prettyKey name <> "]] is not found"
     TypeMismatch name expected actual -> "Type for key " <> prettyKey name <> " doesn't match."
         <> "\n  Expected: " <> expected
         <> "\n  Actual:   " <> Text.pack (showType actual)

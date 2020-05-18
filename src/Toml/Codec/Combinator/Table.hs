@@ -60,6 +60,7 @@ handleErrorInTable :: Key -> TomlDecodeError -> TomlEnv a
 handleErrorInTable key = \case
     KeyNotFound name        -> throwError $ KeyNotFound (key <> name)
     TableNotFound name      -> throwError $ TableNotFound (key <> name)
+    TableArrayNotFound name -> throwError $ TableArrayNotFound (key <> name)
     TypeMismatch name t1 t2 -> throwError $ TypeMismatch (key <> name) t1 t2
     e                       -> throwError e
 

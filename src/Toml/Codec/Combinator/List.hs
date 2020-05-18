@@ -154,7 +154,7 @@ Decodes to an empty list @[]@ when the key is not present.
 list :: forall a . TomlCodec a -> Key -> TomlCodec [a]
 list codec key = Codec
     { codecRead = (toList <$> codecRead nonEmptyCodec) `catchError` \case
-        TableNotFound errKey | errKey == key -> pure []
+        TableArrayNotFound errKey | errKey == key -> pure []
         err -> throwError err
     , codecWrite = \case
         [] -> pure []
@@ -183,7 +183,7 @@ foo =
 If you try to decode an empty @TOML@ list you will see the error:
 
 @
-tomland decode error:  Table [foo] is not found
+tomland decode error:  Table array [[foo]] is not found
 @
 
 or
@@ -195,7 +195,7 @@ tomland decode error:  Key foo.a is not found
 If the key is not present in @TOML@ the following decode error will be spotted:
 
 @
-tomland decode error:  Key foo is not found
+tomland decode error:  Table array [[foo]] is not found
 @
 
 @since 1.0.0
@@ -207,7 +207,7 @@ nonEmpty codec key = Codec input output
     input = do
         mTables <- asks $ HashMap.lookup key . tomlTableArrays
         case mTables of
-            Nothing    -> throwError $ TableNotFound key
+            Nothing    -> throwError $ TableArrayNotFound key
             Just tomls -> forM tomls $ \toml ->
                 codecReadTOML toml codec `catchError` handleErrorInTable key
 
