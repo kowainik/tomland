@@ -23,7 +23,7 @@ There are two way to represent map-like structures with the @tomland@ library.
 * Map structure as a table with the @TOML@ key as the map key:
 
     @
-    [foo] =
+    [foo]
         name = 42
         otherName = 100
     @
