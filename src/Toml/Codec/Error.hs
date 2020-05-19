@@ -27,7 +27,6 @@ import Toml.Codec.BiMap (TomlBiMapError, prettyBiMapError)
 import Toml.Parser (TomlParseError (..))
 import Toml.Type.Key (Key (..))
 import Toml.Type.Printer (prettyKey)
-import Toml.Type.Value (TValue, showType)
 
 import qualified Data.Text as Text
 
@@ -37,8 +36,7 @@ import qualified Data.Text as Text
 @since 1.3.0.0
 -}
 data TomlDecodeError
-    = TrivialError
-    | BiMapError !TomlBiMapError
+    = BiMapError !TomlBiMapError
     | KeyNotFound !Key  -- ^ No such key
     | TableNotFound !Key  -- ^ No such table
     | TableArrayNotFound !Key
@@ -46,7 +44,6 @@ data TomlDecodeError
 
       @since 1.3.0.0
       -}
-    | TypeMismatch !Key !Text !TValue  -- ^ Expected type vs actual type
     | ParseError !TomlParseError  -- ^ Exception during parsing
     deriving stock (Show, Eq, Generic)
     deriving anyclass (NFData)
@@ -66,14 +63,10 @@ prettyTomlDecodeErrors errs = Text.unlines $
 -}
 prettyTomlDecodeError :: TomlDecodeError -> Text
 prettyTomlDecodeError de = "tomland decode error:  " <> case de of
-    TrivialError -> "'empty' parser from 'Alternative' is used"
     BiMapError biError -> prettyBiMapError biError
     KeyNotFound name -> "Key " <> prettyKey name <> " is not found"
     TableNotFound name -> "Table [" <> prettyKey name <> "] is not found"
     TableArrayNotFound name -> "Table array [[" <> prettyKey name <> "]] is not found"
-    TypeMismatch name expected actual -> "Type for key " <> prettyKey name <> " doesn't match."
-        <> "\n    Expected: " <> expected
-        <> "\n    Actual:   " <> Text.pack (showType actual)
     ParseError (TomlParseError msg) ->
         "Parse error during conversion from TOML to custom user type: \n  " <> msg
 
