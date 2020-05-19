@@ -3,7 +3,57 @@ Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
 Maintainer: Kowainik <xrom.xkov@gmail.com>
 
-Reexports functions under @Toml.Codec.*@.
+This module provides utilities for implementing and using
+bidirectional TOML codecs. The concept of bidirectional conversion in
+@tomland@ has two parts: __'TomlBiMap'__ and __'TomlCodec'__.
+
+== General TOML description
+
+In the following TOML
+
+@
+name = "foo"
+@
+
+we call @name@ as __key__ and @"foo"@ as __value__.
+
+== 'TomlBiMap'
+
+'TomlBiMap' provides a bidirectional conversion between
+__TOML values__ and Haskell primitive values. TOML specification
+defines some primitive values you can use in key-value pairs
+(e.g. /integer/, /string/, /local time/). 'TomlBiMap' provides a way
+to convert between TOML primitives and Haskell values. 'TomlBiMap'
+doesn't know anything about TOML keys.
+
+== 'TomlCodec'
+
+'TomlCodec' describes how to convert in both ways between a single or
+multiple key-value pairs and Haskell types. @tomland@ provides basic
+primitives for decoding and encoding single key-value pairs, but also
+a way to compose multiple 'TomlCodec's into a single one. So, if you
+have a custom data type, that has several fields or several
+constructors, you need to define 'TomlCodec' for your data type.
+
+== Encoding and decoding
+
+If you have a type like @User@ then @userCodec :: 'TomlCodec' User@ is
+an object that describes how to 'encode' a value of type @User@ to
+TOML and 'decode' TOML to a value of type @User@.
+
+* To TOML: @'encode' userCodec someUser@
+* From TOML: @'decode' userCodec someToml@
+
+== Naming conventions
+
+@tomland@ uses the following naming conventions (and encourages
+library users to follow them as well):
+
+* __\_SomeName__: for 'TomlBiMap' (e.g. '_Int', '_Text', '_Array')
+* __someName__: for basic 'TomlCodec's (e.g. 'int', 'text', 'arrayOf')
+* __someNameCodec__: for user defined codecs for custom types (e.g. @userCodec@, @configCodec@, @serverCodec@)
+
+@since 1.3.0.0
 -}
 
 module Toml.Codec
