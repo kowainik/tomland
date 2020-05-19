@@ -44,3 +44,5 @@ keySpecs = describe "keyP" $ do
             parseKey "_"   "_"
             parseKey "__"  "__"
             parseKey "___" "___"
+        it "parses quotes" $
+            parseKey "\".\"" $ "\".\"" :|| []

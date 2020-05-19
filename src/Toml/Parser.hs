@@ -11,6 +11,7 @@ Parser for text to TOML AST.
 module Toml.Parser
        ( TomlParseError (..)
        , parse
+       , parseKey
        ) where
 
 import Control.DeepSeq (NFData)
@@ -18,8 +19,10 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Toml.Parser.Item (tomlP)
+import Toml.Parser.Key (keyP)
 import Toml.Parser.Validate (validateItems)
-import Toml.Type (TOML)
+import Toml.Type.Key (Key)
+import Toml.Type.TOML (TOML)
 
 import qualified Data.Text as T
 import qualified Toml.Parser.Core as P (errorBundlePretty, parse)
@@ -46,3 +49,12 @@ parse t = case P.parse tomlP "" t of
     Right items -> case validateItems items of
         Left err   -> Left $ TomlParseError $ T.pack $ show err
         Right toml -> Right toml
+
+{- | Parse TOML 'Key' from 'Text'.
+
+@since 1.3.0.0
+-}
+parseKey :: Text -> Either TomlParseError Key
+parseKey t = case P.parse keyP "" t of
+    Left err  -> Left $ TomlParseError $ T.pack $ P.errorBundlePretty err
+    Right key -> Right key
