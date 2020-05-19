@@ -7,9 +7,9 @@ module Main (main) where
 
 import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
+import Data.ByteString (ByteString)
 import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
-import Data.ByteString (ByteString)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
@@ -19,9 +19,10 @@ import Data.Time (fromGregorian)
 import GHC.Generics (Generic)
 
 import Toml (TomlCodec, TomlParseError (..), pretty, (.=), (<!>))
+import Toml.Codec.Generic (ByteStringAsBytes (..), HasCodec (..), TomlTable (..),
+                           stripTypeNameCodec)
 import Toml.Type (TOML (..), Value (..))
 import Toml.Type.Edsl (mkToml, table, (=:))
-import Toml.Codec.Generic (TomlTable (..), stripTypeNameCodec, HasCodec (..), ByteStringAsBytes (..))
 
 import qualified Data.Text.IO as TIO
 
