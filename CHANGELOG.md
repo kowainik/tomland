@@ -56,6 +56,8 @@ The changelog is available [on GitHub][2].
   Add tests on all kinds of `TomlDecodeError` with `decode` function.
 * [#313](https://github.com/kowainik/tomland/issues/313):
   Store `Key` in the `BiMapError` constructor of `TomlDecodeError`.
+* [#318](https://github.com/kowainik/tomland/issues/318):
+  Export a function for parsing TOML keys.
 * [#311](https://github.com/kowainik/tomland/issues/311):
   Reimplement custom `TomlState` instead of using `MaybeT` and `State`.
 

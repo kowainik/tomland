@@ -2,7 +2,6 @@ module Test.Toml.Type.Key
     ( keySpec
     ) where
 
-import Data.String (IsString (..))
 import Hedgehog (forAll, tripping)
 import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, shouldBe)
 import Test.Hspec.Hedgehog (hedgehog)
@@ -10,7 +9,7 @@ import Test.Hspec.Hedgehog (hedgehog)
 import Test.Toml.Gen (genKey)
 import Toml.Type.Key (KeysDiff (..), keysDiff)
 
-import qualified Data.Text as Text
+import qualified Toml.Parser as Parser
 import qualified Toml.Type.Printer as Printer
 
 
@@ -22,7 +21,7 @@ keySpec = describe "TOML Key" $ do
 keyRoundtripSpec :: SpecWith (Arg Expectation)
 keyRoundtripSpec = it "Key printing: fromString . prettyKey ≡ id" $ hedgehog $ do
     key <- forAll genKey
-    tripping key Printer.prettyKey (Just . fromString . Text.unpack)
+    tripping key Printer.prettyKey Parser.parseKey
 
 keysDiffSpec :: Spec
 keysDiffSpec = describe "Key difference" $ do

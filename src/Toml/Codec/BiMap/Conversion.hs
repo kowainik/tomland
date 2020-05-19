@@ -98,7 +98,7 @@ import Text.Read (readEither)
 
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap, TomlBiMapError (..), iso, mkAnyValueBiMap, prism,
                          tShow, wrongConstructor)
-import Toml.Parser.Key (keyP)
+import Toml.Parser (TomlParseError (..), parseKey)
 import Toml.Type.AnyValue (AnyValue (..), applyAsToAny, matchBool, matchDay, matchDouble,
                            matchHours, matchInteger, matchLocal, matchText, matchZoned,
                            mkMatchError, toMArray)
@@ -117,8 +117,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
-
-import qualified Toml.Parser.Core as P (errorBundlePretty, parse)
 
 ----------------------------------------------------------------------------
 -- Primitive
@@ -564,7 +562,7 @@ _EnumBounded = _EnumBoundedText >>> _Text
 _KeyText :: TomlBiMap Key Text
 _KeyText = BiMap
     { forward = Right . prettyKey
-    , backward = textToKey
+    , backward = first (ArbitraryError . unTomlParseError) . parseKey
     }
 
 {- | Bidirectional converter between 'Key' and 'String'. Usually used
@@ -575,7 +573,7 @@ as an argument for 'Toml.Codec.Combinator.Map.tableMap'.
 _KeyString :: TomlBiMap Key String
 _KeyString = BiMap
     { forward = Right . T.unpack . prettyKey
-    , backward = textToKey . T.pack
+    , backward = first (ArbitraryError . unTomlParseError) . parseKey . T.pack
     }
 
 {- | Bidirectional converter between 'Key' and 'Int'. Usually used
@@ -586,13 +584,8 @@ as an argument for 'Toml.Codec.Combinator.Map.tableIntMap'.
 _KeyInt :: TomlBiMap Key Int
 _KeyInt = BiMap
     { forward = first (ArbitraryError . T.pack) . readEither . T.unpack . prettyKey
-    , backward = textToKey . tShow
+    , backward = first (ArbitraryError . unTomlParseError) . parseKey . tShow
     }
-
-textToKey :: Text -> Either TomlBiMapError Key
-textToKey t = case P.parse keyP "" t of
-    Left err  -> Left $ ArbitraryError $ T.pack $ P.errorBundlePretty err
-    Right key -> Right key
 
 ----------------------------------------------------------------------------
 -- General purpose bimaps
