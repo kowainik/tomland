@@ -3,65 +3,105 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
-## Unreleased
+## 1.3.0.0 — May 19, 2020
 
 * [#253](https://github.com/kowainik/tomland/issues/253):
   Support GHC-8.10.1. Move to GHC-8.8.3 from 8.8.1.
-  Drop support of GHC-8.2.2.
-* [#270](https://github.com/kowainik/tomland/issues/270):
-  Add `pair` and `triple` codecs for tuples.
-* [#252](https://github.com/kowainik/tomland/issues/252):
-  Move to `hspec-*` family of libraries from `tasty-*`.
-* [#242](https://github.com/kowainik/tomland/issues/242):
-  Add `HasCodec` instances for `Map`, `HashMap` and `IntMap` for
-  `Generic` deriving.
-* [#261](https://github.com/kowainik/tomland/issues/261):
-  Implement `tableMap` codec to use TOML keys as `Map` keys.
-* [#256](https://github.com/kowainik/tomland/issues/256),
-  [#278](https://github.com/kowainik/tomland/issues/278):
-  Rename modules to simplify module structure.
-  __TODO__: write migration guide
-* Rename `ParseException` to `TomlParseError`.
+* Drop support of GHC-8.2.2.
+* [#271](https://github.com/kowainik/tomland/issues/271):
+  Use `Validation` from `validation-selective` in `TomlEnv`.
+  This allows to accumulate and display all errors that occurs during the
+  decoding phase.
+  All  previous decode functions return list of all `TomlDecodeError`s.
+
+  __Note:__ Due to the specific of `Validation` data type, there is no `Monad`
+  instanse of `Codec` anymore. However, this doesn't limit any previously
+  released features.
+* Add `decodeValidation`, `decodeFileValidation` functions to return
+  `Validation` instead of `Either`.
 * [#263](https://github.com/kowainik/tomland/issues/263):
   Simplify `Codec` abstraction. Instead of having `Codec r w c a`
   now it is `Codec TomlEnv TomlState c a`.
 
   Remove `BiCodec` as it is simple `TomlCodec` with this change.
-* Rename `DecodeException` to `TomlDecodeError`.
-* Add `decodeFileEither` and `encodeToFile` functions.
-* [#218](https://github.com/kowainik/tomland/issues/218):
-  Add tests for TOML validation.
+* [#256](https://github.com/kowainik/tomland/issues/256),
+  [#278](https://github.com/kowainik/tomland/issues/278):
+  Rename modules to simplify module structure.
+
+  __Migration guide:__ If you use `Toml` module (as advised by the library) then
+  no changes required in your code.
+   If you import some particular modules from `tomland` here is the renaming
+   scheme you can use to apply to your imports:
+
+   | __Old__ | __New__ |
+   |-----|-----|
+   | `Toml.Bi` | `Toml.Codec` |
+   | `Toml.Bi.Combinators` | `Toml.Codec.Combinator` |
+   | `Toml.Bi.Monad` | `Toml.Codec.Types` |
+   | `Toml.Bi.Code` | `Toml.Codec.Code` or `Toml.Codec.Types` or `Toml.Codec.Error` |
+   | `Toml.Bi.Map` | `Toml.Codec.BiMap` or `Toml.Codec.BiMap.Conversion` |
+   | `Toml.Generic` | `Toml.Codec.Generic` |
+   | `Toml.Edsl` | `Toml.Type.Edsl` |
+   | `Toml.Printer` | `Toml.Type.Printer` |
+   | `Toml.PrefixTree` | `Toml.Type.PrefixTree` or `Toml.Type.Key` |
+
+
+* [#283](https://github.com/kowainik/tomland/issues/283):
+  Documentation improvements:
+    - Add Codec Tables to each kind of codecs with examples
+    - Add high-level description to each reexported module
+    - Add @since annotations
+    - Improve README
+    - Add more examples into functions
 * [#237](https://github.com/kowainik/tomland/issues/237):
   Add `BiMap` `_Validate` and codecs `validate` and `validateIf` for custom
   validation.
 * [#289](https://github.com/kowainik/tomland/issues/289):
   Add `_Coerce` `TomlBiMap`.
-* Fix `sum` and `product` behaviour on missing fields. Now it returns the
-  wrapper of `mempty` instead of failure.
-* Add `_KeyInt` `BiMap`for key-as-int approach.
+* [#270](https://github.com/kowainik/tomland/issues/270):
+  Add `pair` and `triple` codecs for tuples.
+* [#261](https://github.com/kowainik/tomland/issues/261):
+  Implement `tableMap` codec to use TOML keys as `Map` keys.
 * [#243](https://github.com/kowainik/tomland/issues/243):
   Implement `hashMap`, `tableHashMap`, `intMap`, `tableIntMap` codec
   combinators.
 * Add `intSet` codec.
+* Add `_KeyInt` `BiMap`for key-as-int approach.
+* [#242](https://github.com/kowainik/tomland/issues/242):
+  Add `HasCodec` instances for `Map`, `HashMap` and `IntMap` for
+  `Generic` deriving.
+* [#272](https://github.com/kowainik/tomland/issues/272):
+  Add `TomlTable` newtype to be used in generic `DerivingVia`.
 * [#251](https://github.com/kowainik/tomland/issues/251):
   Implement `ByteStringAsText`, `ByteStringAsBytes`, `LByteStringAsText`,
   `LByteStringAsBytes` newtypes. Add corresponding `HasCodec` instances for
   these data types.
-* [#302](https://github.com/kowainik/tomland/issues/302):
-   `nonEmpty` codec throws `TableArrayNotFound` instead of `TableNotFound`.
+* [#311](https://github.com/kowainik/tomland/issues/311):
+  Reimplement custom `TomlState` instead of using `MaybeT` and `State`.
+* Rename `ParseException` to `TomlParseError`.
+* Rename `DecodeException` to `TomlDecodeError`.
 * Add `TableArrayNotFound` constructor to `TomlDecodeError`.
 * Remove `TrivialError` and `TypeMismatch` constructors of the `TomlDecodeError`
   type.
-* [#310](https://github.com/kowainik/tomland/issues/310):
-  Add tests on all kinds of `TomlDecodeError` with `decode` function.
 * [#313](https://github.com/kowainik/tomland/issues/313):
   Store `Key` in the `BiMapError` constructor of `TomlDecodeError`.
+* Add `decodeFileEither` and `encodeToFile` functions.
+* Fix `sum` and `product` behaviour on missing fields. Now it returns the
+  wrapper of `mempty` instead of failure.
+* [#302](https://github.com/kowainik/tomland/issues/302):
+  `nonEmpty` codec throws `TableArrayNotFound` instead of `TableNotFound`.
 * [#318](https://github.com/kowainik/tomland/issues/318):
-  Export a function for parsing TOML keys.
-* [#311](https://github.com/kowainik/tomland/issues/311):
-  Reimplement custom `TomlState` instead of using `MaybeT` and `State`.
-* [#272](https://github.com/kowainik/tomland/issues/272):
-  Add `TomlTable` newtype to be used in generic `DerivingVia`.
+  Export a function for parsing TOML keys `parseKey`.
+* [#310](https://github.com/kowainik/tomland/issues/310):
+  Add tests on all kinds of `TomlDecodeError` with `decode` function.
+* [#218](https://github.com/kowainik/tomland/issues/218):
+  Add tests for TOML validation.
+* [#252](https://github.com/kowainik/tomland/issues/252):
+  Move to `hspec-*` family of libraries from `tasty-*`.
+* [#297](https://github.com/kowainik/tomland/issues/297):
+  Tests parallelism and speed-up.
+* [#246](https://github.com/kowainik/tomland/issues/246):
+  Bump up `megaparsec` version to `8.0.0`.
 
 ## 1.2.1.0 — Nov 6, 2019
 
