@@ -136,7 +136,7 @@ diwrap
        (Coercible a b)
     => TomlCodec a
     -> TomlCodec b
-diwrap = dimap coerce coerce
+diwrap = coerce
 {-# INLINE diwrap #-}
 
 {- | Bidirectional converter for @sum types@. For example, given the data

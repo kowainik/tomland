@@ -70,8 +70,7 @@ import Prelude hiding (map)
 
 import Control.Applicative (empty)
 import Control.Monad (forM_)
-import Control.Monad.State (execState, gets, modify)
-import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
+import Control.Monad.State (gets, modify)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.IntMap.Strict (IntMap)
@@ -84,7 +83,7 @@ import Validation (Validation (..))
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
 import Toml.Codec.Code (execTomlCodec)
 import Toml.Codec.Combinator.Common (whenLeftBiMapError)
-import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
+import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState (..))
 import Toml.Type.Key (pattern (:||), Key)
 import Toml.Type.TOML (TOML (..), insertTable, insertTableArrays)
 
@@ -391,7 +390,7 @@ internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName = Co
     output m = do
         mTable <- gets $ Prefix.lookup tableName . tomlTables
         let toml = fromMaybe mempty mTable
-        let newToml = execState (runMaybeT updateMapTable) toml
+        let (_, newToml) = unTomlState updateMapTable toml
         m <$ modify (insertTable tableName newToml)
       where
         updateMapTable :: TomlState ()

@@ -20,12 +20,11 @@ module Toml.Codec.Combinator.Common
     ) where
 
 import Control.Monad.State (modify)
-import Control.Monad.Trans.Maybe (MaybeT (..))
 import Validation (Validation (..))
 
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap, TomlBiMapError)
 import Toml.Codec.Error (TomlDecodeError (..))
-import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
+import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState, eitherToTomlState)
 import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Key (Key)
 import Toml.Type.TOML (TOML (..), insertKeyAnyVal)
@@ -60,7 +59,7 @@ match BiMap{..} key = Codec input output
 
     output :: a -> TomlState a
     output a = do
-        anyVal <- MaybeT $ pure $ either (const Nothing) Just $ forward a
+        anyVal <- eitherToTomlState $ forward a
         a <$ modify (insertKeyAnyVal key anyVal)
 
 

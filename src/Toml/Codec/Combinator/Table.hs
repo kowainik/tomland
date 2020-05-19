@@ -36,13 +36,12 @@ module Toml.Codec.Combinator.Table
     , mapTableErrors
     ) where
 
-import Control.Monad.State (execState, gets, modify)
-import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
+import Control.Monad.State (gets, modify)
 import Data.Maybe (fromMaybe)
 import Validation (Validation (..))
 
 import Toml.Codec.Error (TomlDecodeError (..))
-import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
+import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState (..))
 import Toml.Type.Key (Key)
 import Toml.Type.TOML (TOML (..), insertTable)
 
@@ -89,5 +88,5 @@ table codec key = Codec input output
     output a = do
         mTable <- gets $ Prefix.lookup key . tomlTables
         let toml = fromMaybe mempty mTable
-        let newToml = execState (runMaybeT $ codecWrite codec a) toml
+        let (_, newToml) = unTomlState (codecWrite codec a) toml
         a <$ modify (insertTable key newToml)

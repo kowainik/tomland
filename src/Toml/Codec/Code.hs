@@ -25,13 +25,11 @@ module Toml.Codec.Code
 
 import Control.Exception (throwIO)
 import Control.Monad.IO.Class (MonadIO (..))
-import Control.Monad.State (execState)
-import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Text (Text)
 import Validation (Validation (..), validationToEither)
 
 import Toml.Codec.Error (LoadTomlException (..), TomlDecodeError (..), prettyTomlDecodeErrors)
-import Toml.Codec.Types (Codec (..), TomlCodec)
+import Toml.Codec.Types (Codec (..), TomlCodec, TomlState (..))
 import Toml.Parser (parse)
 import Toml.Type (TOML (..))
 import Toml.Type.Printer (pretty)
@@ -121,4 +119,4 @@ runTomlCodec = codecRead
 
 -- | Runs 'codecWrite' of 'TomlCodec' and returns intermediate TOML AST.
 execTomlCodec :: TomlCodec a -> a -> TOML
-execTomlCodec codec obj = execState (runMaybeT $ codecWrite codec obj) mempty
+execTomlCodec codec obj = snd $ unTomlState (codecWrite codec obj) mempty
