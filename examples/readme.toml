@@ -10,7 +10,11 @@ Don't touch it!
     send-if-inactive = false
 
 [[user]]
-    id = 42
+   guestId = 42
 
 [[user]]
-    name = "Foo Bar"
+   guestId = 114
+
+[[user]]
+    login = "Foo Bar"
+    createdAt = 2020-05-19
