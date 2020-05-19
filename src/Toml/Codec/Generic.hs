@@ -125,6 +125,9 @@ module Toml.Codec.Generic
        , ByteStringAsBytes (..)
        , LByteStringAsText (..)
        , LByteStringAsBytes (..)
+
+         -- * Deriving Via
+       , TomlTable (..)
        ) where
 
 import Data.ByteString (ByteString)
@@ -669,28 +672,24 @@ instance HasCodec a => HasCodec (Last a) where
     hasCodec = Toml.last (hasCodec @a)
     {-# INLINE hasCodec #-}
 
-{-
-TODO: uncomment when higher-kinded roles will be implemented
-* https://github.com/ghc-proposals/ghc-proposals/pull/233
-
 {- | @newtype@ for generic deriving of 'HasCodec' typeclass for custom data
 types that should we wrapped into separate table. Use it only for data types
 that are fields of another data types.
 
 @
-data Person = Person
-    { personName    :: Text
-    , personAddress :: Address
-    } deriving (Generic)
+__data__ Person = Person
+    { personName    :: !'Text'
+    , personAddress :: !Address
+    } __deriving__ ('Generic')
 
 data Address = Address
-    { addressStreet :: Text
-    , addressHouse  :: Int
-    } deriving (Generic)
-      deriving HasCodec via TomlTable Address
+    { addressStreet :: !'Text'
+    , addressHouse  :: !'Int'
+    } __deriving__ ('Generic')
+      __deriving__ 'HasCodec' __via__ 'TomlTable' Address
 
-personCodec :: TomlCodec Person
-personCodec = genericCodec
+personCodec :: 'TomlCodec' Person
+personCodec = 'stripTypeNameCodec'
 @
 
 @personCodec@ corresponds to the TOML of the following structure:
@@ -698,21 +697,26 @@ personCodec = genericCodec
 @
 name = "foo"
 [address]
-    street = \"Bar\"
-    house = 42
+    addressStreet = \"Bar\"
+    addressHouse = 42
 @
+
+@since 1.3.0.0
 -}
 newtype TomlTable a = TomlTable
     { unTomlTable :: a
     }
 
+-- | @since 1.3.0.0
 instance (Generic a, GenericCodec (Rep a)) => HasCodec (TomlTable a) where
     hasCodec :: Key -> TomlCodec (TomlTable a)
     hasCodec = Toml.diwrap . Toml.table (genericCodec @a)
+    {-# INLINE hasCodec #-}
 
+-- | @since 1.3.0.0
 instance (Generic a, GenericCodec (Rep a)) => HasItemCodec (TomlTable a) where
     hasItemCodec = Right $ Toml.diwrap $ genericCodec @a
--}
+    {-# INLINE hasItemCodec #-}
 
 {- $bytestring
 There are two ways to encode 'ByteString' in TOML:
@@ -726,9 +730,7 @@ To handle all these cases, @tomland@ provides helpful newtypes, specifically:
 * 'ByteStringAsBytes'
 * 'LByteStringAsText'
 * 'LByteStringAsBytes'
--}
 
-{- TODO: uncomment when the same GHC issue as above is resolved:
 As a bonus, on GHC >= 8.6 you can use these newtypes with the @DerivingVia@
 extensions for your own 'ByteString' types.
 
