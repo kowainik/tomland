@@ -56,7 +56,7 @@ match BiMap{..} key = Codec input output
     input :: TomlEnv a
     input = \toml -> case HashMap.lookup key (tomlPairs toml) of
         Nothing     -> Failure [KeyNotFound key]
-        Just anyVal -> whenLeftBiMapError (backward anyVal) pure
+        Just anyVal -> whenLeftBiMapError key (backward anyVal) pure
 
     output :: a -> TomlState a
     output a = do
@@ -69,9 +69,10 @@ match BiMap{..} key = Codec input output
 @since 1.3.0.0
 -}
 whenLeftBiMapError
-    :: Either TomlBiMapError a
+    :: Key
+    -> Either TomlBiMapError a
     -> (a -> Validation [TomlDecodeError] b)
     -> Validation [TomlDecodeError] b
-whenLeftBiMapError val action = case val of
+whenLeftBiMapError key val action = case val of
     Right a  -> action a
-    Left err -> Failure [BiMapError err]
+    Left err -> Failure [BiMapError key err]

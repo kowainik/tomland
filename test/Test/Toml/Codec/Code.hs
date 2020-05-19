@@ -9,6 +9,7 @@ import Toml.Codec.Code (decode)
 import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Parser (TomlParseError (..))
 import Toml.Type.AnyValue (AnyValue (..), MatchError (..))
+import Toml.Type.Key (Key)
 import Toml.Type.Value (TValue (..), Value (..))
 
 import qualified Data.Map.Strict as Map
@@ -31,7 +32,7 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
                  ]
     it "fails decode text as Toml.int" $
         decode (Toml.int "a") "a = 'foo'" `shouldBe`
-            Left [ matchErr TInteger $ AnyValue $ Text "foo"]
+            Left [ matchErr "a" TInteger $ AnyValue $ Text "foo"]
     -- table
     it "fails to decode table on missing field" $
         decode (Toml.table (Toml.int "x") "foo") "" `shouldBe`
@@ -50,7 +51,7 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
             Left [KeyNotFound "foo"]
     it "fails to decode arrayNonEmptyOf when list is empty" $
         decode (Toml.arrayNonEmptyOf Toml._Int "foo") "foo = []" `shouldBe`
-            Left [BiMapError $ ArbitraryError "Empty array list, but expected NonEmpty"]
+            Left [BiMapError "foo" $ ArbitraryError "Empty array list, but expected NonEmpty"]
 
     it "decodes to an empty list when field is missing" $
         decode (Toml.list (Toml.int "i") "foo") "" `shouldBe`
@@ -77,8 +78,8 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
             (Toml.map (Toml.int "key") (Toml.text "val") "foo")
             "foo = [{key = 'a', val = 42}]"
             `shouldBe` Left
-            [ matchErr TInteger $ AnyValue $ Text "a"
-            , matchErr TText $ AnyValue $ Integer 42
+            [ matchErr "key" TInteger $ AnyValue $ Text "a"
+            , matchErr "val" TText $ AnyValue $ Integer 42
             ]
     it "map: fails to decode when value is missing" $
         decode
@@ -92,18 +93,18 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
     it "tableMap: throws error on invalid key type" $
         decode (Toml.tableMap Toml._KeyInt Toml.text "foo")
             "foo = {a = 'a'}"
-            `shouldBe` Left [BiMapError $ ArbitraryError "Prelude.read: no parse"]
+            `shouldBe` Left [BiMapError "a" $ ArbitraryError "Prelude.read: no parse"]
 
     -- custom
     it "fails to decode via read when non-existing value" $
         decode (Toml.read @Ordering "foo") "foo = 'EQUAL'" `shouldBe`
-            Left [BiMapError $ ArbitraryError "Prelude.read: no parse"]
+            Left [BiMapError "foo" $ ArbitraryError "Prelude.read: no parse"]
     it "fails to decode via enumBounded when non-existing value" $
         decode (Toml.enumBounded @Ordering "foo") "foo = 'EQUAL'" `shouldBe`
-            Left [BiMapError $ ArbitraryError "Value is 'EQUAL' but expected one of: LT, EQ, GT"]
+            Left [BiMapError "foo" $ ArbitraryError "Value is 'EQUAL' but expected one of: LT, EQ, GT"]
     it "fails to validateIf" $
         decode (Toml.validateIf even Toml._Int "foo") "foo = 5" `shouldBe`
-            Left [BiMapError $ ArbitraryError "Value does not pass the validation for key: foo"]
+            Left [BiMapError "foo" $ ArbitraryError "Value does not pass the validation for key: foo"]
   where
-    matchErr :: TValue -> AnyValue -> TomlDecodeError
-    matchErr valueExpected valueActual = BiMapError $ WrongValue $ MatchError {..}
+    matchErr :: Key -> TValue -> AnyValue -> TomlDecodeError
+    matchErr key valueExpected valueActual = BiMapError key $ WrongValue $ MatchError {..}
