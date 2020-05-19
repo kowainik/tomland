@@ -384,7 +384,7 @@ internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName = Co
             let valKeys = HashMap.keys $ tomlPairs toml
                 tableKeys = fmap (:|| []) $ HashMap.keys $ tomlTables toml
             in fmap fromListMap $ for (valKeys <> tableKeys) $ \key ->
-                whenLeftBiMapError (forward keyBiMap key) $ \k ->
+                whenLeftBiMapError key (forward keyBiMap key) $ \k ->
                     (k,) <$> codecRead (valCodec key) toml
 
     output :: map -> TomlState map

@@ -54,6 +54,8 @@ The changelog is available [on GitHub][2].
   type.
 * [#310](https://github.com/kowainik/tomland/issues/310):
   Add tests on all kinds of `TomlDecodeError` with `decode` function.
+* [#313](https://github.com/kowainik/tomland/issues/313):
+  Store `Key` in the `BiMapError` constructor of `TomlDecodeError`.
 
 ## 1.2.1.0 — Nov 6, 2019
 

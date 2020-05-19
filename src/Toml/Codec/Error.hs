@@ -36,7 +36,7 @@ import qualified Data.Text as Text
 @since 1.3.0.0
 -}
 data TomlDecodeError
-    = BiMapError !TomlBiMapError
+    = BiMapError !Key !TomlBiMapError
     | KeyNotFound !Key  -- ^ No such key
     | TableNotFound !Key  -- ^ No such table
     | TableArrayNotFound !Key
@@ -63,7 +63,8 @@ prettyTomlDecodeErrors errs = Text.unlines $
 -}
 prettyTomlDecodeError :: TomlDecodeError -> Text
 prettyTomlDecodeError de = "tomland decode error:  " <> case de of
-    BiMapError biError -> prettyBiMapError biError
+    BiMapError name biError -> "BiMap error in key '" <> prettyKey name <> "' : "
+        <> prettyBiMapError biError
     KeyNotFound name -> "Key " <> prettyKey name <> " is not found"
     TableNotFound name -> "Table [" <> prettyKey name <> "] is not found"
     TableArrayNotFound name -> "Table array [[" <> prettyKey name <> "]] is not found"
