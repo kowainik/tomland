@@ -128,16 +128,16 @@ newtype Host = Host Text
 ```
 
 Using the `tomland` library, you can write bidirectional converters for these types
-using the following guidelines and helper functions:
+with the following guidelines and helper functions:
 
-1. If your fields are some simple basic types like `Int` or `Text` you can just
+1. If your fields are some simple primitive types like `Int` or `Text` you can just
    use standard codecs like `Toml.int` and `Toml.text`.
 2. If you want to parse `newtype`s, use `Toml.diwrap` to wrap parsers for
    underlying `newtype` representation.
-3. For parsing nested data types, use `Toml.table`. But this requires to specify
+3. For parsing nested data types, use `Toml.table`. But it requires to specify
    this data type as TOML table in the `.toml` file.
 4. If you have lists of custom data types, use `Toml.list`. Such lists are
-   represented as array of tables in TOML. If you have lists of primitive types
+   represented as _array of tables_ in TOML. If you have lists of the primitive types
    like `Int`, `Bool`, `Double`, `Text` or time types, that you can use
    `Toml.arrayOf` and parse arrays of values.
 5. If you have sets of custom data types, use `Toml.set` or `Toml.HashSet`. Such
@@ -185,7 +185,7 @@ registeredUserCodec = RegisteredUser
     <*> Toml.day  "createdAt" .= registeredUserCreatedAt
 ```
 
-And now we're ready to parse our TOML and print the result back to see whether
+And now we are ready to parse our TOML and print the result back to see whether
 everything is okay.
 
 ```haskell
