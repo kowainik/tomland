@@ -1,3 +1,9 @@
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
+
 {- |
 Copyright: (c) 2018-2020 Kowainik
 SPDX-License-Identifier: MPL-2.0
@@ -11,8 +17,11 @@ Contains general underlying monad for bidirectional conversion.
 module Toml.Codec.Types
        ( -- * Toml Codec
          TomlCodec
+         -- * Toml Environment
        , TomlEnv
-       , TomlState
+         -- * Toml State
+       , TomlState (..)
+       , eitherToTomlState
 
          -- * Codec
        , Codec (..)
@@ -22,8 +31,8 @@ module Toml.Codec.Types
        ) where
 
 import Control.Applicative (Alternative (..), liftA2)
-import Control.Monad.State (State)
-import Control.Monad.Trans.Maybe (MaybeT (..))
+import Control.Monad.State (MonadState (..))
+import Data.Bifunctor (first)
 import Validation (Validation (..))
 
 import Toml.Codec.Error (TomlDecodeError)
@@ -36,17 +45,6 @@ import Toml.Type (TOML (..))
 -}
 type TomlEnv a = TOML -> Validation [TomlDecodeError] a
 
-{- | Mutable context for TOML conversion.
-
-@
-MaybeT (State TOML) a
-    = State TOML (Maybe a)
-    = TOML -> (Maybe a, TOML)
-@
-
-@since 1.3.0.0
--}
-type TomlState = MaybeT (State TOML)
 
 {- | Specialied 'Codec' type alias for bidirectional TOML serialization. Keeps
 'TOML' object as both environment and state.
@@ -135,3 +133,79 @@ infixl 3 <!>
 (<!>) :: Alternative f => (a -> f x) -> (a -> f x) -> (a -> f x)
 f <!> g = \a -> f a <|> g a
 {-# INLINE (<!>) #-}
+
+{- | Mutable context for TOML conversion.
+
+@since 1.3.0.0
+-}
+newtype TomlState a = TomlState
+    { unTomlState :: TOML -> (Maybe a, TOML)
+    }
+
+-- | @since 1.3.0.0
+instance Functor TomlState where
+    fmap :: (a -> b) -> TomlState a -> TomlState b
+    fmap f TomlState{..} = TomlState (first (fmap f) . unTomlState)
+    {-# INLINE fmap #-}
+
+    (<$) :: a -> TomlState b -> TomlState a
+    a <$ TomlState{..} = TomlState (first (fmap (const a)) . unTomlState)
+    {-# INLINE (<$) #-}
+
+-- | @since 1.3.0.0
+instance Applicative TomlState where
+    pure :: a -> TomlState a
+    pure a = TomlState (Just a,)
+    {-# INLINE pure #-}
+
+    (<*>) :: TomlState (a -> b) -> TomlState a -> TomlState b
+    tsF <*> tsA = TomlState $ \t ->
+        let (mF, tF) = unTomlState tsF t
+            (mA, tA) = unTomlState tsA tF
+        in (mF <*> mA , tA)
+    {-# INLINE (<*>) #-}
+
+-- | @since 1.3.0.0
+instance Alternative TomlState where
+    empty :: TomlState a
+    empty = TomlState (Nothing,)
+    {-# INLINE empty #-}
+
+    (<|>) :: TomlState a -> TomlState a -> TomlState a
+    ts1 <|> ts2 = TomlState $ \t -> let (m1, t1) = unTomlState ts1 t in case m1 of
+        Nothing -> unTomlState ts2 t
+        Just _  -> (m1, t1)
+    {-# INLINE (<|>) #-}
+
+-- | @since 1.3.0.0
+instance Monad TomlState where
+    return :: a -> TomlState a
+    return = pure
+    {-# INLINE return #-}
+
+    (>>=) :: TomlState a -> (a -> TomlState b) -> TomlState b
+    tsA >>= f = TomlState $ \t -> let (mA, newT) = unTomlState tsA t in case mA of
+        Nothing -> (Nothing, newT)
+        Just a  -> unTomlState (f a) newT
+    {-# INLINE (>>=) #-}
+
+-- | @since 1.3.0.0
+instance (s ~ TOML) => MonadState s TomlState where
+    state :: (TOML -> (a, TOML)) -> TomlState a
+    state f = TomlState (first Just . f)
+    {-# INLINE state #-}
+
+    get :: TomlState TOML
+    get = TomlState (\t -> (Just t, t))
+    {-# INLINE get #-}
+
+    put :: TOML -> TomlState ()
+    put t = TomlState (\_ -> (Just (), t))
+    {-# INLINE put #-}
+
+{- | Transform 'Either' into 'TomlState'.
+
+@since 1.3.0.0
+-}
+eitherToTomlState :: Either e a -> TomlState a
+eitherToTomlState e = TomlState (either (const Nothing) Just e,)
