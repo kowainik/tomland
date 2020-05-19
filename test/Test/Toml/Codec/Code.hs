@@ -89,7 +89,7 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
     it "tableMap: decodes to an empty map when field is missing" $
         decode (Toml.tableMap Toml._KeyText Toml.int "foo") "" `shouldBe`
             Right Map.empty
-    it "tableMap: decodes to an empty map when field is missing" $
+    it "tableMap: throws error on invalid key type" $
         decode (Toml.tableMap Toml._KeyInt Toml.text "foo")
             "foo = {a = 'a'}"
             `shouldBe` Left [BiMapError $ ArbitraryError "Prelude.read: no parse"]
