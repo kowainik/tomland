@@ -135,6 +135,15 @@ f <!> g = \a -> f a <|> g a
 {-# INLINE (<!>) #-}
 
 {- | Mutable context for TOML conversion.
+We are introducing our own implemetation of state with 'MonadState' instance due
+to some limitation in the design connected to the usage of State.
+
+This newtype is equivalent to the following transformer:
+
+@
+MaybeT (State TOML)
+@
+
 
 @since 1.3.0.0
 -}
