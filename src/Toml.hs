@@ -26,6 +26,13 @@ userCodec = User
     \<*\> Toml.'int'  "age"  '.=' userAge
 @
 
+A value of such type will look in TOML like this:
+
+@
+name = "Alice"
+age  = 27
+@
+
 For more detailed examples see README.md in the repository:
 
 * [tomland/README.md](https://github.com/kowainik/tomland#tomland)
