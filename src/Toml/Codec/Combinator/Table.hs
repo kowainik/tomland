@@ -70,7 +70,6 @@ mapTableErrors key = map (\case
     KeyNotFound name        -> KeyNotFound (key <> name)
     TableNotFound name      -> TableNotFound (key <> name)
     TableArrayNotFound name -> TableArrayNotFound (key <> name)
-    TypeMismatch name t1 t2 -> TypeMismatch (key <> name) t1 t2
     e                       -> e
     )
 

@@ -162,6 +162,7 @@ test-suite tomland-test
   other-modules:       Test.Toml.Codec
                          Test.Toml.Codec.BiMap
                            Test.Toml.Codec.BiMap.Conversion
+                         Test.Toml.Codec.Code
                          Test.Toml.Codec.Combinator
                            Test.Toml.Codec.Combinator.Common
                            Test.Toml.Codec.Combinator.Custom

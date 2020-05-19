@@ -50,6 +50,10 @@ The changelog is available [on GitHub][2].
 * [#302](https://github.com/kowainik/tomland/issues/302):
    `nonEmpty` codec throws `TableArrayNotFound` instead of `TableNotFound`.
 * Add `TableArrayNotFound` constructor to `TomlDecodeError`.
+* Remove `TrivialError` and `TypeMismatch` constructors of the `TomlDecodeError`
+  type.
+* [#310](https://github.com/kowainik/tomland/issues/310):
+  Add tests on all kinds of `TomlDecodeError` with `decode` function.
 
 ## 1.2.1.0 — Nov 6, 2019
 
