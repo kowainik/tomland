@@ -81,3 +81,9 @@ integerSpecs = describe "integerP" $ do
         it "can parse numbers when hex digits are in both lowercase and uppercase" $ do
             parseInteger "0xAbCdEf" 0xAbCdEf
             parseInteger "0xaBcDeF" 0xaBcDeF
+        it "can parse numbers when has underscore in hexadecimal representation" $ do
+            parseInteger "0xAb_Cd_Ef" "0xabcdef"
+            parseInteger "0xA__bcdef" "0xabcdef"
+        it "can't parse when underscore is between hexadecimal prefix and suffix" $ do
+            parseInteger "0x_Abab_ca" 0
+            parseInteger "0x_ababbac" 0
