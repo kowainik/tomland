@@ -93,3 +93,9 @@ integerSpecs = describe "integerP" $ do
         it "can't parse when underscore is between octal prefix and suffix" $ do
             parseInteger "0o_123_4567" 0
             parseInteger "0o_1234567" 0
+        it "can parse numbers with underscore in binary representation" $ do
+            parseInteger "0b10_101_0" "0b101010"
+            parseInteger "0b10_10_10" "0b101010"
+        it "can't parse numbers when underscore is between binary prefix and suffix" $ do
+            parseInteger "0b_10101_0" 0
+            parseInteger "0b_101010" 0
