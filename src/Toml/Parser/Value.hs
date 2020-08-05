@@ -31,20 +31,22 @@ import Toml.Parser.Core (Parser, char, digitChar, hexDigitChar, octDigitChar, bi
 import Toml.Parser.String (textP)
 import Toml.Type (AnyValue, UValue (..), typeCheck)
 
-
+-- | Returns decimal value from base N representation 
 baseStringToInt :: Integer -> String -> Maybe Integer
-baseStringToInt base = Just . h . reverse 
-   where 
-     h [] = 0
-     h (x:xs) = (charValue x) + base * h xs
+baseStringToInt base = Just . getValue . reverse 
+  where 
+    getValue [] = 0
+    getValue (x:xs) = charValue x + base * getValue xs
 
+-- | Returns value of a single char
 charValue :: Char -> Integer
 charValue c
-   | num >= 48 && num <= 57 = num - 48
-   | num >= 97 && num <= 102 = num - 87
-   | num >= 65 && num <= 70 = num - 55 
-   | otherwise = 0
- where num = toInteger $ ord c
+    | num >= 48 && num <= 57 = num - 48
+    | num >= 97 && num <= 102 = num - 87
+    | num >= 65 && num <= 70 = num - 55 
+    | otherwise = 0
+  where 
+    num = toInteger $ ord c
 
 -- | Parser for decimap 'Integer': included parsing of underscore.
 decimalP :: Parser Integer
@@ -57,6 +59,7 @@ decimalP = zero <|> more
     check :: Maybe Integer -> Parser Integer
     check = maybe (fail "Not an integer") pure
 
+-- | Parser for hexadecimal numbers : included parsing of underscore.
 hexadecimalP :: Parser Integer
 hexadecimalP = zero <|> more
   where 
@@ -67,7 +70,7 @@ hexadecimalP = zero <|> more
     check :: Maybe Integer -> Parser Integer
     check = maybe (fail "Not hexadecimal") pure 
 
-
+-- | Parser for octal numbers : included parsing of underscore.
 octalP :: Parser Integer
 octalP = zero <|> more
   where 
@@ -78,6 +81,7 @@ octalP = zero <|> more
     check :: Maybe Integer -> Parser Integer
     check = maybe (fail "Not octal") pure 
 
+-- | Parser for binary numbers : included parsing of underscore
 binaryP :: Parser Integer
 binaryP = zero <|> more
   where 
