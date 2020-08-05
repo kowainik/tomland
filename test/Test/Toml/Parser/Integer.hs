@@ -83,19 +83,25 @@ integerSpecs = describe "integerP" $ do
             parseInteger "0xaBcDeF" 0xaBcDeF
         it "can parse numbers with underscore in hexadecimal representation" $ do
             parseInteger "0xAb_Cd_Ef" 0xabcdef
-            parseInteger "0xA__bcdef" 0xabcdef
+            parseInteger "0xA_bcd_ef" 0xabcdef
+            parseInteger "0x123_abc" 0x123abc
+            parseInteger "0xa_b_c_1_2_3" 0xabc123
         it "can't parse when underscore is between hexadecimal prefix and suffix" $ do
             parseInteger "0x_Abab_ca" 0
             parseInteger "0x_ababbac" 0
         it "can parse numbers with underscore in octal representation" $ do
             parseInteger "0o12_34_56" 0o123456
-            parseInteger "0o1__123456" 0o123456
+            parseInteger "0o1_2345_6" 0o123456
+            parseInteger "0o76_54_21" 0o765421
+            parseInteger "0o4_5_3_2_6" 0o45326
         it "can't parse when underscore is between octal prefix and suffix" $ do
             parseInteger "0o_123_4567" 0
             parseInteger "0o_1234567" 0
         it "can parse numbers with underscore in binary representation" $ do
             parseInteger "0b10_101_0" 42
             parseInteger "0b10_10_10" 42
+            parseInteger "0b1_0_1" 5
+            parseInteger "0b1_0" 2
         it "can't parse numbers when underscore is between binary prefix and suffix" $ do
             parseInteger "0b_10101_0" 0
             parseInteger "0b_101010" 0
