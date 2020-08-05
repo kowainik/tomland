@@ -62,35 +62,35 @@ decimalP = zero <|> more
 -- | Parser for hexadecimal numbers : included parsing of underscore.
 hexadecimalP :: Parser Integer
 hexadecimalP = zero <|> more
-  where 
+  where
     zero, more :: Parser Integer
     zero = 0 <$ char '_'
     more = check =<< baseStringToInt 16 . concat <$> sepBy1 (some hexDigitChar) (char '_')
 
     check :: Maybe Integer -> Parser Integer
-    check = maybe (fail "Not hexadecimal") pure 
+    check = maybe (fail "Not hexadecimal") pure
 
 -- | Parser for octal numbers : included parsing of underscore.
 octalP :: Parser Integer
 octalP = zero <|> more
-  where 
+  where
     zero, more :: Parser Integer
     zero = 0 <$ char '_'
     more = check =<< baseStringToInt 8 . concat <$> sepBy1 (some octDigitChar) (char '_')
 
     check :: Maybe Integer -> Parser Integer
-    check = maybe (fail "Not octal") pure 
+    check = maybe (fail "Not octal") pure
 
 -- | Parser for binary numbers : included parsing of underscore
 binaryP :: Parser Integer
 binaryP = zero <|> more
-  where 
+  where
     zero, more :: Parser Integer
     zero = 0 <$ char '_'
     more = check =<< baseStringToInt 2 . concat <$> sepBy1 (some binDigitChar) (char '_')
 
     check :: Maybe Integer -> Parser Integer
-    check = maybe (fail "Not binary") pure 
+    check = maybe (fail "Not binary") pure
 
 -- | Parser for 'Integer' value.
 integerP :: Parser Integer
