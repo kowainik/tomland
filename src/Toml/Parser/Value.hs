@@ -31,10 +31,10 @@ import Toml.Parser.Core (Parser, char, digitChar, hexDigitChar, octDigitChar, bi
 import Toml.Parser.String (textP)
 import Toml.Type (AnyValue, UValue (..), typeCheck)
 
--- | Returns decimal value from base N representation 
+-- | Returns decimal value from base N representation
 baseStringToInt :: Integer -> String -> Maybe Integer
-baseStringToInt base = Just . getValue . reverse 
-  where 
+baseStringToInt base = Just . getValue . reverse
+  where
     getValue [] = 0
     getValue (x:xs) = charValue x + base * getValue xs
 
@@ -43,9 +43,9 @@ charValue :: Char -> Integer
 charValue c
     | num >= 48 && num <= 57 = num - 48
     | num >= 97 && num <= 102 = num - 87
-    | num >= 65 && num <= 70 = num - 55 
+    | num >= 65 && num <= 70 = num - 55
     | otherwise = 0
-  where 
+  where
     num = toInteger $ ord c
 
 -- | Parser for decimap 'Integer': included parsing of underscore.
