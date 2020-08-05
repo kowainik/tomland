@@ -22,13 +22,29 @@ import Control.Applicative.Combinators (between, count, option, optional, sepBy1
 import Data.Fixed (Pico)
 import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime (..), fromGregorianValid,
                   makeTimeOfDayValid, minutesToTimeZone)
+import Data.Char (ord)
+
 import Text.Read (readMaybe)
 
-import Toml.Parser.Core (Parser, binary, char, digitChar, hexadecimal, lexeme, octal, sc, signed,
+import Toml.Parser.Core (Parser, char, digitChar, hexDigitChar, octDigitChar, binDigitChar, lexeme, sc, signed,
                          string, text, try, (<?>))
 import Toml.Parser.String (textP)
 import Toml.Type (AnyValue, UValue (..), typeCheck)
 
+
+baseStringToInt :: Integer -> String -> Maybe Integer
+baseStringToInt base = Just . h . reverse 
+   where 
+     h [] = 0
+     h (x:xs) = (charValue x) + base * h xs
+
+charValue :: Char -> Integer
+charValue c
+   | num >= 48 && num <= 57 = num - 48
+   | num >= 97 && num <= 102 = num - 87
+   | num >= 65 && num <= 70 = num - 55 
+   | otherwise = 0
+ where num = toInteger $ ord c
 
 -- | Parser for decimap 'Integer': included parsing of underscore.
 decimalP :: Parser Integer
@@ -41,14 +57,45 @@ decimalP = zero <|> more
     check :: Maybe Integer -> Parser Integer
     check = maybe (fail "Not an integer") pure
 
+hexadecimalP :: Parser Integer
+hexadecimalP = zero <|> more
+  where 
+    zero, more :: Parser Integer
+    zero = 0 <$ char '_'
+    more = check =<< baseStringToInt 16 . concat <$> sepBy1 (some hexDigitChar) (char '_')
+
+    check :: Maybe Integer -> Parser Integer
+    check = maybe (fail "Not hexadecimal") pure 
+
+
+octalP :: Parser Integer
+octalP = zero <|> more
+  where 
+    zero, more :: Parser Integer
+    zero = 0 <$ char '_'
+    more = check =<< baseStringToInt 8 . concat <$> sepBy1 (some octDigitChar) (char '_')
+
+    check :: Maybe Integer -> Parser Integer
+    check = maybe (fail "Not octal") pure 
+
+binaryP :: Parser Integer
+binaryP = zero <|> more
+  where 
+    zero, more :: Parser Integer
+    zero = 0 <$ char '_'
+    more = check =<< baseStringToInt 2 . concat <$> sepBy1 (some binDigitChar) (char '_')
+
+    check :: Maybe Integer -> Parser Integer
+    check = maybe (fail "Not binary") pure 
+
 -- | Parser for 'Integer' value.
 integerP :: Parser Integer
 integerP = lexeme (bin <|> oct <|> hex <|> dec) <?> "integer"
   where
     bin, oct, hex, dec :: Parser Integer
-    bin = try (char '0' *> char 'b') *> binary      <?> "bin"
-    oct = try (char '0' *> char 'o') *> octal       <?> "oct"
-    hex = try (char '0' *> char 'x') *> hexadecimal <?> "hex"
+    bin = try (char '0' *> char 'b') *> binaryP      <?> "bin"
+    oct = try (char '0' *> char 'o') *> octalP       <?> "oct"
+    hex = try (char '0' *> char 'x') *> hexadecimalP <?> "hex"
     dec = signed sc decimalP                        <?> "dec"
 
 -- | Parser for 'Double' value.
