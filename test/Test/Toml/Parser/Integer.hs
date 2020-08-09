@@ -110,4 +110,12 @@ integerSpecs = describe "integerP" $ do
             integerFailOn "0b_"
             integerFailOn "0o_"
             integerFailOn "0x_"
+        it "doesn't parse when number is ending with underscore" $ do 
+            integerFailOn "0b101_110_"
+            integerFailOn "0b10101_"
+            integerFailOn "0x1_23_daf_"
+            integerFailOn "0x1214adf_"
+            integerFailOn "0o1_15_41_"
+            integerFailOn "0o1215147_"
+            
        
