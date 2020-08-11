@@ -22,7 +22,6 @@ import Control.Applicative.Combinators (between, count, option, optional, sepBy1
 import Data.Fixed (Pico)
 import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime (..), fromGregorianValid,
                   makeTimeOfDayValid, minutesToTimeZone)
-
 import Data.String (fromString)
 
 import Text.Read (readMaybe)
@@ -46,17 +45,17 @@ decimalP = zero <|> more
     check = maybe (fail "Not an integer") pure
 
 -- | Parser for hexadecimal, octal and binary numbers : included parsing
-numberP :: Parser Integer -> Parser Char -> Parser Integer
-numberP parser parseDigit = more
+numberP :: Parser Integer -> Parser Char -> String -> Parser Integer
+numberP parseInteger parseDigit errorMessage = more
   where
     more :: Parser Integer
     more = check =<< intValueMaybe . concat <$> sepBy1 (some parseDigit) (char '_')
 
     intValueMaybe :: String -> Maybe Integer
-    intValueMaybe = parseMaybe (parser :: Parser Integer) . fromString
+    intValueMaybe = parseMaybe parseInteger . fromString
 
     check :: Maybe Integer -> Parser Integer
-    check = maybe (fail "Not valid number") pure
+    check = maybe (fail errorMessage) pure
 
 
 
@@ -69,9 +68,9 @@ integerP = lexeme (bin <|> oct <|> hex <|> dec) <?> "integer"
     oct = try (char '0' *> char 'o') *> octalP       <?> "oct"
     hex = try (char '0' *> char 'x') *> hexadecimalP <?> "hex"
     dec = signed sc decimalP                        <?> "dec"
-    binaryP = numberP binary binDigitChar
-    octalP  = numberP octal octDigitChar
-    hexadecimalP = numberP hexadecimal hexDigitChar
+    binaryP = numberP binary binDigitChar "Invalid binary number"
+    octalP  = numberP octal octDigitChar  "Invalid ocatl number"
+    hexadecimalP = numberP hexadecimal hexDigitChar "Invalid hexadecimal number"
 
 -- | Parser for 'Double' value.
 doubleP :: Parser Double
