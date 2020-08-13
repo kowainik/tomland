@@ -22,9 +22,12 @@ import Control.Applicative.Combinators (between, count, option, optional, sepBy1
 import Data.Fixed (Pico)
 import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime (..), fromGregorianValid,
                   makeTimeOfDayValid, minutesToTimeZone)
-import Text.Read (readMaybe)
+import Data.String (fromString)
 
-import Toml.Parser.Core (Parser, binary, char, digitChar, hexadecimal, lexeme, octal, sc, signed,
+import Text.Read (readMaybe)
+import Text.Megaparsec (parseMaybe)
+
+import Toml.Parser.Core (Parser, char, digitChar, hexDigitChar, octDigitChar, binDigitChar, hexadecimal, octal, binary, lexeme, sc, signed,
                          string, text, try, (<?>))
 import Toml.Parser.String (textP)
 import Toml.Type (AnyValue, UValue (..), typeCheck)
@@ -41,15 +44,33 @@ decimalP = zero <|> more
     check :: Maybe Integer -> Parser Integer
     check = maybe (fail "Not an integer") pure
 
+-- | Parser for hexadecimal, octal and binary numbers : included parsing
+numberP :: Parser Integer -> Parser Char -> String -> Parser Integer
+numberP parseInteger parseDigit errorMessage = more
+  where
+    more :: Parser Integer
+    more = check =<< intValueMaybe . concat <$> sepBy1 (some parseDigit) (char '_')
+
+    intValueMaybe :: String -> Maybe Integer
+    intValueMaybe = parseMaybe parseInteger . fromString
+
+    check :: Maybe Integer -> Parser Integer
+    check = maybe (fail errorMessage) pure
+
+
+
 -- | Parser for 'Integer' value.
 integerP :: Parser Integer
 integerP = lexeme (bin <|> oct <|> hex <|> dec) <?> "integer"
   where
     bin, oct, hex, dec :: Parser Integer
-    bin = try (char '0' *> char 'b') *> binary      <?> "bin"
-    oct = try (char '0' *> char 'o') *> octal       <?> "oct"
-    hex = try (char '0' *> char 'x') *> hexadecimal <?> "hex"
+    bin = try (char '0' *> char 'b') *> binaryP      <?> "bin"
+    oct = try (char '0' *> char 'o') *> octalP       <?> "oct"
+    hex = try (char '0' *> char 'x') *> hexadecimalP <?> "hex"
     dec = signed sc decimalP                        <?> "dec"
+    binaryP = numberP binary binDigitChar "Invalid binary number"
+    octalP  = numberP octal octDigitChar  "Invalid ocatl number"
+    hexadecimalP = numberP hexadecimal hexDigitChar "Invalid hexadecimal number"
 
 -- | Parser for 'Double' value.
 doubleP :: Parser Double
