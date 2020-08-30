@@ -3,6 +3,11 @@
 tomland uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## Unreleased
+
+* [#335](https://github.com/kowainik/tomland/issues/335):
+  Consider table array keys in `tableMap`s as well.
+
 ## 1.3.0.0 — May 19, 2020
 
 * [#253](https://github.com/kowainik/tomland/issues/253):

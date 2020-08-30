@@ -374,7 +374,8 @@ internalTableMap
     -> Key
     -- ^ Table name for Map
     -> TomlCodec map
-internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName = Codec input output
+internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName =
+    Codec input output
   where
     input :: TomlEnv map
     input = \t -> case Prefix.lookup tableName $ tomlTables t of
@@ -382,7 +383,8 @@ internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName = Co
         Just toml ->
             let valKeys = HashMap.keys $ tomlPairs toml
                 tableKeys = fmap (:|| []) $ HashMap.keys $ tomlTables toml
-            in fmap fromListMap $ for (valKeys <> tableKeys) $ \key ->
+                tableArrayKey = HashMap.keys $ tomlTableArrays toml
+            in fmap fromListMap $ for (valKeys <> tableKeys <> tableArrayKey) $ \key ->
                 whenLeftBiMapError key (forward keyBiMap key) $ \k ->
                     (k,) <$> codecRead (valCodec key) toml
 
