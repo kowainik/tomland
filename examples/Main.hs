@@ -108,6 +108,21 @@ rgbCodec = Rgb
     <*> Toml.int "green" .= rgbGreen
     <*> Toml.int "blue"  .= rgbBlue
 
+newtype Inner = Inner
+    { val :: Text
+    } deriving stock (Show)
+
+innerCodec :: TomlCodec Inner
+innerCodec = Inner <$> Toml.text "val" .= val
+
+newtype MapWithList = MapWithList
+    { mapList :: Map Text [Inner]
+    } deriving stock (Show)
+
+mapWithListCodec :: TomlCodec MapWithList
+mapWithListCodec = MapWithList
+    <$> Toml.tableMap Toml._KeyText (Toml.list innerCodec) "mapList" .= mapList
+
 data Test = Test
     { testB      :: !Bool
     , testI      :: !Int
@@ -133,6 +148,7 @@ data Test = Test
     , intset     :: !IntSet
     , payloads   :: !(Map Text Int)
     , colours    :: !(Map Text Colour)
+    , tableList  :: !MapWithList
     }
 
 
@@ -162,6 +178,7 @@ testT = Test
     <*> Toml.arrayIntSet "intset" .= intset
     <*> Toml.map (Toml.text "name") (Toml.int "payload") "payloads" .= payloads
     <*> Toml.tableMap Toml._KeyText colourCodec "colours" .= colours
+    <*> mapWithListCodec .= tableList
   where
     pairC :: TomlCodec (Int, Text)
     pairC = Toml.pair (Toml.int "pNum") (Toml.text "pName")

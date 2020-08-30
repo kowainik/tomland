@@ -59,3 +59,10 @@ password = "password"
 yellow = "#FFFF00"
 red    = { red = 255, green = 0, blue = 0 }
 pink   = "#FFC0CB"
+
+[mapList]
+  [[mapList.k]]
+    val = "a"
+
+  [[mapList.k]]
+    val = "b"
