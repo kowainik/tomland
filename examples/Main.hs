@@ -108,14 +108,14 @@ rgbCodec = Rgb
     <*> Toml.int "green" .= rgbGreen
     <*> Toml.int "blue"  .= rgbBlue
 
-data Inner = Inner
-  { val :: Text
-  } deriving stock (Show)
+newtype Inner = Inner
+    { val :: Text
+    } deriving stock (Show)
 
 innerCodec :: TomlCodec Inner
 innerCodec = Inner <$> Toml.text "val" .= val
 
-data MapWithList = MapWithList
+newtype MapWithList = MapWithList
     { mapList :: Map Text [Inner]
     } deriving stock (Show)
 
