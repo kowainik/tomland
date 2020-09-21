@@ -8,5 +8,5 @@ updates:
       prefix: "GA"
       include: "scope"
     labels:
-      - "build"
+      - "CI"
       - "dependencies"
