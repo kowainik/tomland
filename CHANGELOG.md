@@ -1,12 +1,17 @@
 # Changelog
 
-tomland uses [PVP Versioning][1].
+`tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
-## Unreleased
+## 1.3.1.0 — Sep 21, 2020
 
+* [#331](https://github.com/kowainik/tomland/issues/331):
+  Support hexidecimal, octal and binary values with underscores.
 * [#335](https://github.com/kowainik/tomland/issues/335):
   Consider table array keys in `tableMap`s as well.
+* [#338](https://github.com/kowainik/tomland/issues/338):
+  Allow `megaparsec-9.0` and `hspec-megaparsec-2.2`.
+* Update GHC from `8.8.3` to `8.8.4`, from `8.10.1` to `8.10.2`.
 
 ## 1.3.0.0 — May 19, 2020
 
