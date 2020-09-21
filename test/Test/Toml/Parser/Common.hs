@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Test.Toml.Parser.Common
        ( parseX
        , failOn
@@ -40,6 +42,9 @@ import Data.Time (Day, LocalTime (..), TimeOfDay (..), TimeZone, ZonedTime (..),
 import Test.Hspec (Expectation)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
 import Text.Megaparsec (Parsec, ShowErrorComponent, Stream, parse)
+#if MIN_VERSION_megaparsec(9,0,0)
+import Text.Megaparsec.Stream (TraversableStream, VisualStream)
+#endif
 
 import Toml.Parser.Item (tomlP)
 import Toml.Parser.Key (keyP)
@@ -52,7 +57,15 @@ import Toml.Type.UValue (UValue (..))
 
 
 parseX
-    :: (ShowErrorComponent e, Stream s, Show a, Eq a)
+    :: ( ShowErrorComponent e
+       , Stream s
+#if MIN_VERSION_megaparsec(9,0,0)
+       , VisualStream s
+       , TraversableStream s
+#endif
+       , Show a
+       , Eq a
+       )
     => Parsec e s a -> s -> a -> Expectation
 parseX p given expected = parse p "" given `shouldParse` expected
 
