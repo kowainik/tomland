@@ -12,6 +12,7 @@ Contains functions for pretty printing @toml@ types.
 
 module Toml.Type.Printer
        ( PrintOptions(..)
+       , Lines(..)
        , defaultOptions
        , pretty
        , prettyOptions
@@ -248,7 +249,7 @@ addPrefix key = \case
     prefix -> prefix <> "." <> prettyKey key
 
 withLines :: PrintOptions -> Int -> (Int -> Value t -> Text) -> [Value t] -> Text
-withLines options@PrintOptions{..} offLength valTxt a = case printOptionsLines of
+withLines PrintOptions{..} offLength valTxt a = case printOptionsLines of
     OneLine -> "[" <> Text.intercalate ", " (map (valTxt offLength) a) <> "]"
     MultiLine -> off <> "[ " <> Text.intercalate (off <> ", ") (map (valTxt offLength) a) <> off <> "]"
   where

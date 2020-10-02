@@ -5,6 +5,8 @@ d = "ddd"
 
 [baz]
 
+list = ["one", "two"]
+
 [doo]
 
 [foo]
