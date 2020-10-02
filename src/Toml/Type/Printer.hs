@@ -54,6 +54,19 @@ data PrintOptions = PrintOptions
       @since 1.1.0.0
       -}
     , printOptionsIndent  :: !Int
+    {- | How to print Array.
+      OneLine:
+      foo = [a, b]
+
+      MultiLine:
+      foo =
+          [ a
+          , b
+          ]
+
+      Default is OneLine
+    -}
+    , printOptionsLines :: !Lines
     }
 
 {- | Default printing options.
@@ -64,7 +77,9 @@ data PrintOptions = PrintOptions
 @since 0.5.0
 -}
 defaultOptions :: PrintOptions
-defaultOptions = PrintOptions (Just compare) 2
+defaultOptions = PrintOptions (Just compare) 2 OneLine
+
+data Lines = OneLine | MultiLine
 
 {- | Converts 'TOML' type into 'Data.Text.Text' (using 'defaultOptions').
 
@@ -132,18 +147,22 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
   where
     kvText :: (Key, AnyValue) -> Text
     kvText (k, AnyValue v) =
-      tabWith options i <> prettyKey k <>  " = " <> valText v
+      let lKey = Text.length $ prettyKey k
+          lTab = Text.length $ tabWith options i
+          off = lKey + lTab + 1
+      in tabWith options i <> prettyKey k <>  " = " <> valText off v
 
-    valText :: Value t -> Text
-    valText (Bool b)    = Text.toLower $ showText b
-    valText (Integer n) = showText n
-    valText (Double d)  = showDouble d
-    valText (Text s)    = showText s
-    valText (Zoned z)   = showZonedTime z
-    valText (Local l)   = showText l
-    valText (Day d)     = showText d
-    valText (Hours h)   = showText h
-    valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
+    valText :: Int -> Value t -> Text
+    valText _ (Bool b)    = Text.toLower $ showText b
+    valText _ (Integer n) = showText n
+    valText _ (Double d)  = showDouble d
+    valText _ (Text s)    = showText s
+    valText _ (Zoned z)   = showZonedTime z
+    valText _ (Local l)   = showText l
+    valText _ (Day d)     = showText d
+    valText _ (Hours h)   = showText h
+    -- valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
+    valText off (Array a) = withLines options off valText a
 
     showText :: Show a => a -> Text
     showText = Text.pack . show
@@ -227,3 +246,11 @@ addPrefix :: Key -> Text -> Text
 addPrefix key = \case
     "" -> prettyKey key
     prefix -> prefix <> "." <> prettyKey key
+
+withLines :: PrintOptions -> Int -> (Int -> Value t -> Text) -> [Value t] -> Text
+withLines options@PrintOptions{..} offLength valTxt a = case printOptionsLines of
+    OneLine -> "[" <> Text.intercalate ", " (map (valTxt offLength) a) <> "]"
+    MultiLine -> off <> "[ " <> Text.intercalate (off <> ", ") (map (valTxt offLength) a) <> off <> "]"
+  where
+    off :: Text
+    off = "\n" <> Text.replicate offLength " "
