@@ -33,8 +33,10 @@ integerSpecs = describe "integerP" $ do
             integerFailOn "_13"
             integerFailOn "_"
         it "does not parse numbers with leading zeros" $ do
-            parseInteger "0123" 0
-            parseInteger "-023" 0
+            integerFailOn "0123"
+            integerFailOn "00123"
+            integerFailOn "-023"
+            integerFailOn "-0023"
     context "when the integer is in binary representation" $ do
         it "can parse numbers prefixed with `0b`" $ do
             parseInteger "0b1101" 13
