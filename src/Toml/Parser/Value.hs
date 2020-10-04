@@ -38,17 +38,15 @@ decimalP :: Parser Integer
 decimalP = do
         value <- observing $ try leadingZeroP
         case value of
-          Left (_) -> do
-            res <- try more
-            return res
-          Right (_) -> do
-            fail $ "Leading zero."
+          Left _ -> do
+            try more
+          Right _ -> 
+            fail "Leading zero."
 
   where
     leadingZeroP :: Parser String
     leadingZeroP = do
-               out <- count 1 (char '0') >>= (\_ -> some digitChar)
-               return out
+               count 1 (char '0') >>= (\_ -> some digitChar)
 
     more :: Parser Integer
     more  = check =<< readMaybe . concat <$> sepBy1 (some digitChar) (char '_')
