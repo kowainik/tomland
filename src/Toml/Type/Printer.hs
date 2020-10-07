@@ -57,15 +57,21 @@ data PrintOptions = PrintOptions
     , printOptionsIndent  :: !Int
     {- | How to print Array.
       OneLine:
+      
+      @
       foo = [a, b]
+      @
 
       MultiLine:
+      
+      @
       foo =
           [ a
           , b
           ]
+      @
 
-      Default is OneLine
+      Default is 'OneLine'.
     -}
     , printOptionsLines :: !Lines
     }
