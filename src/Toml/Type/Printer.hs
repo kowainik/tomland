@@ -25,6 +25,7 @@ import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Semigroup (stimes)
 import Data.Text (Text)
 import Data.Time (ZonedTime, defaultTimeLocale, formatTime)
 
@@ -57,13 +58,13 @@ data PrintOptions = PrintOptions
     , printOptionsIndent  :: !Int
     {- | How to print Array.
       OneLine:
-      
+
       @
       foo = [a, b]
       @
 
       MultiLine:
-      
+
       @
       foo =
           [ a
@@ -154,22 +155,18 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
   where
     kvText :: (Key, AnyValue) -> Text
     kvText (k, AnyValue v) =
-      let lKey = Text.length $ prettyKey k
-          lTab = Text.length $ tabWith options i
-          off = lKey + lTab + 1
-      in tabWith options i <> prettyKey k <>  " = " <> valText off v
+      tabWith options i <> prettyKey k <> " = " <> valText v
 
-    valText :: Int -> Value t -> Text
-    valText _ (Bool b)    = Text.toLower $ showText b
-    valText _ (Integer n) = showText n
-    valText _ (Double d)  = showDouble d
-    valText _ (Text s)    = showText s
-    valText _ (Zoned z)   = showZonedTime z
-    valText _ (Local l)   = showText l
-    valText _ (Day d)     = showText d
-    valText _ (Hours h)   = showText h
-    -- valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
-    valText off (Array a) = withLines options off valText a
+    valText :: Value t -> Text
+    valText (Bool b)    = Text.toLower $ showText b
+    valText (Integer n) = showText n
+    valText (Double d)  = showDouble d
+    valText (Text s)    = showText s
+    valText (Zoned z)   = showZonedTime z
+    valText (Local l)   = showText l
+    valText (Day d)     = showText d
+    valText (Hours h)   = showText h
+    valText (Array a)   = withLines options valText a
 
     showText :: Show a => a -> Text
     showText = Text.pack . show
@@ -254,10 +251,10 @@ addPrefix key = \case
     "" -> prettyKey key
     prefix -> prefix <> "." <> prettyKey key
 
-withLines :: PrintOptions -> Int -> (Int -> Value t -> Text) -> [Value t] -> Text
-withLines PrintOptions{..} offLength valTxt a = case printOptionsLines of
-    OneLine -> "[" <> Text.intercalate ", " (map (valTxt offLength) a) <> "]"
-    MultiLine -> off <> "[ " <> Text.intercalate (off <> ", ") (map (valTxt offLength) a) <> off <> "]"
+withLines :: PrintOptions -> (Value t -> Text) -> [Value t] -> Text
+withLines PrintOptions{..} valTxt a = case printOptionsLines of
+    OneLine -> "[" <> Text.intercalate ", " (map valTxt a) <> "]"
+    MultiLine -> off <> "[ " <> Text.intercalate (off <> ", ") (map valTxt a) <> off <> "]"
   where
     off :: Text
-    off = "\n" <> Text.replicate offLength " "
+    off = "\n" <> stimes printOptionsIndent " "

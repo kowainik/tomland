@@ -48,6 +48,7 @@ type TomlEnv a = TOML -> Validation [TomlDecodeError] a
 
 {- | Specialied 'Codec' type alias for bidirectional TOML serialization. Keeps
 'TOML' object as both environment and state.
+class (B.BeamSqlBackend be, B.MonadBeam be beM) => BeamRuntime be beM
 
 @since 0.5.0
 -}

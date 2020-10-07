@@ -6,9 +6,9 @@ d = "ddd"
 [baz]
 
 list =
-     [ "one"
-     , "two"
-     ]
+  [ "one"
+  , "two"
+  ]
 
 [doo]
 
