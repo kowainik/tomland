@@ -6,7 +6,7 @@ The changelog is available [on GitHub][2].
 ## Unrelised
 
 * [#325](https://github.com/kowainik/tomland/issues/325):
-  PrintOptions for lists
+  Add ability to one or multiline printing to `PrintOptions` for arrays.
 
 ## 1.3.1.0 — Sep 21, 2020
 
