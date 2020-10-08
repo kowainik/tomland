@@ -9,6 +9,8 @@ b = "bb"
 
 [baz]
 
+list = ["one", "two"]
+
 [qux.doo]
     egg = "?"
     spam = "!"

@@ -11,7 +11,7 @@ import Test.Hspec.Golden (defaultGolden)
 
 import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.Type.Key (Key (..), (<|))
-import Toml.Type.Printer (PrintOptions (..), defaultOptions, prettyOptions)
+import Toml.Type.Printer (PrintOptions (..), Lines(..), defaultOptions, prettyOptions)
 import Toml.Type.TOML (TOML)
 import Toml.Type.Value (Value (..))
 
@@ -25,6 +25,7 @@ printerSpec = describe "Toml.Type.Printer: Golden tests for pretty-printing" $ d
     test "pretty_indented_only" noFormatting { printOptionsIndent = 4 }
     test "pretty_unformatted" noFormatting
     test "pretty_custom_sorted" noFormatting { printOptionsSorting = Just spamEgg }
+    test "pretty_lines" defaultOptions { printOptionsLines = MultiLine }
   where
     test :: String -> PrintOptions -> SpecWith (Arg Expectation)
     test name options = it ("Golden " ++ name) $
@@ -44,6 +45,7 @@ example = mkToml $ do
     table "foo" empty
     table "doo" empty
     table "baz" empty
+    "list" =: Array ["one", "two"]
     tableArray "deepest" $
       "ping" =: "pong"
       :| [empty]
@@ -55,6 +57,7 @@ noFormatting :: PrintOptions
 noFormatting = PrintOptions
     { printOptionsSorting = Nothing
     , printOptionsIndent  = 0
+    , printOptionsLines = OneLine
     }
 
 -- | Decorate keys as tuples so spam comes before egg

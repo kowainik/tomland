@@ -12,6 +12,7 @@ Contains functions for pretty printing @toml@ types.
 
 module Toml.Type.Printer
        ( PrintOptions(..)
+       , Lines(..)
        , defaultOptions
        , pretty
        , prettyOptions
@@ -24,6 +25,7 @@ import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Semigroup (stimes)
 import Data.Text (Text)
 import Data.Time (ZonedTime, defaultTimeLocale, formatTime)
 
@@ -54,6 +56,25 @@ data PrintOptions = PrintOptions
       @since 1.1.0.0
       -}
     , printOptionsIndent  :: !Int
+    {- | How to print Array.
+      OneLine:
+
+      @
+      foo = [a, b]
+      @
+
+      MultiLine:
+
+      @
+      foo =
+          [ a
+          , b
+          ]
+      @
+
+      Default is 'OneLine'.
+    -}
+    , printOptionsLines :: !Lines
     }
 
 {- | Default printing options.
@@ -64,7 +85,9 @@ data PrintOptions = PrintOptions
 @since 0.5.0
 -}
 defaultOptions :: PrintOptions
-defaultOptions = PrintOptions (Just compare) 2
+defaultOptions = PrintOptions (Just compare) 2 OneLine
+
+data Lines = OneLine | MultiLine
 
 {- | Converts 'TOML' type into 'Data.Text.Text' (using 'defaultOptions').
 
@@ -132,7 +155,7 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
   where
     kvText :: (Key, AnyValue) -> Text
     kvText (k, AnyValue v) =
-      tabWith options i <> prettyKey k <>  " = " <> valText v
+      tabWith options i <> prettyKey k <> " = " <> valText v
 
     valText :: Value t -> Text
     valText (Bool b)    = Text.toLower $ showText b
@@ -143,7 +166,7 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
     valText (Local l)   = showText l
     valText (Day d)     = showText d
     valText (Hours h)   = showText h
-    valText (Array a)   = "[" <> Text.intercalate ", " (map valText a) <> "]"
+    valText (Array a)   = withLines options valText a
 
     showText :: Show a => a -> Text
     showText = Text.pack . show
@@ -227,3 +250,11 @@ addPrefix :: Key -> Text -> Text
 addPrefix key = \case
     "" -> prettyKey key
     prefix -> prefix <> "." <> prettyKey key
+
+withLines :: PrintOptions -> (Value t -> Text) -> [Value t] -> Text
+withLines PrintOptions{..} valTxt a = case printOptionsLines of
+    OneLine -> "[" <> Text.intercalate ", " (map valTxt a) <> "]"
+    MultiLine -> off <> "[ " <> Text.intercalate (off <> ", ") (map valTxt a) <> off <> "]"
+  where
+    off :: Text
+    off = "\n" <> stimes printOptionsIndent " "

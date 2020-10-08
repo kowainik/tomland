@@ -9,6 +9,8 @@ d = "ddd"
 
 [foo]
 
+list = ["one", "two"]
+
 [qux.doo]
 spam = "!"
 egg = "?"

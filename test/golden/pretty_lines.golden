@@ -5,24 +5,27 @@ d = "ddd"
 
 [baz]
 
-list = ["one", "two"]
+list =
+  [ "one"
+  , "two"
+  ]
 
 [doo]
 
 [foo]
 
 [qux.doo]
-egg = "?"
-spam = "!"
+  egg = "?"
+  spam = "!"
 
 [[deeper]]
-green = true
+  green = true
 
 [[deeper]]
-[deeper.blue]
-red = 255
+  [deeper.blue]
+    red = 255
 
 [[deepest]]
-ping = "pong"
+  ping = "pong"
 
 [[deepest]]
