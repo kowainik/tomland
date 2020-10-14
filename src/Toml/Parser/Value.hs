@@ -25,7 +25,7 @@ import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime (..), fromGregorianV
 import Data.String (fromString)
 
 import Text.Read (readMaybe)
-import Text.Megaparsec (parseMaybe)
+import Text.Megaparsec (observing, parseMaybe)
 
 import Toml.Parser.Core (Parser, char, digitChar, hexDigitChar, octDigitChar, binDigitChar, hexadecimal, octal, binary, lexeme, sc, signed,
                          string, text, try, (<?>))
@@ -35,14 +35,26 @@ import Toml.Type (AnyValue, UValue (..), typeCheck)
 
 -- | Parser for decimap 'Integer': included parsing of underscore.
 decimalP :: Parser Integer
-decimalP = zero <|> more
+decimalP = do
+        value <- observing $ try leadingZeroP
+        case value of
+          Left _ -> do
+            try more
+          Right _ -> 
+            fail "Leading zero."
+
   where
-    zero, more :: Parser Integer
-    zero  = 0 <$ char '0'
+    leadingZeroP :: Parser String
+    leadingZeroP = do
+               count 1 (char '0') >>= (\_ -> some digitChar)
+
+    more :: Parser Integer
     more  = check =<< readMaybe . concat <$> sepBy1 (some digitChar) (char '_')
 
     check :: Maybe Integer -> Parser Integer
     check = maybe (fail "Not an integer") pure
+
+
 
 -- | Parser for hexadecimal, octal and binary numbers : included parsing
 numberP :: Parser Integer -> Parser Char -> String -> Parser Integer
