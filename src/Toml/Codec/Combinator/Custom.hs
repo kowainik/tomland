@@ -10,7 +10,6 @@ See examples below of the situations you may need the following combinators.
 
 @since 1.3.0.0
 -}
-{-# LANGUAGE LambdaCase #-}
 
 module Toml.Codec.Combinator.Custom
     ( -- * 'Text' combinators
@@ -22,20 +21,20 @@ module Toml.Codec.Combinator.Custom
     , validate
     , validateIf
 
-      -- * Transform
+      -- * With the errors reporting
     , either
     ) where
 
 import Prelude hiding (read, either)
 
 import Data.Text (Text)
-import Validation (validationToEither)
+import Validation (validationToEither, Validation(Success))
 
 import Toml.Codec.BiMap (TomlBiMap)
 import Toml.Codec.BiMap.Conversion (_EnumBounded, _Read, _TextBy, _Validate)
 import Toml.Codec.Combinator.Common (match)
 import Toml.Codec.Error (TomlDecodeError)
-import Toml.Codec.Types (TomlCodec, Codec(..))
+import Toml.Codec.Types (TomlCodec, Codec(..), TomlEnv, TomlState)
 import Toml.Type.AnyValue (AnyValue)
 import Toml.Type.Key (Key)
 import Toml.Type.Printer (prettyKey)
@@ -248,11 +247,13 @@ validateIf p biMap k = validate validateEither biMap k
 __Example:__
 
 @
-either (bool "mykey") :: TomlCodec (Either [TomlDecodeError] Bool)
+either (bool "mykey") :: Codec Bool (Either [TomlDecodeError] Bool)
 @
 -}
-either :: TomlCodec a -> TomlCodec (Either [TomlDecodeError] a)
-either (Codec r w) = Codec r' $ \case
-  Left x' -> pure . Left $ x'
-  Right x' -> fmap Right . w $ x'
-  where r' = pure . validationToEither . r
+either :: forall i o. Codec i o -> Codec i (Either [TomlDecodeError] o)
+either (Codec oldCodecRead oldCodecWrite) = Codec newCodecRead newCodecWrite
+  where
+    newCodecRead :: TomlEnv (Either [TomlDecodeError] o)
+    newCodecRead = Success . validationToEither . oldCodecRead
+    newCodecWrite :: i -> TomlState (Either [TomlDecodeError] o)
+    newCodecWrite = fmap Right . oldCodecWrite

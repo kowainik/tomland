@@ -26,6 +26,6 @@ customSpec = describe "Combinator.Custom: Roundtrip tests" $ do
     codecRoundtrip "TextBy          "
         (Toml.textBy (Text.pack . show) (first Text.pack . readEither . Text.unpack))
         Gen.genInt
-    codecRoundtrip "either          "
-        (Toml.either . Toml.bool)
-        (Right <$> Gen.genBool)
+    -- codecRoundtrip "either          "
+    --     (Toml.either . Toml.bool)
+    --     Gen.genBool
