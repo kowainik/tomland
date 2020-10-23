@@ -63,7 +63,7 @@ import Toml.Codec.Combinator.Tuple
 TOML-specific combinators for converting between TOML and Haskell primitive
 types, e.g. 'int' \<-\> 'Int', 'byteString' \<-\> 'ByteString'.
 
-See the "Toml.Codec.Combinators.Primitive" module documentation for the overview
+See the "Toml.Codec.Combinator.Primitive" module documentation for the overview
 table and more examples.
 -}
 
@@ -73,21 +73,21 @@ data types. TOML specification describes date and time primitives you
 can use in your configuration. @tomland@ provides mapping of those
 primitives to types from the @time@ library.
 
-See the "Toml.Codec.Combinators.Time" module documentation for the overview
+See the "Toml.Codec.Combinator.Time" module documentation for the overview
 table and more examples.
 -}
 
 {- $table
 Combinators for the @TOML@ tables.
 
-See the "Toml.Codec.Combinators.Table" module documentation for more examples.
+See the "Toml.Codec.Combinator.Table" module documentation for more examples.
 -}
 
 {- $list
 TOML-specific combinators for converting between TOML and Haskell list-like data
 types.
 
-See the "Toml.Codec.Combinators.List" module documentation for the overview
+See the "Toml.Codec.Combinator.List" module documentation for the overview
 table and more examples.
 -}
 
@@ -95,7 +95,7 @@ table and more examples.
 TOML-specific combinators for converting between TOML and Haskell set-like data
 types.
 
-See the "Toml.Codec.Combinators.Set" module documentation for the overview
+See the "Toml.Codec.Combinator.Set" module documentation for the overview
 table and more examples.
 -}
 
@@ -103,7 +103,7 @@ table and more examples.
 TOML-specific combinators for converting between TOML and Haskell map-like data
 types.
 
-See the "Toml.Codec.Combinators.Map" module documentation for the overview
+See the "Toml.Codec.Combinator.Map" module documentation for the overview
 table and more examples.
 -}
 
@@ -114,7 +114,7 @@ for them, but if you need to have tuples (e.g. for decoding different
 constructors of sum types), you can find codecs from this module
 helpful.
 
-See the "Toml.Codec.Combinators.Tuple" module documentation for the overview
+See the "Toml.Codec.Combinator.Tuple" module documentation for the overview
 table and more examples.
 -}
 
@@ -124,7 +124,7 @@ wrapper data types. These codecs are especially handy when you are implementing
 the [Partial Options Monoid](https://medium.com/@jonathangfischoff/the-partial-options-monoid-pattern-31914a71fc67)
 pattern.
 
-See the "Toml.Codec.Combinators.Monoid" module documentation for the overview
+See the "Toml.Codec.Combinator.Monoid" module documentation for the overview
 table and more examples.
 -}
 
@@ -137,7 +137,7 @@ before encoding. And 'enumBounded' is an automatical codec that uses 'Enum' and
 'Bounded' instances of the data type only and provides descriptive error
 messages at the same time.
 
-See the "Toml.Codec.Combinators.Custom" module documentation for the overview
+See the "Toml.Codec.Combinator.Custom" module documentation for the overview
 table and more examples.
 -}
 
@@ -148,5 +148,5 @@ you don't need to implement your own codecs and can reuse existing
 ones. But if you need something that library doesn't provide, you can
 find functions in this module useful.
 
-See the "Toml.Codec.Combinators.Common" module documentation for more examples.
+See the "Toml.Codec.Combinator.Common" module documentation for more examples.
 -}
