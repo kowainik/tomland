@@ -250,10 +250,10 @@ __Example:__
 either (bool "mykey") :: Codec Bool (Either [TomlDecodeError] Bool)
 @
 -}
-either :: forall i o. Codec i o -> Codec i (Either [TomlDecodeError] o)
+either :: forall a. TomlCodec a -> TomlCodec (Either [TomlDecodeError] a)
 either (Codec oldCodecRead oldCodecWrite) = Codec newCodecRead newCodecWrite
   where
-    newCodecRead :: TomlEnv (Either [TomlDecodeError] o)
+    newCodecRead :: TomlEnv (Either [TomlDecodeError] a)
     newCodecRead = Success . validationToEither . oldCodecRead
-    newCodecWrite :: i -> TomlState (Either [TomlDecodeError] o)
-    newCodecWrite = fmap Right . oldCodecWrite
+    newCodecWrite :: Either [TomlDecodeError] a -> TomlState (Either [TomlDecodeError] a)
+    newCodecWrite = traverse oldCodecWrite

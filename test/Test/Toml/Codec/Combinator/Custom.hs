@@ -10,6 +10,7 @@ import Test.Toml.Codec.Combinator.Common (codecRoundtrip)
 
 import qualified Data.Text as Text
 import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 import qualified Test.Toml.Gen as Gen
 import qualified Toml.Codec.BiMap.Conversion as Toml
 import qualified Toml.Codec.Combinator.Custom as Toml
@@ -26,6 +27,6 @@ customSpec = describe "Combinator.Custom: Roundtrip tests" $ do
     codecRoundtrip "TextBy          "
         (Toml.textBy (Text.pack . show) (first Text.pack . readEither . Text.unpack))
         Gen.genInt
-    -- codecRoundtrip "either          "
-    --     (Toml.either . Toml.bool)
-    --     Gen.genBool
+    codecRoundtrip "either          "
+        (Toml.either . Toml.bool)
+        (Gen.either (Gen.list (Range.linear 0 10) Gen.genTomlDecodeError) Gen.genBool)

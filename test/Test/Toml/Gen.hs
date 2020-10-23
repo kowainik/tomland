@@ -47,6 +47,7 @@ module Test.Toml.Gen
        , genKey
        , genPrefixMap
        , genToml
+       , genTomlDecodeError
 
          -- ** Other
        , range100
@@ -71,7 +72,9 @@ import GHC.Exts (fromList)
 import Hedgehog (Gen, Range)
 import Numeric.Natural (Natural)
 
-import Toml.Type.AnyValue (AnyValue (..), toMArray)
+import Toml.Codec.Error (TomlDecodeError(..))
+import Toml.Codec.BiMap (TomlBiMapError(..))
+import Toml.Type.AnyValue (AnyValue (..), MatchError(..), toMArray)
 import Toml.Type.Key (pattern (:||), Key (..), Piece (..))
 import Toml.Type.PrefixTree (PrefixMap, PrefixTree (..))
 import Toml.Type.TOML (TOML (..))
@@ -186,6 +189,36 @@ genToml = Gen.recursive
         key <- genKey
         arr <- Gen.list (Range.linear 1 10) genToml
         pure (key, NE.fromList arr)
+
+genTValue :: Gen TValue
+genTValue = Gen.element [ TBool
+                        , TInteger
+                        , TDouble
+                        , TText
+                        , TZoned
+                        , TLocal
+                        , TDay
+                        , THours
+                        , TArray
+                        ]
+
+genMatchError :: Gen MatchError
+genMatchError = MatchError <$> genTValue <*> genAnyValue
+
+genTomlBiMapError :: Gen TomlBiMapError
+genTomlBiMapError =
+  Gen.choice [ WrongConstructor <$> genText <*> genText
+             , WrongValue <$> genMatchError
+             , ArbitraryError <$> genText
+             ]
+
+genTomlDecodeError :: Gen TomlDecodeError
+genTomlDecodeError =
+  Gen.choice [ KeyNotFound <$> genKey
+             , TableNotFound <$> genKey
+             , TableArrayNotFound <$> genKey
+             , BiMapError <$> genKey <*> genTomlBiMapError
+             ]
 
 -- Date generators
 
