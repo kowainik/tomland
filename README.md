@@ -3,11 +3,11 @@
 ![palm](https://user-images.githubusercontent.com/4276606/51088259-7a777000-176e-11e9-9d76-6be4023c0ac3.png)
 
 [![GitHub CI](https://github.com/kowainik/tomland/workflows/CI/badge.svg)](https://github.com/kowainik/tomland/actions)
-[![AppVeyor CI](https://ci.appveyor.com/api/projects/status/github/kowainik/tomland?branch=master&svg=true)](https://ci.appveyor.com/project/kowainik/tomland)
+[![AppVeyor CI](https://ci.appveyor.com/api/projects/status/github/kowainik/tomland?branch=main&svg=true)](https://ci.appveyor.com/project/kowainik/tomland)
 [![Hackage](https://img.shields.io/hackage/v/tomland.svg?logo=haskell)](https://hackage.haskell.org/package/tomland)
 [![Stackage LTS](http://stackage.org/package/tomland/badge/lts)](http://stackage.org/lts/package/tomland)
 [![Stackage Nightly](http://stackage.org/package/tomland/badge/nightly)](http://stackage.org/nightly/package/tomland)
-[![MPL-2.0 license](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](https://github.com/kowainik/tomland/blob/master/LICENSE)
+[![MPL-2.0 license](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](https://github.com/kowainik/tomland/blob/main/LICENSE)
 
 > “A library is like an island in the middle of a vast sea of ignorance,
 > particularly if the library is very tall and the surrounding area has been
