@@ -176,15 +176,22 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
     showText = Text.pack . show
 
     showTextUnicode :: Text -> Text
-    showTextUnicode text = Text.pack $ show $ foldl (\acc (ch, asciiCh) -> acc ++ getCh ch asciiCh) "" asciiArr
+    showTextUnicode text = Text.pack quotedText
       where
-        xs = Text.unpack text
-        asciiArr = zip xs $ asciiStatus xs
+        quotedText = finalText
+        finalText = foldl (\acc (ch, asciiCh) -> acc ++ getCh ch asciiCh) "" asciiArr 
+        xss = unicodeEscape $ show $ Text.unpack text
+        asciiArr = zip xss $ asciiStatus xss
         getCh ch True  = [ch]
-        getCh ch False = printf "\\U%08x" ordChr :: String
+        getCh ch False = printf "\\\\U%08x" ordChr :: String
           where
             ordChr = ord ch
         asciiStatus = map isAscii
+
+        unicodeEscape "" = ""
+        unicodeEscape ('\\':'\\':'u':xs) = '\\':'\\':'u': unicodeEscape xs
+        unicodeEscape ('\\':'\\':'U':xs) = '\\':'\\':'U': unicodeEscape xs
+        unicodeEscape (x:xs) = x : unicodeEscape xs
 
     showDouble :: Double -> Text
     showDouble d | isInfinite d && d < 0 = "-inf"
