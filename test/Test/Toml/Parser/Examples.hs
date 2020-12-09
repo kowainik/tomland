@@ -7,9 +7,9 @@ import System.Directory (listDirectory)
 import Test.Hspec (Spec, describe, it, runIO, shouldBe)
 
 import Toml.Parser (parse)
-import Toml.Type.Printer (pretty)
 
 import qualified Data.Text.IO as TIO
+
 
 examplesSpec :: Spec
 examplesSpec = describe "Can parse official TOML examples" $ do
@@ -23,4 +23,3 @@ example file = it ("can parse file " ++ file) $ do
 
 exampleDir :: FilePath
 exampleDir = "test/examples/"
-
