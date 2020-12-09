@@ -299,6 +299,13 @@ genUniHex8Color = do
     hex <- genDiffHex 8
     pure . Text.pack $ "\\U" ++ hex
 
+-- | Generates some unescaped unicode string
+genUnicodeChar :: Gen Text
+genUnicodeChar = Gen.element
+    [ "č", "ć", "š", "đ", "ž", "Ö", "ё"
+    , "в", "ь", "ж", "ю", "ч", "ü", "я"
+    ]
+
 -- | Generates text from different symbols.
 genText :: Gen Text
 genText = genNotEscape $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Gen.choice
@@ -307,7 +314,9 @@ genText = genNotEscape $ fmap Text.concat $ Gen.list (Range.constant 0 256) $ Ge
     , genPunctuation
     , genUniHex4Color
     , genUniHex8Color
+    --, genUnicodeChar
     ]
+
 
 genString :: Gen String
 genString = Text.unpack <$> genText
