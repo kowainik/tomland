@@ -24,7 +24,7 @@ import Data.Char (isAscii, ord)
 import Data.Coerce (coerce)
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
-import Data.List (sortBy)
+import Data.List (sortBy, foldl')
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semigroup (stimes)
 import Data.Text (Text)
@@ -175,17 +175,21 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
     showText :: Show a => a -> Text
     showText = Text.pack . show
 
+        
+    -- | Function encodes all non-ascii characters in TOML defined form using the isAscii function
     showTextUnicode :: Text -> Text
-    showTextUnicode text = Text.pack quotedText
+    showTextUnicode text = Text.pack $ show finalText
       where
-        quotedText = show finalText
-        finalText = foldl (\acc (ch, asciiCh) -> acc ++ getCh ch asciiCh) "" asciiArr 
         xss = Text.unpack text
+        finalText = foldl' (\acc (ch, asciiCh) -> acc ++ getCh ch asciiCh) "" asciiArr
+
         asciiArr = zip xss $ asciiStatus xss
-        getCh ch True  = [ch]
-        getCh ch False = printf "\\U%08x" ordChr :: String
-          where
-            ordChr = ord ch
+
+        getCh :: Char -> Bool -> String
+        getCh ch True  = [ch] -- it is true ascii character
+        getCh ch False = printf "\\U%08x" (ord ch) :: String -- it is not true ascii character, it must be encoded
+
+        asciiStatus :: String -> [Bool]
         asciiStatus = map isAscii
 
     showDouble :: Double -> Text
