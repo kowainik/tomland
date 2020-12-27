@@ -20,14 +20,17 @@ module Toml.Type.Printer
        ) where
 
 import Data.Bifunctor (first)
+import Data.Char (isAscii, ord)
 import Data.Coerce (coerce)
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
-import Data.List (sortBy)
+import Data.List (sortBy, foldl')
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semigroup (stimes)
 import Data.Text (Text)
 import Data.Time (ZonedTime, defaultTimeLocale, formatTime)
+
+import Text.Printf (printf)
 
 import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Key (Key (..), Piece (..))
@@ -38,6 +41,7 @@ import Toml.Type.Value (Value (..))
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
+
 
 
 {- | Configures the pretty printer.
@@ -161,7 +165,7 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
     valText (Bool b)    = Text.toLower $ showText b
     valText (Integer n) = showText n
     valText (Double d)  = showDouble d
-    valText (Text s)    = showText s
+    valText (Text s)    = showTextUnicode s
     valText (Zoned z)   = showZonedTime z
     valText (Local l)   = showText l
     valText (Day d)     = showText d
@@ -170,6 +174,23 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
 
     showText :: Show a => a -> Text
     showText = Text.pack . show
+
+        
+    -- | Function encodes all non-ascii characters in TOML defined form using the isAscii function
+    showTextUnicode :: Text -> Text
+    showTextUnicode text = Text.pack $ show finalText
+      where
+        xss = Text.unpack text
+        finalText = foldl' (\acc (ch, asciiCh) -> acc ++ getCh ch asciiCh) "" asciiArr
+
+        asciiArr = zip xss $ asciiStatus xss
+
+        getCh :: Char -> Bool -> String
+        getCh ch True  = [ch] -- it is true ascii character
+        getCh ch False = printf "\\U%08x" (ord ch) :: String -- it is not true ascii character, it must be encoded
+
+        asciiStatus :: String -> [Bool]
+        asciiStatus = map isAscii
 
     showDouble :: Double -> Text
     showDouble d | isInfinite d && d < 0 = "-inf"
