@@ -105,6 +105,9 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
     it "fails to validateIf" $
         decode (Toml.validateIf even Toml._Int "foo") "foo = 5" `shouldBe`
             Left [BiMapError "foo" $ ArbitraryError "Value does not pass the validation for key: foo"]
+    it "fails to hardcoded" $
+        decode (Toml.hardcoded "bar" Toml._Text "foo") "foo = \"baz\"" `shouldBe`
+            Left [BiMapError "foo" $ ArbitraryError "Value '\"baz\"' doesn't align with the hardcoded value '\"bar\"'"]
   where
     matchErr :: Key -> TValue -> AnyValue -> TomlDecodeError
     matchErr key valueExpected valueActual = BiMapError key $ WrongValue $ MatchError {..}

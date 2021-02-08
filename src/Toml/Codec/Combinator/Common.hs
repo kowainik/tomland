@@ -65,7 +65,6 @@ match BiMap{..} key = Codec input output
         anyVal <- eitherToTomlState $ forward a
         a <$ modify (insertKeyAnyVal key anyVal)
 
-
 {- | Throw error on 'Left', or perform a given action with 'Right'.
 
 @since 1.3.0.0

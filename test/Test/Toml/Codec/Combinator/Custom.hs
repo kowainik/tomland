@@ -25,3 +25,4 @@ customSpec = describe "Combinator.Custom: Roundtrip tests" $ do
     codecRoundtrip "TextBy          "
         (Toml.textBy (Text.pack . show) (first Text.pack . readEither . Text.unpack))
         Gen.genInt
+    codecRoundtrip "Hardcoded (Text)" (Toml.hardcoded "abc" Toml._Text) (pure "abc")

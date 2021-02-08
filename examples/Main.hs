@@ -149,6 +149,7 @@ data Test = Test
     , payloads   :: !(Map Text Int)
     , colours    :: !(Map Text Colour)
     , tableList  :: !MapWithList
+    , testHardcoded :: !Text
     }
 
 
@@ -179,6 +180,7 @@ testT = Test
     <*> Toml.map (Toml.text "name") (Toml.int "payload") "payloads" .= payloads
     <*> Toml.tableMap Toml._KeyText colourCodec "colours" .= colours
     <*> mapWithListCodec .= tableList
+    <*> Toml.hardcoded "abc" Toml._Text "testHardcoded" .= testHardcoded
   where
     pairC :: TomlCodec (Int, Text)
     pairC = Toml.pair (Toml.int "pNum") (Toml.text "pName")

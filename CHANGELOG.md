@@ -9,6 +9,8 @@ The changelog is available [on GitHub][2].
   Add ability to one or multiline printing to `PrintOptions` for arrays.
 * [#358](https://github.com/kowainik/tomland/issues/358):
   Upgrade `parser-combinators` upper bound to allow `1.3`.
+* [#329](https://github.com/kowainik/tomland/issues/329):
+  Add `_Harcoded` codec and `hardcoded` combinator.
 
 ## 1.3.1.0 — Sep 21, 2020
 

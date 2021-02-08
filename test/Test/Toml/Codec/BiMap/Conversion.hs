@@ -55,6 +55,9 @@ conversionSpec = parallel $ describe "BiMap Rountrip Property tests" $ do
         it "EnumBounded (Ordering)" $ testBiMap B._EnumBounded $ Gen.enumBounded @_ @Ordering
         it "Read (Integer)"         $ testBiMap B._Read G.genInteger
         it "TextBy (Text)"          $ testBiMap (B._TextBy id Right) G.genText
+        it "Hardcoded (Text)"       $ do
+            txt <- forAll G.genText
+            testBiMap (B._Hardcoded txt) (pure txt)
 
     describe "Key" $ do
         it "KeyText"   $ testBiMap B._KeyText G.genKey
