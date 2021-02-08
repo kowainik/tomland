@@ -1,9 +1,12 @@
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
-Copyright: (c) 2018-2020 Kowainik
-SPDX-License-Identifier: MPL-2.0
-Maintainer: Kowainik <xrom.xkov@gmail.com>
+Module                  : Toml.Type.Printer
+Copyright               : (c) 2018-2021 Kowainik
+SPDX-License-Identifier : MPL-2.0
+Maintainer              : Kowainik <xrom.xkov@gmail.com>
+Stability               : Stable
+Portability             : Portable
 
 Contains functions for pretty printing @toml@ types.
 

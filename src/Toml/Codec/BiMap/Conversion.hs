@@ -1,13 +1,16 @@
 {-# LANGUAGE GADTs #-}
 
 {- |
-Copyright: (c) 2018-2020 Kowainik
-SPDX-License-Identifier: MPL-2.0
-Maintainer: Kowainik <xrom.xkov@gmail.com>
+Module                  : Toml.Codec.BiMap.Conversion
+Copyright               : (c) 2018-2021 Kowainik
+SPDX-License-Identifier : MPL-2.0
+Maintainer              : Kowainik <xrom.xkov@gmail.com>
+Stability               : Stable
+Portability             : Portable
 
 Implementations of 'BiMap' for specific Haskell types and TOML
-values. Usually, you use codecs from the "Toml.Codec.Combinator"
-module. You may need to use these 'BiMap's instead of codecs in the
+values. Usually, you use codecs from the "Toml.Codec.Combinator" module.
+You may need to use these 'BiMap's instead of codecs in the
 following situations:
 
 1. When using 'Toml.Codec.Combinator.List.arrayOf' combinator (or similar).

@@ -1,7 +1,10 @@
 {- |
-Copyright: (c) 2018-2020 Kowainik
-SPDX-License-Identifier: MPL-2.0
-Maintainer: Kowainik <xrom.xkov@gmail.com>
+Module                  : Toml.Codec.Combinator
+Copyright               : (c) 2018-2021 Kowainik
+SPDX-License-Identifier : MPL-2.0
+Maintainer              : Kowainik <xrom.xkov@gmail.com>
+Stability               : Stable
+Portability             : Portable
 
 Contains TOML-specific combinators for converting between TOML and user data
 types.

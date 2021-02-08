@@ -1,7 +1,10 @@
-{-|
-Copyright: (c) 2018-2020 Kowainik
-SPDX-License-Identifier: MPL-2.0
-Maintainer: Kowainik <xrom.xkov@gmail.com>
+{- |
+Module                  : Toml.Parser.Item
+Copyright               : (c) 2018-2021 Kowainik
+SPDX-License-Identifier : MPL-2.0
+Maintainer              : Kowainik <xrom.xkov@gmail.com>
+Stability               : Stable
+Portability             : Portable
 
 This module contains the definition of the 'TomlItem' data type which
 represents either key-value pair or table name. This data type serves the

@@ -3,9 +3,12 @@
 {-# LANGUAGE TupleSections   #-}
 
 {- |
-Copyright: (c) 2018-2020 Kowainik
-SPDX-License-Identifier: MPL-2.0
-Maintainer: Kowainik <xrom.xkov@gmail.com>
+Module                  : Toml.Codec.Combinator.Map
+Copyright               : (c) 2018-2021 Kowainik
+SPDX-License-Identifier : MPL-2.0
+Maintainer              : Kowainik <xrom.xkov@gmail.com>
+Stability               : Stable
+Portability             : Portable
 
 TOML-specific combinators for converting between TOML and Haskell Map-like data
 types.

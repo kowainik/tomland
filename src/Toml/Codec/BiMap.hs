@@ -6,12 +6,15 @@
 {-# LANGUAGE Rank2Types          #-}
 
 {- |
-Copyright: (c) 2018-2020 Kowainik
-SPDX-License-Identifier: MPL-2.0
-Maintainer: Kowainik <xrom.xkov@gmail.com>
+Module                  : Toml.Codec.BiMap
+Copyright               : (c) 2018-2021 Kowainik
+SPDX-License-Identifier : MPL-2.0
+Maintainer              : Kowainik <xrom.xkov@gmail.com>
+Stability               : Stable
+Portability             : Portable
 
-Implementation of /Tagged Partial Bidirectional Isomorphism/. This
-module contains the 'BiMap' type that represents conversion between
+Implementation of /Tagged Partial Bidirectional Isomorphism/.
+This module contains the 'BiMap' type that represents conversion between
 two types with the possibility of failure.
 
 See "Toml.Codec.BiMap.Conversion" for examples of 'BiMap' with
