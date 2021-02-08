@@ -6,6 +6,9 @@ testA = [   "abacaba", "foo", 'bar'    ]
 testNE = [ "nonEmpty" ]
 testNET = [ {a = 1} ]
 
+testHardcoded = "abc"
+# testHardcoded = "cba"
+
 testEven = 6
 # testEven = 5
 

@@ -63,6 +63,7 @@ module Toml.Codec.BiMap.Conversion
     , _Read
     , _TextBy
     , _Validate
+    , _Hardcoded
 
       -- * 'Key's
     , _KeyText
@@ -551,6 +552,28 @@ _EnumBoundedText = BiMap
 _EnumBounded :: (Show a, Enum a, Bounded a) => TomlBiMap a AnyValue
 _EnumBounded = _EnumBoundedText >>> _Text
 {-# INLINE _EnumBounded #-}
+
+
+{- | 'BiMap' for hardcoded values.
+It returns the same value in case of success and 'ArbitraryError' in other case.
+
+@since x.x.x.x
+-}
+_Hardcoded :: forall a . (Show a, Eq a) => a -> TomlBiMap a a
+_Hardcoded a = BiMap
+    { forward = const (Right a)
+    , backward = checkValue
+    }
+  where
+      checkValue :: a -> Either TomlBiMapError a
+      checkValue v = if v == a
+          then Right v
+          else Left (ArbitraryError msg)
+        where
+          msg :: Text
+          msg = "Value '" <> T.pack (show v)
+              <> "' doesn't align with the hardcoded value '"
+              <> T.pack (show a) <> "'"
 
 ----------------------------------------------------------------------------
 -- Keys

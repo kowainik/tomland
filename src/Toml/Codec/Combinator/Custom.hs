@@ -19,6 +19,7 @@ module Toml.Codec.Combinator.Custom
       textBy
     , read
     , enumBounded
+    , hardcoded
 
       -- * Validation
     , validate
@@ -27,10 +28,11 @@ module Toml.Codec.Combinator.Custom
 
 import Prelude hiding (read)
 
+import Control.Category ((>>>))
 import Data.Text (Text)
 
 import Toml.Codec.BiMap (TomlBiMap)
-import Toml.Codec.BiMap.Conversion (_EnumBounded, _Read, _TextBy, _Validate)
+import Toml.Codec.BiMap.Conversion (_EnumBounded, _Read, _TextBy, _Validate, _Hardcoded)
 import Toml.Codec.Combinator.Common (match)
 import Toml.Codec.Types (TomlCodec)
 import Toml.Type.AnyValue (AnyValue)
@@ -152,6 +154,32 @@ tomland decode error:  Value is 'Jif' but expected one of: Jpeg, Png, Gif
 enumBounded :: (Bounded a, Enum a, Show a) => Key -> TomlCodec a
 enumBounded = match _EnumBounded
 {-# INLINE enumBounded #-}
+
+{- | Codec for hardcoded provided values and its 'BiMap'.
+
+If you want to decode a single key-value pair where only one value is allowed.
+Like in the example below:
+
+@
+scope = "all"
+@
+
+To decode that you could use the following function:
+
+@
+Toml.hardcoded "all" Toml._Text "scope"
+@
+
+in case if the value in @TOML@ is not the same as hardcoded, you will get the following error:
+
+@
+tomland decode error:  BiMap error in key 'scope' : Value '"foo"' doesn't align with the hardcoded value '"all"'
+@
+
+@since x.x.x.x
+-}
+hardcoded :: (Show a, Eq a) => a -> TomlBiMap a AnyValue -> Key -> TomlCodec a
+hardcoded a aBm = match (_Hardcoded a >>> aBm)
 
 {- | Codec that checks the 'BiMap' on the given predicate.
 The predicate function returns the value, if the validation is successful, or
