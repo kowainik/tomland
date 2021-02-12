@@ -723,7 +723,7 @@ instance (Generic a, GenericCodec (Rep a)) => HasItemCodec (TomlTable a) where
     {-# INLINE hasItemCodec #-}
 
 {- | @newtype@ for generic deriving of 'HasCodec' typeclass for custom data
-types that should we wrapped into separate table.
+types that should be wrapped into a separate table.
 
 Similar to 'TomlTable' but also strips the data type name prefix from
 TOML keys.
