@@ -17,6 +17,8 @@ module Toml.Type.TOML
        , insertKeyAnyVal
        , insertTable
        , insertTableArrays
+
+       , tomlDiff
        ) where
 
 import Control.DeepSeq (NFData)
@@ -30,6 +32,7 @@ import Toml.Type.PrefixTree (PrefixMap)
 import Toml.Type.Value (Value)
 
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.List.NonEmpty as NE
 import qualified Toml.Type.PrefixTree as Prefix
 
 
@@ -145,3 +148,41 @@ insertTableArrays k arr toml = toml
     { tomlTableArrays = HashMap.insert k arr (tomlTableArrays toml)
     }
 {-# INLINE insertTableArrays #-}
+
+{- | Difference of two 'TOML's. Returns elements of the first 'TOML' that are
+not existing in the second one.
+
+@since x.x.x.x
+-}
+tomlDiff :: TOML -> TOML -> TOML
+tomlDiff t1 t2 = TOML
+    { tomlPairs = HashMap.difference (tomlPairs t1) (tomlPairs t2)
+    , tomlTables = prefixMapDiff (tomlTables t1) (tomlTables t2)
+    , tomlTableArrays = HashMap.differenceWith interTomlsDiff
+        (tomlTableArrays t1)
+        (tomlTableArrays t2)
+    }
+  where
+    interTomlsDiff :: NonEmpty TOML -> NonEmpty TOML -> Maybe (NonEmpty TOML)
+    interTomlsDiff tl1 tl2 = NE.nonEmpty $ tomlListDiff (NE.toList tl1) (NE.toList tl2)
+{-# INLINE tomlDiff #-}
+
+{- | Difference of two 'PrefixMap's. Returns elements of the first 'PrefixMap'
+that are not existing in the second one.
+
+@since x.x.x.x
+-}
+prefixMapDiff :: PrefixMap TOML -> PrefixMap TOML -> PrefixMap TOML
+prefixMapDiff = Prefix.differenceWith $ \toml1 toml2 -> let diff = tomlDiff toml1 toml2 in
+    if diff == mempty
+    then Nothing
+    else Just diff
+
+
+tomlListDiff :: [TOML] -> [TOML] -> [TOML]
+tomlListDiff [] _ = []
+tomlListDiff ts [] = ts
+tomlListDiff (t1:t1s) (t2:t2s) = let diff = tomlDiff t1 t2 in
+    if diff == mempty
+    then tomlListDiff t1s t2s
+    else diff : tomlListDiff t1s t2s

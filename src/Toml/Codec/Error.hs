@@ -29,7 +29,8 @@ import GHC.Generics (Generic)
 import Toml.Codec.BiMap (TomlBiMapError, prettyBiMapError)
 import Toml.Parser (TomlParseError (..))
 import Toml.Type.Key (Key (..))
-import Toml.Type.Printer (prettyKey)
+import Toml.Type.TOML (TOML)
+import Toml.Type.Printer (prettyKey, pretty)
 
 import qualified Data.Text as Text
 
@@ -48,6 +49,11 @@ data TomlDecodeError
       @since 1.3.0.0
       -}
     | ParseError !TomlParseError  -- ^ Exception during parsing
+    | NotExactDecode !TOML
+      {- ^ Unused field left in the decoded TOML.
+
+      @since x.x.x.x
+      -}
     deriving stock (Show, Eq, Generic)
     deriving anyclass (NFData)
 
@@ -72,7 +78,10 @@ prettyTomlDecodeError de = "tomland decode error:  " <> case de of
     TableNotFound name -> "Table [" <> prettyKey name <> "] is not found"
     TableArrayNotFound name -> "Table array [[" <> prettyKey name <> "]] is not found"
     ParseError (TomlParseError msg) ->
-        "Parse error during conversion from TOML to custom user type: \n  " <> msg
+        "Parse error during conversion from TOML to custom user type:\n  " <> msg
+    NotExactDecode toml ->
+        "The following fields are present in TOML but not used:\n"
+        <> pretty toml
 
 {- | File loading error data type.
 

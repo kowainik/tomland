@@ -11,6 +11,8 @@ The changelog is available [on GitHub][2].
   Upgrade `parser-combinators` upper bound to allow `1.3`.
 * [#329](https://github.com/kowainik/tomland/issues/329):
   Add `_Harcoded` codec and `hardcoded` combinator.
+* [#186](https://github.com/kowainik/tomland/issues/186):
+  Implement TOML difference. Add `decodeExact` and `decodeFileExact`.
 
 ## 1.3.1.0 — Sep 21, 2020
 

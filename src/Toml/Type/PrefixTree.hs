@@ -22,6 +22,8 @@ module Toml.Type.PrefixTree
     , insertT
     , lookupT
     , toListT
+    , addPrefixT
+    , differenceWithT
 
       -- * Prefix map that stores roots of 'PrefixTree'
     , PrefixMap
@@ -30,6 +32,7 @@ module Toml.Type.PrefixTree
     , lookup
     , fromList
     , toList
+    , differenceWith
     ) where
 
 import Prelude hiding (lookup)
@@ -70,6 +73,28 @@ data PrefixTree a
 instance Semigroup (PrefixTree a) where
     a <> b = foldl' (\tree (k, v) -> insertT k v tree) a (toListT b)
 
+{- | Push 'Prefix' inside the given 'PrefixTree'.
+
+@since x.x.x.x
+-}
+addPrefixT :: Prefix -> PrefixTree a -> PrefixTree a
+addPrefixT pref = \case
+    Leaf k a -> Leaf (pref <> k) a
+    Branch k ma pma -> Branch (pref <> k) ma pma
+
+{- | Convert branches to 'Leaf' or remove them at all.
+
+@since x.x.x.x
+-}
+compressTree :: PrefixTree a -> Maybe (PrefixTree a)
+compressTree = \case
+    l@(Leaf _ _) -> Just l
+    b@(Branch p ma pma) -> case HashMap.toList pma of
+        [] -> ma >>= \a -> Just (Leaf p a)
+        [(_, child)] -> case ma of
+            Just _ -> Just b
+            Nothing -> compressTree $ addPrefixT p child
+        _ : _ : _ -> Just b
 
 {- | Creates a 'PrefixTree' of one key-value element.
 
@@ -168,3 +193,53 @@ toListT (Branch pref ma prefMap) = case ma of
 -}
 toList :: PrefixMap a -> [(Key, a)]
 toList = concatMap (\(p, tr) -> first (p <|) <$> toListT tr) . HashMap.toList
+
+{- | Difference of two 'PrefixMap's. Returns elements of the first 'PrefixMap'
+that are not existing in the second one.
+
+@since x.x.x.x
+-}
+differenceWith :: (a -> b -> Maybe a) -> PrefixMap a -> PrefixMap b -> PrefixMap a
+differenceWith f = HashMap.differenceWith (differenceWithT f)
+
+{- | Difference of two 'PrefixTree's. Returns elements of the first 'PrefixTree'
+that are not existing in the second one.
+
+@since x.x.x.x
+-}
+differenceWithT :: (a -> b -> Maybe a) -> PrefixTree a -> PrefixTree b -> Maybe (PrefixTree a)
+differenceWithT f pt1 pt2 = case (pt1, pt2) of
+    (Leaf k1 a, Leaf k2 b)
+        | k1 == k2 -> f a b >>= \aNew -> Just (Leaf k1 aNew)
+        | otherwise -> Just (Leaf k1 a)
+
+    (l@(Leaf k a), Branch p mb pmb) -> case keysDiff k p of
+        Equal -> mb >>= f a >>= \aNew -> Just (Leaf k aNew)
+        NoPrefix -> Just l
+        FstIsPref _ -> Just l
+        SndIsPref kSuf -> case HashMap.toList $ differenceWith f (single kSuf a) pmb of
+            -- zero elements
+            [] -> Nothing
+            -- our single key
+            [(_, aNew)] -> Just $ addPrefixT k aNew
+            -- shouldn't happen, but for some reasons
+            _ : _ : _ -> Nothing
+        Diff _ _ _ -> Just l
+
+    (br@(Branch p ma pma), Leaf k b) -> case keysDiff p k of
+        Equal -> compressTree $ Branch p (ma >>= \a -> f a b) pma
+        NoPrefix -> Just br
+        FstIsPref kSuf -> compressTree $ Branch p ma (differenceWith f pma $ single kSuf b)
+        SndIsPref _ -> Just br
+        Diff _ _ _ -> Just br
+
+    (b1@(Branch p1 ma pma), Branch p2 mb pmb) -> case keysDiff p1 p2 of
+        Equal -> compressTree $
+            Branch p1 (ma >>= \a -> mb >>= \b -> f a b) (differenceWith f pma pmb)
+        NoPrefix -> Just b1
+        FstIsPref p2Suf@(p2Head :|| _) -> compressTree $
+            Branch p1 ma (differenceWith f pma $ HashMap.singleton p2Head $ Branch p2Suf mb pmb)
+        SndIsPref p1Suf@(p1Head :|| _) -> case HashMap.lookup p1Head pmb of
+            Nothing -> Just b1
+            Just ch -> addPrefixT p2 <$> differenceWithT f (Branch p1Suf ma pma) ch
+        Diff _ _ _ -> Just b1

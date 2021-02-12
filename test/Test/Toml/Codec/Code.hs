@@ -5,13 +5,15 @@ module Test.Toml.Codec.Code
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 import Toml.Codec.BiMap (TomlBiMapError (..))
-import Toml.Codec.Code (decode)
+import Toml.Codec.Code (decode, decodeExact)
 import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Parser (TomlParseError (..))
 import Toml.Type.AnyValue (AnyValue (..), MatchError (..))
 import Toml.Type.Key (Key)
 import Toml.Type.Value (TValue (..), Value (..))
+import Toml.Type.Edsl (mkToml, table, tableArray, (=:))
 
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Toml.Codec as Toml
@@ -33,6 +35,13 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
     it "fails decode text as Toml.int" $
         decode (Toml.int "a") "a = 'foo'" `shouldBe`
             Left [ matchErr "a" TInteger $ AnyValue $ Text "foo"]
+    it "exact decode" $
+        decodeExact (Toml.int "a") "a = 4" `shouldBe`
+            Right 4
+    it "fails to decode exact when there is other field" $
+        decodeExact (Toml.int "a") "a = 4\nb = 'foo'" `shouldBe`
+            Left [ NotExactDecode $ mkToml $ "b" =: "foo"]
+
     -- table
     it "fails to decode table on missing field" $
         decode (Toml.table (Toml.int "x") "foo") "" `shouldBe`
@@ -40,6 +49,12 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
     it "fails to decode table on missing field" $
         decode (Toml.table (Toml.int "x") "foo") "[foo]" `shouldBe`
             Left [ KeyNotFound "foo.x"]
+    it "exact decode table" $
+        decodeExact (Toml.table (Toml.int "x") "foo") "[foo]\nx = 5" `shouldBe`
+            Right 5
+    it "fails to decode exact table on missing field" $
+        decodeExact (Toml.table (Toml.int "x") "foo") "[foo]\ny = 'abc'\nx = 5" `shouldBe`
+            Left [ NotExactDecode $ mkToml $ table "foo" $ "y" =: "abc"]
 
     -- lists
 
@@ -68,6 +83,15 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
     it "fails to decode nonEmpty  when empty list" $
         decode (Toml.nonEmpty (Toml.int "i") "foo") "foo = []" `shouldBe`
             Left [TableArrayNotFound "foo"]
+
+    -- table arrays
+    it "exact decode table array" $
+        decodeExact (Toml.list (Toml.int "x") "foo") "[[foo]]\nx = 1" `shouldBe`
+            Right [1]
+
+    it "fails to exact decode table array with redundant field" $
+        decodeExact (Toml.list (Toml.int "x") "foo") "[[foo]]\nx = 1\ny = 'abc'" `shouldBe`
+            Left [NotExactDecode $ mkToml $ tableArray "foo" $ ("y" =: "abc") NE.:| []]
 
     -- map
     it "map: decodes to an empty map when field is missing" $
