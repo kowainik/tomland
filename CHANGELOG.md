@@ -13,6 +13,8 @@ The changelog is available [on GitHub][2].
   Add `_Harcoded` codec and `hardcoded` combinator.
 * [#186](https://github.com/kowainik/tomland/issues/186):
   Implement TOML difference. Add `decodeExact` and `decodeFileExact`.
+* [#364](https://github.com/kowainik/tomland/issues/364):
+  Update GHC from `8.10.2` to `8.10.4`.
 
 ## 1.3.1.0 — Sep 21, 2020
 
