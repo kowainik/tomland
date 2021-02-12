@@ -15,9 +15,11 @@ This module includes coding functions like 'decode' and 'encode'.
 module Toml.Codec.Code
        ( -- * Decode
          decode
+       , decodeExact
        , decodeValidation
        , decodeFileEither
        , decodeFile
+       , decodeFileExact
          -- * Encode
        , encode
        , encodeToFile
@@ -34,7 +36,7 @@ import Validation (Validation (..), validationToEither)
 import Toml.Codec.Error (LoadTomlException (..), TomlDecodeError (..), prettyTomlDecodeErrors)
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlState (..))
 import Toml.Parser (parse)
-import Toml.Type (TOML (..))
+import Toml.Type (TOML (..), tomlDiff)
 import Toml.Type.Printer (pretty)
 
 import qualified Data.Text.IO as TIO
@@ -57,6 +59,26 @@ provided codec.
 -}
 decode :: TomlCodec a -> Text -> Either [TomlDecodeError] a
 decode codec = validationToEither . decodeValidation codec
+
+{- | Convert textual representation of @TOML@ into user data type by the
+provided codec.
+
+Unlike 'decode', this function returns 'NotExactDecode' error in case if given
+@TOML@ has redundant fields and other elements.
+
+@since x.x.x.x.
+-}
+decodeExact :: TomlCodec a -> Text -> Either [TomlDecodeError] a
+decodeExact codec text = case parse text of
+    Left err -> Left [ParseError err]
+    Right toml -> case runTomlCodec codec toml of
+        Failure errs -> Left errs
+        Success a ->
+            let tomlExpected = execTomlCodec codec a
+                aDiff = tomlDiff toml tomlExpected in
+            if aDiff == mempty
+            then Right a
+            else Left [NotExactDecode aDiff]
 
 {- | Similar to 'decodeValidation', but takes a path to a file with textual @TOML@
 values from which it decodes them with the provided codec.
@@ -81,6 +103,18 @@ decodeFileEither
     -> FilePath
     -> m (Either [TomlDecodeError] a)
 decodeFileEither codec = fmap validationToEither . decodeFileValidation codec
+
+{- | Similar to 'decodeExact', but takes a path to a file with textual @TOML@
+values from which it decodes them with the provided codec.
+
+@since x.x.x.x
+-}
+decodeFileExact
+    :: forall a m . (MonadIO m)
+    => TomlCodec a
+    -> FilePath
+    -> m (Either [TomlDecodeError] a)
+decodeFileExact codec = fmap (decodeExact codec) . liftIO . TIO.readFile
 
 {- | Similar to 'decodeFileEither', throws 'LoadTomlException' in case of parse
 errors ('TomlDecodeError').

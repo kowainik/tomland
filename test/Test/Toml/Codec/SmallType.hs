@@ -14,7 +14,7 @@ import GHC.Generics (Generic)
 import Hedgehog (Gen)
 import Test.Hspec (Spec, describe)
 
-import Test.Toml.Codec.Combinator.Common (codecRoundtrip)
+import Test.Toml.Codec.Combinator.Common (codecRoundtrip, exactCodecRoundtrip)
 import Toml.Codec (ByteStringAsBytes (..), TomlCodec, (.=))
 
 import qualified Hedgehog.Gen as Gen
@@ -23,8 +23,9 @@ import qualified Toml.Codec as Toml
 
 
 smallTypeSpec :: Spec
-smallTypeSpec = describe "SmallType: tests for custom data type" $
+smallTypeSpec = describe "SmallType: tests for custom data type" $ do
     codecRoundtrip "SmallType" (Toml.table smallTypeCodec) genSmallType
+    exactCodecRoundtrip "SmallType" (Toml.table smallTypeCodec) genSmallType
 
 data SmallType = SmallType
     { smallTypeInt       :: !Int
