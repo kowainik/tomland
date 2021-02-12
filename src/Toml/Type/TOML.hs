@@ -152,7 +152,7 @@ insertTableArrays k arr toml = toml
 {- | Difference of two 'TOML's. Returns elements of the first 'TOML' that are
 not existing in the second one.
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 tomlDiff :: TOML -> TOML -> TOML
 tomlDiff t1 t2 = TOML
@@ -170,7 +170,7 @@ tomlDiff t1 t2 = TOML
 {- | Difference of two 'PrefixMap's. Returns elements of the first 'PrefixMap'
 that are not existing in the second one.
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 prefixMapDiff :: PrefixMap TOML -> PrefixMap TOML -> PrefixMap TOML
 prefixMapDiff = Prefix.differenceWith $ \toml1 toml2 -> let diff = tomlDiff toml1 toml2 in

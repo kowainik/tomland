@@ -3,18 +3,22 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
-## Unrelised
+## 🐂 1.3.2.0 — Feb 12, 2021
 
-* [#325](https://github.com/kowainik/tomland/issues/325):
-  Add ability to one or multiline printing to `PrintOptions` for arrays.
-* [#358](https://github.com/kowainik/tomland/issues/358):
-  Upgrade `parser-combinators` upper bound to allow `1.3`.
-* [#329](https://github.com/kowainik/tomland/issues/329):
-  Add `_Harcoded` codec and `hardcoded` combinator.
 * [#186](https://github.com/kowainik/tomland/issues/186):
   Implement TOML difference. Add `decodeExact` and `decodeFileExact`.
+* [#325](https://github.com/kowainik/tomland/issues/325):
+  Add ability to one or multiline printing to `PrintOptions` for arrays.
+* [#329](https://github.com/kowainik/tomland/issues/329):
+  Add `_Harcoded` codec and `hardcoded` combinator.
+* [#333](https://github.com/kowainik/tomland/issues/333):
+  Fix bug with parsing leading zeroes in numeric values.
+* [#334](https://github.com/kowainik/tomland/issues/334):
+  Escape unicode characters correctly in `encode`.
 * [#364](https://github.com/kowainik/tomland/issues/364):
   Update GHC from `8.10.2` to `8.10.4`.
+* [#358](https://github.com/kowainik/tomland/issues/358):
+  Upgrade `parser-combinators` upper bound to allow `1.3`.
 
 ## 1.3.1.0 — Sep 21, 2020
 

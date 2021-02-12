@@ -75,7 +75,7 @@ instance Semigroup (PrefixTree a) where
 
 {- | Push 'Prefix' inside the given 'PrefixTree'.
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 addPrefixT :: Prefix -> PrefixTree a -> PrefixTree a
 addPrefixT pref = \case
@@ -84,7 +84,7 @@ addPrefixT pref = \case
 
 {- | Convert branches to 'Leaf' or remove them at all.
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 compressTree :: PrefixTree a -> Maybe (PrefixTree a)
 compressTree = \case
@@ -197,7 +197,7 @@ toList = concatMap (\(p, tr) -> first (p <|) <$> toListT tr) . HashMap.toList
 {- | Difference of two 'PrefixMap's. Returns elements of the first 'PrefixMap'
 that are not existing in the second one.
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 differenceWith :: (a -> b -> Maybe a) -> PrefixMap a -> PrefixMap b -> PrefixMap a
 differenceWith f = HashMap.differenceWith (differenceWithT f)
@@ -205,7 +205,7 @@ differenceWith f = HashMap.differenceWith (differenceWithT f)
 {- | Difference of two 'PrefixTree's. Returns elements of the first 'PrefixTree'
 that are not existing in the second one.
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 differenceWithT :: (a -> b -> Maybe a) -> PrefixTree a -> PrefixTree b -> Maybe (PrefixTree a)
 differenceWithT f pt1 pt2 = case (pt1, pt2) of
