@@ -52,7 +52,7 @@ data TomlDecodeError
     | NotExactDecode !TOML
       {- ^ Unused field left in the decoded TOML.
 
-      @since x.x.x.x
+      @since 1.3.2.0
       -}
     deriving stock (Show, Eq, Generic)
     deriving anyclass (NFData)

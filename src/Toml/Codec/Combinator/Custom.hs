@@ -176,7 +176,7 @@ in case if the value in @TOML@ is not the same as hardcoded, you will get the fo
 tomland decode error:  BiMap error in key 'scope' : Value '"foo"' doesn't align with the hardcoded value '"all"'
 @
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 hardcoded :: (Show a, Eq a) => a -> TomlBiMap a AnyValue -> Key -> TomlCodec a
 hardcoded a aBm = match (_Hardcoded a >>> aBm)

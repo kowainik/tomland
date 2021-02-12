@@ -738,19 +738,19 @@ name = "foo"
     house = 42
 @
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 newtype TomlTableStrip a = TomlTableStrip
     { unTomlTableStrip :: a
     }
 
--- | @since x.x.x.x
+-- | @since 1.3.2.0
 instance (Generic a, GenericCodec (Rep a), Typeable a) => HasCodec (TomlTableStrip a) where
     hasCodec :: Key -> TomlCodec (TomlTableStrip a)
     hasCodec = Toml.diwrap . Toml.table (stripTypeNameCodec @a)
     {-# INLINE hasCodec #-}
 
--- | @since x.x.x.x
+-- | @since 1.3.2.0
 instance (Generic a, GenericCodec (Rep a), Typeable a) => HasItemCodec (TomlTableStrip a) where
     hasItemCodec = Right $ Toml.diwrap $ stripTypeNameCodec @a
     {-# INLINE hasItemCodec #-}

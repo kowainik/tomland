@@ -66,7 +66,7 @@ provided codec.
 Unlike 'decode', this function returns 'NotExactDecode' error in case if given
 @TOML@ has redundant fields and other elements.
 
-@since x.x.x.x.
+@since 1.3.2.0
 -}
 decodeExact :: TomlCodec a -> Text -> Either [TomlDecodeError] a
 decodeExact codec text = case parse text of
@@ -107,7 +107,7 @@ decodeFileEither codec = fmap validationToEither . decodeFileValidation codec
 {- | Similar to 'decodeExact', but takes a path to a file with textual @TOML@
 values from which it decodes them with the provided codec.
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 decodeFileExact
     :: forall a m . (MonadIO m)

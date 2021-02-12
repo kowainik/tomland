@@ -557,7 +557,7 @@ _EnumBounded = _EnumBoundedText >>> _Text
 {- | 'BiMap' for hardcoded values.
 It returns the same value in case of success and 'ArbitraryError' in other case.
 
-@since x.x.x.x
+@since 1.3.2.0
 -}
 _Hardcoded :: forall a . (Show a, Eq a) => a -> TomlBiMap a a
 _Hardcoded a = BiMap
