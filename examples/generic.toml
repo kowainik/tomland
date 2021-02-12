@@ -1,5 +1,5 @@
 name = "foo"
 
 [address]
-    addressStreet = "Bar"
-    addressHouse = 42
+    street = "Bar"
+    house = 42

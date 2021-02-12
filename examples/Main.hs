@@ -8,8 +8,8 @@ module Main (main) where
 import Control.Applicative ((<|>))
 import Control.Arrow ((>>>))
 import Data.ByteString (ByteString)
-import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
+import Data.Hashable (Hashable)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
@@ -19,7 +19,7 @@ import Data.Time (fromGregorian)
 import GHC.Generics (Generic)
 
 import Toml (TomlCodec, TomlParseError (..), pretty, (.=), (<!>))
-import Toml.Codec.Generic (ByteStringAsBytes (..), HasCodec (..), TomlTable (..),
+import Toml.Codec.Generic (ByteStringAsBytes (..), HasCodec (..), TomlTableStrip (..),
                            stripTypeNameCodec)
 import Toml.Type (TOML (..), Value (..))
 import Toml.Type.Edsl (mkToml, table, (=:))
@@ -84,12 +84,12 @@ data Colour
 matchHex :: Colour -> Maybe Text
 matchHex = \case
     Hex t -> Just t
-    _ -> Nothing
+    _     -> Nothing
 
 matchRgb :: Colour -> Maybe Rgb
 matchRgb = \case
     RGB rgb -> Just rgb
-    _ -> Nothing
+    _       -> Nothing
 
 colourCodec :: Toml.Key -> TomlCodec Colour
 colourCodec key =
@@ -124,31 +124,31 @@ mapWithListCodec = MapWithList
     <$> Toml.tableMap Toml._KeyText (Toml.list innerCodec) "mapList" .= mapList
 
 data Test = Test
-    { testB      :: !Bool
-    , testI      :: !Int
-    , testF      :: !Double
-    , testS      :: !Text
-    , testA      :: ![Text]
-    , testNE     :: !(NonEmpty Text)
-    , testNET    :: !(NonEmpty Int)
-    , testM      :: !(Maybe Bool)
-    , testX      :: !TestInside
-    , testY      :: !(Maybe TestInside)
-    , testEven   :: !Int
-    , testN      :: !N
-    , testC      :: !ColorScheme
-    , testPair   :: !(Int, Text)
-    , testTriple :: !(Int, Text, Bool)
-    , testE1     :: !(Either Integer String)
-    , testE2     :: !(Either String Double)
-    , testStatus :: !UserStatus
-    , users      :: ![User]
-    , susers     :: !(Set User)
-    , husers     :: !(HashSet User)
-    , intset     :: !IntSet
-    , payloads   :: !(Map Text Int)
-    , colours    :: !(Map Text Colour)
-    , tableList  :: !MapWithList
+    { testB         :: !Bool
+    , testI         :: !Int
+    , testF         :: !Double
+    , testS         :: !Text
+    , testA         :: ![Text]
+    , testNE        :: !(NonEmpty Text)
+    , testNET       :: !(NonEmpty Int)
+    , testM         :: !(Maybe Bool)
+    , testX         :: !TestInside
+    , testY         :: !(Maybe TestInside)
+    , testEven      :: !Int
+    , testN         :: !N
+    , testC         :: !ColorScheme
+    , testPair      :: !(Int, Text)
+    , testTriple    :: !(Int, Text, Bool)
+    , testE1        :: !(Either Integer String)
+    , testE2        :: !(Either String Double)
+    , testStatus    :: !UserStatus
+    , users         :: ![User]
+    , susers        :: !(Set User)
+    , husers        :: !(HashSet User)
+    , intset        :: !IntSet
+    , payloads      :: !(Map Text Int)
+    , colours       :: !(Map Text Colour)
+    , tableList     :: !MapWithList
     , testHardcoded :: !Text
     }
 
@@ -210,7 +210,7 @@ data Address = Address
     { addressStreet :: !Text
     , addressHouse  :: !Int
     } deriving stock (Generic)
-      deriving HasCodec via (TomlTable Address)
+      deriving HasCodec via (TomlTableStrip Address)
 
 testGeneric :: TomlCodec GenericPerson
 testGeneric = stripTypeNameCodec

@@ -131,14 +131,15 @@ module Toml.Codec.Generic
 
          -- * Deriving Via
        , TomlTable (..)
+       , TomlTableStrip (..)
        ) where
 
 import Data.ByteString (ByteString)
 import Data.Char (isLower, toLower)
 import Data.Coerce (coerce)
-import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
+import Data.Hashable (Hashable)
 import Data.IntMap.Strict (IntMap)
 import Data.IntSet (IntSet)
 import Data.Kind (Type)
@@ -153,8 +154,8 @@ import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Typeable (Typeable, typeRep)
 import Data.Word (Word8)
-import GHC.Generics ((:*:) (..), (:+:), C1, D1, Generic (..), K1 (..), M1 (..), Rec0, S1,
-                     Selector (..))
+import GHC.Generics (C1, D1, Generic (..), K1 (..), M1 (..), Rec0, S1, Selector (..), (:*:) (..),
+                     (:+:))
 import GHC.TypeLits (ErrorMessage (..), TypeError)
 import Numeric.Natural (Natural)
 
@@ -719,6 +720,39 @@ instance (Generic a, GenericCodec (Rep a)) => HasCodec (TomlTable a) where
 -- | @since 1.3.0.0
 instance (Generic a, GenericCodec (Rep a)) => HasItemCodec (TomlTable a) where
     hasItemCodec = Right $ Toml.diwrap $ genericCodec @a
+    {-# INLINE hasItemCodec #-}
+
+{- | @newtype@ for generic deriving of 'HasCodec' typeclass for custom data
+types that should we wrapped into separate table.
+
+Similar to 'TomlTable' but also strips the data type name prefix from
+TOML keys.
+
+@personCodec@ from the 'TomlTable' comment corresponds to the TOML of
+the following structure:
+
+@
+name = "foo"
+[address]
+    street = \"Bar\"
+    house = 42
+@
+
+@since x.x.x.x
+-}
+newtype TomlTableStrip a = TomlTableStrip
+    { unTomlTableStrip :: a
+    }
+
+-- | @since x.x.x.x
+instance (Generic a, GenericCodec (Rep a), Typeable a) => HasCodec (TomlTableStrip a) where
+    hasCodec :: Key -> TomlCodec (TomlTableStrip a)
+    hasCodec = Toml.diwrap . Toml.table (stripTypeNameCodec @a)
+    {-# INLINE hasCodec #-}
+
+-- | @since x.x.x.x
+instance (Generic a, GenericCodec (Rep a), Typeable a) => HasItemCodec (TomlTableStrip a) where
+    hasItemCodec = Right $ Toml.diwrap $ stripTypeNameCodec @a
     {-# INLINE hasItemCodec #-}
 
 {- $bytestring
