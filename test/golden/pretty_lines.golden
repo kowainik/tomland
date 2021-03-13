@@ -2,13 +2,12 @@ a = "a"
 b = "bb"
 c = "cccc"
 d = "ddd"
-
-[baz]
-
-list =
+list = 
   [ "one"
   , "two"
   ]
+
+[baz]
 
 [doo]
 
