@@ -3,6 +3,11 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## 1.3.3.0 — Mar 13, 2021
+
+* Upgrade `hashable` lower bound to 1.3.1.0.
+* Sort keys in pretty printing by default.
+
 ## 🐂 1.3.2.0 — Feb 12, 2021
 
 * [#186](https://github.com/kowainik/tomland/issues/186):

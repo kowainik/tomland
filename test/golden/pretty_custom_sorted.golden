@@ -2,14 +2,13 @@ a = "a"
 b = "bb"
 c = "cccc"
 d = "ddd"
+list = ["one", "two"]
 
 [baz]
 
 [doo]
 
 [foo]
-
-list = ["one", "two"]
 
 [qux.doo]
 spam = "!"

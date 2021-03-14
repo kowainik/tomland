@@ -2,10 +2,9 @@ a = "a"
 b = "bb"
 c = "cccc"
 d = "ddd"
+list = ["one", "two"]
 
 [baz]
-
-list = ["one", "two"]
 
 [doo]
 

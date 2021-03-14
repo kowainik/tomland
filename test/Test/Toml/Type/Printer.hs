@@ -6,8 +6,7 @@ module Test.Toml.Type.Printer
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Ord (comparing)
-import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it)
-import Test.Hspec.Golden (defaultGolden)
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, shouldReturn)
 
 import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.Type.Key (Key (..), (<|))
@@ -15,7 +14,7 @@ import Toml.Type.Printer (PrintOptions (..), Lines(..), defaultOptions, prettyOp
 import Toml.Type.TOML (TOML)
 import Toml.Type.Value (Value (..))
 
-import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 
 printerSpec :: Spec
@@ -29,9 +28,8 @@ printerSpec = describe "Toml.Type.Printer: Golden tests for pretty-printing" $ d
   where
     test :: String -> PrintOptions -> SpecWith (Arg Expectation)
     test name options = it ("Golden " ++ name) $
-        defaultGolden
-            ("test/golden/" ++ name ++ ".golden")
-            (T.unpack $ prettyOptions options example)
+        T.readFile ("test/golden/" ++ name ++ ".golden")
+            `shouldReturn` prettyOptions options example
 
 example :: TOML
 example = mkToml $ do

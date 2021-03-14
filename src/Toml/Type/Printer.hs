@@ -22,6 +22,7 @@ module Toml.Type.Printer
        , prettyKey
        ) where
 
+import GHC.Exts (sortWith)
 import Data.Bifunctor (first)
 import Data.Char (isAscii, ord)
 import Data.Coerce (coerce)
@@ -178,7 +179,7 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
     showText :: Show a => a -> Text
     showText = Text.pack . show
 
-        
+
     -- | Function encodes all non-ascii characters in TOML defined form using the isAscii function
     showTextUnicode :: Text -> Text
     showTextUnicode text = Text.pack $ show finalText
@@ -267,7 +268,7 @@ tabWith PrintOptions{..} n = Text.replicate (n * printOptionsIndent) " "
 mapOrdered :: ((Key, v) -> [t]) -> PrintOptions -> [(Key, v)] -> [t]
 mapOrdered f options = case printOptionsSorting options of
     Just sorter -> concatMap f . sortBy (sorter `on` fst)
-    Nothing     -> concatMap f
+    Nothing     -> concatMap f . sortWith fst
 
 -- Adds next part of the table name to the accumulator.
 addPrefix :: Key -> Text -> Text
