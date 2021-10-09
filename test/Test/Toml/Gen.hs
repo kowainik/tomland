@@ -116,16 +116,22 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
 
     quoted :: Gen Text
-    quoted = genNotEscape $ Gen.choice [quotedWith '"', quotedWith '\'']
+    quoted = genNotEscape $ Gen.choice
+        [ quotedWith '"' (\x -> x /= '\\' && notControl x)
+        , quotedWith '\'' notControl
+        ]
 
-    quotedWith :: Char -> Gen Text
-    quotedWith c = wrapChar c <$> Gen.text (Range.constant 1 10) notControl
+    quotedWith :: Char -> (Char -> Bool) -> Gen Text
+    quotedWith c isAllowed = wrapChar c <$> Gen.text (Range.constant 1 10) allowedChar
       where
-        notControl :: Gen Char
-        notControl = Gen.filter (\x -> x /= c && not (Char.isControl x)) Gen.unicode
+        allowedChar :: Gen Char
+        allowedChar = Gen.filter (\x -> x /= c && isAllowed x) Gen.unicode
 
     wrapChar :: Char -> Text -> Text
     wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
+
+    notControl :: Char -> Bool
+    notControl = not . Char.isControl
 
 genKey :: Gen Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
