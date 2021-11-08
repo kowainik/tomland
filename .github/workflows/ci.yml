@@ -78,7 +78,8 @@ jobs:
       run: |
         cabal test all
 
-    - name: Documentation
+    - if: matrix.ghc != '8.4.4'
+      name: Documentation
       run: |
         cabal haddock
 
