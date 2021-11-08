@@ -44,6 +44,16 @@ source-repository head
   type:                git
   location:            https://github.com/kowainik/tomland.git
 
+flag build-readme
+  description:         Build README generator.
+  default:             False
+  manual:              True
+
+flag build-play-tomland
+  description:         Build play-tomland executable.
+  default:             False
+  manual:              True
+
 common common-options
   build-depends:       base >= 4.11 && < 4.16
 
@@ -132,7 +142,7 @@ library
 executable readme
   import:              common-options
   -- doesn't work on windows for unknown reasons
-  if os(windows)
+  if !flag(build-readme) || os(windows)
     buildable: False
   main-is:             README.lhs
   build-depends:       tomland
@@ -145,7 +155,7 @@ executable readme
 executable play-tomland
   import:              common-options
   -- We are using DerivingVia that works only with > 8.6
-  if impl(ghc < 8.6)
+  if !flag(build-play-tomland) || impl(ghc < 8.6)
     buildable: False
   main-is:             Main.hs
   build-depends:       tomland
