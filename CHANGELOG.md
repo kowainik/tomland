@@ -3,6 +3,16 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## 🍁 1.3.3.1 — Nov 8, 2021
+
+* Disable building executables by default
+* Bump up dependencies:
+    * Allow `bytestring-0.11.*`
+    * Allow `hashable-1.4.0.0`
+    * Allow `megaparsec-9.2.0`
+    * Allow `time-1.13`
+    * Allow `transformers-0.6.*`
+
 ## 🥞 1.3.3.0 — Mar 14, 2021
 
 * [#370](https://github.com/kowainik/tomland/issues/370):

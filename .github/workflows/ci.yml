@@ -1,10 +1,13 @@
 name: CI
 
-# Trigger the workflow on push or pull request, but only for the main branch
 on:
   pull_request:
+    types: [synchronize, opened, reopened]
   push:
     branches: [main]
+  schedule:
+    # additionally run once per week (At 00:00 on Sunday) to maintain cache
+    - cron: '0 0 * * 0'
 
 jobs:
   cabal:
@@ -18,19 +21,20 @@ jobs:
           - "8.4.4"
           - "8.6.5"
           - "8.8.4"
-          - "8.10.4"
+          - "8.10.7"
           - "9.0.1"
         exclude:
           - os: macOS-latest
-            ghc: 8.10.4
+            ghc: 9.0.1
           - os: macOS-latest
             ghc: 8.8.4
           - os: macOS-latest
             ghc: 8.6.5
           - os: macOS-latest
             ghc: 8.4.4
+
           - os: windows-latest
-            ghc: 8.10.4
+            ghc: 9.0.1
           - os: windows-latest
             ghc: 8.8.4
           - os: windows-latest
@@ -39,30 +43,45 @@ jobs:
             ghc: 8.4.4
 
     steps:
-    - uses: actions/checkout@v2.4.0
-      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/main'
+    - uses: actions/checkout@v2
 
-    - uses: haskell/actions/setup@v1.2.6
+    - uses: haskell/actions/setup@v1
       id: setup-haskell-cabal
       name: Setup Haskell
       with:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
 
-    - uses: actions/cache@v2.1.6
-      name: Cache cabal-store
+    - name: Configure
+      run: |
+        cabal configure --enable-tests --enable-benchmarks --enable-documentation --test-show-details=direct --write-ghc-environment-files=always
+
+    - name: Freeze
+      run: |
+        cabal freeze
+
+    - uses: actions/cache@v2
+      name: Cache ~/.cabal/store
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-        key: ${{ runner.os }}-${{ matrix.ghc }}-cabal
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+
+    - name: Install dependencies
+      run: |
+        cabal build all --only-dependencies
 
     - name: Build
       run: |
-        cabal update
-        cabal build all --enable-tests --enable-benchmarks --write-ghc-environment-files=always
+        cabal build all
 
     - name: Test
       run: |
-        cabal test all --enable-tests --test-show-details=direct
+        cabal test all
+
+    - if: matrix.ghc != '8.4.4'
+      name: Documentation
+      run: |
+        cabal haddock
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
@@ -73,16 +92,15 @@ jobs:
         ghc: ["8.10.4"]
 
     steps:
-    - uses: actions/checkout@v2.4.0
-      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/main'
+    - uses: actions/checkout@v2
 
-    - uses: haskell/actions/setup@v1.2.6
+    - uses: haskell/actions/setup@v1
       name: Setup Haskell Stack
       with:
         ghc-version: ${{ matrix.ghc }}
         stack-version: ${{ matrix.stack }}
 
-    - uses: actions/cache@v2.1.6
+    - uses: actions/cache@v2
       name: Cache ~/.stack
       with:
         path: ~/.stack
