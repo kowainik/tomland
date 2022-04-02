@@ -49,22 +49,21 @@ import Toml.Type (TOML (..))
 type TomlEnv a = TOML -> Validation [TomlDecodeError] a
 
 
-{- | Specialied 'Codec' type alias for bidirectional TOML serialization. Keeps
+{- | Specialized 'Codec' type alias for bidirectional TOML serialization. Keeps
 'TOML' object as both environment and state.
 
 @since 0.5.0
 -}
 type TomlCodec a = Codec a a
 
-{- | Monad for bidirectional conversion. Contains pair of functions:
+{- | Monad for bidirectional conversion. Contains a pair of functions:
 
-1. How to read value of type @o@ (out) from immutable environment context
+1. How to read a value of type @o@ (out) from an immutable environment context
 ('TomlEnv')?
-2. How to store a value of type @i@ (in) in stateful context ('TomlState') and
-return a value of type @o@?
+2. How to store a value of type @i@ (in) in a stateful context ('TomlState')?
 
-This approach with the bunch of utility functions allows to
-have single description for from/to @TOML@ conversion.
+This approach, along with a bunch of utility functions, allows us to
+have a single description for @TOML@ serialization + deserialization.
 
 In practice this type will always be used in the following way:
 
@@ -72,9 +71,11 @@ In practice this type will always be used in the following way:
 type 'TomlCodec' a = 'Codec' a a
 @
 
-Type parameter @i@ if fictional. Here some trick is used. This trick is
-implemented in the [codec](http://hackage.haskell.org/package/codec) package and
-described in more details in related blog post:
+However, we need to represent @i@ separately from @o@ in order to implement
+instances like 'Alternative', which requires the type parameter to be covariant,
+but @i@ is contravariant. This trick is inspired by the
+[codec](http://hackage.haskell.org/package/codec) package and
+described in more details in this blog post:
 <https://blog.poisson.chat/posts/2016-10-12-bidirectional-serialization.html>.
 
 @since 0.0.0
@@ -133,15 +134,14 @@ f <!> g = \a -> f a <|> g a
 {-# INLINE (<!>) #-}
 
 {- | Mutable context for TOML conversion.
-We are introducing our own implemetation of state with 'MonadState' instance due
-to some limitation in the design connected to the usage of State.
+We are introducing our own implementation of state with 'MonadState' instance due
+to some limitations in the design connected to the usage of State.
 
 This newtype is equivalent to the following transformer:
 
 @
 MaybeT (State TOML)
 @
-
 
 @since 1.3.0.0
 -}
