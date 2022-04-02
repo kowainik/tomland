@@ -82,13 +82,8 @@ described in more details in related blog post:
 data Codec i o = Codec
     { -- | Extract value of type @o@ from monadic context 'TomlEnv'.
       codecRead  :: TomlEnv o
-
-      {- | Store value of type @i@ inside monadic context 'TomlState' and
-      returning value of type @o@. Type of this function actually should be
-      @o -> TomlState ()@ but with such type it's impossible to have 'Monad'
-      and other instances.
-      -}
-    , codecWrite :: i -> TomlState o
+      -- | Store value of type @i@ inside monadic context 'TomlState'.
+    , codecWrite :: i -> TomlState ()
     }
 
 -- | @since 0.0.0
@@ -96,7 +91,7 @@ instance Functor (Codec i) where
     fmap :: (oA -> oB) -> Codec i oA -> Codec i oB
     fmap f codec = Codec
         { codecRead  = fmap f . codecRead codec
-        , codecWrite = fmap f . codecWrite codec
+        , codecWrite = codecWrite codec
         }
     {-# INLINE fmap #-}
 
@@ -105,14 +100,14 @@ instance Applicative (Codec i) where
     pure :: o -> Codec i o
     pure a = Codec
         { codecRead  = \_ -> Success a
-        , codecWrite = \_ -> pure a
+        , codecWrite = \_ -> pure ()
         }
     {-# INLINE pure #-}
 
     (<*>) :: Codec i (oA -> oB) -> Codec i oA -> Codec i oB
     codecf <*> codeca = Codec
         { codecRead  = liftA2 (<*>) (codecRead codecf) (codecRead codeca)
-        , codecWrite = \c -> codecWrite codecf c <*> codecWrite codeca c
+        , codecWrite = \c -> codecWrite codecf c *> codecWrite codeca c
         }
     {-# INLINE (<*>) #-}
 
