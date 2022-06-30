@@ -135,7 +135,6 @@ library
                      , parser-combinators >= 1.1.0 && < 1.4
                      , text ^>= 1.2
                      , time >= 1.8 && < 1.14
-                     , transformers >= 0.5 && < 0.7
                      , unordered-containers ^>= 0.2.7
                      , validation-selective ^>= 0.1.0
 
