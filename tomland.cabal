@@ -55,7 +55,7 @@ flag build-play-tomland
   manual:              True
 
 common common-options
-  build-depends:       base >= 4.11 && < 4.16
+  build-depends:       base >= 4.11 && < 4.17
 
   ghc-options:         -Wall
                        -Wcompat
@@ -222,7 +222,7 @@ test-suite tomland-test
   build-depends:       bytestring
                      , containers >= 0.5.7 && < 0.7
                      , hashable
-                     , hedgehog ^>= 1.0.1
+                     , hedgehog ^>= 1.2
                      , hspec >= 2.7.1 && < 2.9
                      , hspec-hedgehog ^>= 0.0.1
                      , hspec-megaparsec >= 2.0.0 && < 2.3.0
