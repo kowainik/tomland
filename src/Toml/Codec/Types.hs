@@ -119,8 +119,8 @@ instance Applicative (Codec i) where
 instance Alternative (Codec i) where
     empty :: Codec i o
     empty = Codec
-        { codecRead  = \_ -> empty
-        , codecWrite = \_ -> empty
+        { codecRead  = const empty
+        , codecWrite = const empty
         }
     {-# INLINE empty #-}
 
@@ -212,7 +212,7 @@ instance (s ~ TOML) => MonadState s TomlState where
     {-# INLINE get #-}
 
     put :: TOML -> TomlState ()
-    put t = TomlState (\_ -> (Just (), t))
+    put t = TomlState (const (Just (), t))
     {-# INLINE put #-}
 
 {- | Transform 'Either' into 'TomlState'.

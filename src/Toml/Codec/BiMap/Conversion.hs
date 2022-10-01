@@ -315,7 +315,7 @@ _ByteStringText :: TomlBiMap ByteString Text
 _ByteStringText = prism T.encodeUtf8 eitherText
   where
     eitherText :: ByteString -> Either TomlBiMapError Text
-    eitherText = either (\err -> Left $ ArbitraryError $ tShow err) Right . T.decodeUtf8'
+    eitherText = either (Left . ArbitraryError . tShow) Right . T.decodeUtf8'
 {-# INLINE _ByteStringText #-}
 
 {- | UTF-8 encoded 'ByteString' 'BiMap' for 'AnyValue'.

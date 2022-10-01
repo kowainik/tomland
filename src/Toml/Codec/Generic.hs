@@ -6,7 +6,6 @@
 {-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE Rank2Types           #-}
 {-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
