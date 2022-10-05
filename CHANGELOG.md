@@ -3,6 +3,12 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## Unreleased
+
+* [#412](https://github.com/kowainik/tomland/issues/412):
+  Support GHC-9.4.4.
+* Upgrade `mtl` and `validation-selective` upper boundary.
+
 ## 1.3.3.2 – Oct 5, 2022
 
 * [#395](https://github.com/kowainik/tomland/issues/395):
