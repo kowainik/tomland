@@ -3,6 +3,13 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## Unreleased
+
+* [#395](https://github.com/kowainik/tomland/issues/395):
+  Support GHC-9.2.4.
+* Upgrade `text` to version `2`.
+* Upgrade `hedgehog` and `hspec`.
+
 ## 🍁 1.3.3.1 — Nov 8, 2021
 
 * Disable building executables by default

@@ -27,7 +27,7 @@ license:             MPL-2.0
 license-file:        LICENSE
 author:              Dmitrii Kovanikov, Veronika Romashkina
 maintainer:          Kowainik <xrom.xkov@gmail.com>
-copyright:           2018-2021 Kowainik
+copyright:           2018-2022 Kowainik
 category:            TOML, Text, Configuration
 build-type:          Simple
 extra-doc-files:     README.md
@@ -38,7 +38,8 @@ tested-with:         GHC == 8.4.4
                      GHC == 8.6.5
                      GHC == 8.8.4
                      GHC == 8.10.7
-                     GHC == 9.0.1
+                     GHC == 9.0.2
+                     GHC == 9.2.4
 
 source-repository head
   type:                git
@@ -55,7 +56,7 @@ flag build-play-tomland
   manual:              True
 
 common common-options
-  build-depends:       base >= 4.11 && < 4.16
+  build-depends:       base >= 4.11 && < 4.17
 
   ghc-options:         -Wall
                        -Wcompat
@@ -73,6 +74,9 @@ common common-options
                        -Werror=missing-deriving-strategies
   if impl(ghc >= 8.10)
     ghc-options:       -Wunused-packages
+  if impl(ghc >= 9.2)
+    ghc-options:
+                       -Wredundant-bang-patterns
 
   default-language:    Haskell2010
   default-extensions:  DeriveGeneric
@@ -133,7 +137,7 @@ library
                      , megaparsec >= 7.0.5 && < 9.3
                      , mtl ^>= 2.2
                      , parser-combinators >= 1.1.0 && < 1.4
-                     , text ^>= 1.2
+                     , text >= 1.2 && < 2.1
                      , time >= 1.8 && < 1.14
                      , transformers >= 0.5 && < 0.7
                      , unordered-containers ^>= 0.2.7
@@ -222,8 +226,8 @@ test-suite tomland-test
   build-depends:       bytestring
                      , containers >= 0.5.7 && < 0.7
                      , hashable
-                     , hedgehog ^>= 1.0.1
-                     , hspec >= 2.7.1 && < 2.9
+                     , hedgehog >= 1.0.1 && < 1.3
+                     , hspec >= 2.7.1 && < 2.11
                      , hspec-hedgehog ^>= 0.0.1
                      , hspec-megaparsec >= 2.0.0 && < 2.3.0
                      , megaparsec
