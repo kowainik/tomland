@@ -3,7 +3,7 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
-## Unreleased
+## 1.3.3.2 – Oct 5, 2022
 
 * [#395](https://github.com/kowainik/tomland/issues/395):
   Support GHC-9.2.4.
