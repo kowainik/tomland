@@ -1,1 +1,4 @@
 resolver: lts-20.12
+
+extra-deps:
+ - validation-selective-0.2.0.0
