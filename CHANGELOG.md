@@ -8,6 +8,7 @@ The changelog is available [on GitHub][2].
 * [#412](https://github.com/kowainik/tomland/issues/412):
   Support GHC-9.4.4.
 * Upgrade `mtl` and `validation-selective` upper boundary.
+* Remove `transformers` dependency.
 
 ## 1.3.3.2 – Oct 5, 2022
 
