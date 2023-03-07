@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE PatternSynonyms     #-}
@@ -258,7 +259,14 @@ genFloat = Gen.float (Range.constant (-10000.0) 10000.0)
 genSet :: Ord a => Gen a -> Gen (Set a)
 genSet genA = fromList <$> genList genA
 
-genHashSet :: (Eq a, Hashable a) => Gen a -> Gen (HashSet a)
+genHashSet 
+#if MIN_VERSION_hashable(1,4,0)
+    :: (Hashable a)
+#else
+    :: (Eq a, Hashable a) 
+#endif
+    => Gen a 
+    -> Gen (HashSet a)
 genHashSet genA = fromList <$> genList genA
 
 genNonEmpty :: Gen a -> Gen (NonEmpty a)
@@ -387,7 +395,7 @@ genArray = Gen.recursive Gen.choice
 
 -- filters
 
--- | Discards strings that end with \
+-- | Discards strings that end with @\@
 genNotEscape :: Gen Text -> Gen Text
 genNotEscape gen = gen >>= \t ->
     if | Text.null t -> pure t

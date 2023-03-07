@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo   #-}
+{-# LANGUAGE CPP             #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TupleSections   #-}
 
@@ -74,8 +75,8 @@ import Prelude hiding (map)
 import Control.Applicative (empty)
 import Control.Monad (forM_)
 import Control.Monad.State (gets, modify)
-import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
+import Data.Hashable (Hashable)
 import Data.IntMap.Strict (IntMap)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
@@ -87,7 +88,7 @@ import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
 import Toml.Codec.Code (execTomlCodec)
 import Toml.Codec.Combinator.Common (whenLeftBiMapError)
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState (..))
-import Toml.Type.Key (pattern (:||), Key)
+import Toml.Type.Key (Key, pattern (:||))
 import Toml.Type.TOML (TOML (..), insertTable, insertTableArrays)
 
 import qualified Data.HashMap.Strict as HashMap
@@ -237,7 +238,11 @@ If there's no key with the name @"myHashMap"@ then empty 'HashMap' is returned.
 -}
 hashMap
     :: forall k v
+#if MIN_VERSION_hashable(1,4,0)
+    .  (Hashable k)
+#else
     .  (Eq k, Hashable k)
+#endif
     => TomlCodec k  -- ^ Codec for 'HashMap' keys
     -> TomlCodec v  -- ^ Codec for 'HashMap' values
     -> Key          -- ^ TOML key where 'HashMap' is stored
@@ -261,7 +266,11 @@ key2 = "value2"
 -}
 tableHashMap
     :: forall k v
+#if MIN_VERSION_hashable(1,4,0)
+    .  (Hashable k)
+#else
     .  (Eq k, Hashable k)
+#endif
     => TomlBiMap Key k
     -- ^ Bidirectional converter between TOML 'Key's and 'HashMap' keys
     -> (Key -> TomlCodec v)

@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {- |
 Module                  : Toml.Codec.Combinator.Set
 Copyright               : (c) 2018-2022 Kowainik
@@ -152,7 +154,11 @@ tomland decode error:  Key foo is not found
 @since 0.5.0
 -}
 arrayHashSetOf
-    :: (Hashable a, Eq a)
+#if MIN_VERSION_hashable(1,4,0)
+  :: (Hashable a)
+#else
+  :: (Eq a, Hashable a)
+#endif
     => TomlBiMap a AnyValue
     -> Key
     -> TomlCodec (HashSet a)
@@ -222,6 +228,15 @@ Decodes to an empty 'HashSet' in case of the missing field in @TOML@.
 
 @since 1.2.0.0
 -}
-hashSet :: forall a . (Hashable a, Eq a) => TomlCodec a -> Key -> TomlCodec (HashSet a)
+hashSet 
+    :: forall a 
+#if MIN_VERSION_hashable(1,4,0)
+    .  (Hashable a)
+#else
+    .  (Eq a, Hashable a)
+#endif
+    => TomlCodec a 
+    -> Key 
+    -> TomlCodec (HashSet a)
 hashSet codec key = dimap HS.toList HS.fromList (list codec key)
 {-# INLINE hashSet #-}
