@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -586,7 +587,12 @@ instance (Ord a, HasItemCodec a) => HasCodec (Set a) where
     {-# INLINE hasCodec #-}
 
 -- | @since 1.2.0.0
-instance (Hashable a, Eq a, HasItemCodec a) => HasCodec (HashSet a) where
+#if MIN_VERSION_hashable(1,4,0)
+instance (Hashable a, HasItemCodec a)
+#else
+instance (Hashable a, Eq a, HasItemCodec a)
+#endif
+  => HasCodec (HashSet a) where
     hasCodec = case hasItemCodec @a of
         Left prim   -> Toml.arrayHashSetOf prim
         Right codec -> Toml.hashSet codec
@@ -624,7 +630,12 @@ fieldName =
 
 @since 1.3.0.0
 -}
-instance (Hashable k, Eq k, HasCodec k, HasCodec v) => HasCodec (HashMap k v) where
+#if MIN_VERSION_hashable(1,4,0)
+instance (Hashable k, HasCodec k, HasCodec v)
+#else
+instance (Hashable k, Eq k, HasCodec k, HasCodec v)
+#endif
+  => HasCodec (HashMap k v) where
     hasCodec = Toml.hashMap (hasCodec @k "key") (hasCodec @v "val")
     {-# INLINE hasCodec #-}
 

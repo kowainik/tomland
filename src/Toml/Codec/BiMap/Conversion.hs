@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP   #-}
 {-# LANGUAGE GADTs #-}
 
 {- |
@@ -427,7 +428,14 @@ values and 'AnyValue' as an array. Usually used as the
 
 @since 0.5.0
 -}
-_HashSet :: (Eq a, Hashable a) => TomlBiMap a AnyValue -> TomlBiMap (HS.HashSet a) AnyValue
+_HashSet
+#if MIN_VERSION_hashable(1,4,0)
+  :: (Hashable a)
+#else
+  :: (Eq a, Hashable a)
+#endif
+  => TomlBiMap a AnyValue
+  -> TomlBiMap (HS.HashSet a) AnyValue
 _HashSet bi = iso HS.toList HS.fromList >>> _Array bi
 {-# INLINE _HashSet #-}
 
@@ -624,7 +632,7 @@ _KeyInt = BiMap
 _Left :: (Show l, Show r) => TomlBiMap (Either l r) l
 _Left = prism Left $ \case
     Left l -> Right l
-    x -> wrongConstructor "Left" x
+    x      -> wrongConstructor "Left" x
 
 {- | 'BiMap' for 'Either' and its 'Right' part.
 
@@ -633,7 +641,7 @@ _Left = prism Left $ \case
 _Right :: (Show l, Show r) => TomlBiMap (Either l r) r
 _Right = prism Right $ \case
     Right r -> Right r
-    x -> wrongConstructor "Right" x
+    x       -> wrongConstructor "Right" x
 
 {- | 'BiMap' for 'Maybe' and its 'Just' part.
 
@@ -642,4 +650,4 @@ _Right = prism Right $ \case
 _Just :: Show r => TomlBiMap (Maybe r) r
 _Just = prism Just $ \case
     Just r -> Right r
-    x -> wrongConstructor "Just" x
+    x      -> wrongConstructor "Just" x

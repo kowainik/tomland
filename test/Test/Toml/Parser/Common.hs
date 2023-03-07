@@ -41,7 +41,7 @@ import Data.Time (Day, LocalTime (..), TimeOfDay (..), TimeZone, ZonedTime (..),
                   minutesToTimeZone)
 import Test.Hspec (Expectation)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
-import Text.Megaparsec (Parsec, ShowErrorComponent, Stream, parse)
+import Text.Megaparsec (Parsec, ShowErrorComponent, parse)
 #if MIN_VERSION_megaparsec(9,0,0)
 import Text.Megaparsec.Stream (TraversableStream, VisualStream)
 #endif
@@ -58,7 +58,6 @@ import Toml.Type.UValue (UValue (..))
 
 parseX
     :: ( ShowErrorComponent e
-       , Stream s
 #if MIN_VERSION_megaparsec(9,0,0)
        , VisualStream s
        , TraversableStream s
