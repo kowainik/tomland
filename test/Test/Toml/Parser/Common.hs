@@ -42,6 +42,9 @@ import Data.Time (Day, LocalTime (..), TimeOfDay (..), TimeZone, ZonedTime (..),
 import Test.Hspec (Expectation)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
 import Text.Megaparsec (Parsec, ShowErrorComponent, parse)
+#if __GLASGOW_HASKELL__ <= 804
+import Text.Megaparsec (Stream)
+#endif
 #if MIN_VERSION_megaparsec(9,0,0)
 import Text.Megaparsec.Stream (TraversableStream, VisualStream)
 #endif
@@ -58,6 +61,9 @@ import Toml.Type.UValue (UValue (..))
 
 parseX
     :: ( ShowErrorComponent e
+#if __GLASGOW_HASKELL__ <= 804
+       , Stream s
+#endif
 #if MIN_VERSION_megaparsec(9,0,0)
        , VisualStream s
        , TraversableStream s
