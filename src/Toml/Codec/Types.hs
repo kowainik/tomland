@@ -36,6 +36,7 @@ module Toml.Codec.Types
 
 import Control.Applicative (Alternative (..), liftA2)
 import Control.Monad.State (MonadState (..))
+import Control.Selective (Selective (..))
 import Data.Bifunctor (first)
 import Validation (Validation (..))
 
@@ -137,6 +138,14 @@ infixl 3 <!>
 (<!>) :: Alternative f => (a -> f x) -> (a -> f x) -> (a -> f x)
 f <!> g = \a -> f a <|> g a
 {-# INLINE (<!>) #-}
+
+-- | @since 1.3.4
+instance Selective (Codec i) where
+  select branched onLeft = Codec
+        { codecRead  = \o -> (`either` id)  <$> codecRead  onLeft o <*> codecRead  branched o
+        , codecWrite = \i -> (`either` id) <$> codecWrite onLeft i <*> codecWrite branched i
+        }
+  {-# INLINE select #-}
 
 {- | Mutable context for TOML conversion.
 We are introducing our own implemetation of state with 'MonadState' instance due
