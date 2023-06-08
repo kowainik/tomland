@@ -57,7 +57,7 @@ flag build-play-tomland
   manual:              True
 
 common common-options
-  build-depends:       base >= 4.11 && < 4.18
+  build-depends:       base >= 4.11 && < 4.19
 
   ghc-options:         -Wall
                        -Wcompat
