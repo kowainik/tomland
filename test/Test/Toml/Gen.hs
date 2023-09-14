@@ -114,7 +114,7 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     bare = liftA2 Text.cons Gen.alpha $ Gen.text (Range.constant 1 10) alphadashes
 
     alphadashes :: Gen Char
-    alphadashes = Gen.choice [Gen.alphaNum, Gen.element "_-"]
+    alphadashes = Gen.choice [Gen.alphaNum, Gen.element ("_-" :: String)]
 
     quoted :: Gen Text
     quoted = genNotEscape $ Gen.choice
