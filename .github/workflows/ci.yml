@@ -55,7 +55,7 @@ jobs:
             ghc: 8.4.4
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
@@ -104,7 +104,7 @@ jobs:
         ghc: ["9.2.6"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: haskell/actions/setup@v2
       name: Setup Haskell Stack
