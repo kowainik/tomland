@@ -9,6 +9,8 @@ The changelog is available [on GitHub][2].
   Support GHC-9.4.4.
 * Upgrade `mtl` and `validation-selective` upper boundary.
 * Remove `transformers` dependency.
+* [#408](https://github.com/kowainik/tomland/issues/412):
+  Fix escaping in printer.
 
 ## 1.3.3.2 – Oct 5, 2022
 

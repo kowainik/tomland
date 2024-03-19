@@ -24,11 +24,11 @@ module Toml.Type.Printer
 
 import GHC.Exts (sortWith)
 import Data.Bifunctor (first)
-import Data.Char (isAscii, ord)
+import Data.Char (isAscii, isControl, ord)
 import Data.Coerce (coerce)
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
-import Data.List (sortBy, foldl')
+import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semigroup (stimes)
 import Data.Text (Text)
@@ -182,19 +182,21 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
 
     -- | Function encodes all non-ascii characters in TOML defined form using the isAscii function
     showTextUnicode :: Text -> Text
-    showTextUnicode text = Text.pack $ show finalText
+    showTextUnicode t = Text.concat ["\"", Text.concatMap escape t, "\""]
       where
-        xss = Text.unpack text
-        finalText = foldl' (\acc (ch, asciiCh) -> acc ++ getCh ch asciiCh) "" asciiArr
-
-        asciiArr = zip xss $ asciiStatus xss
-
-        getCh :: Char -> Bool -> String
-        getCh ch True  = [ch] -- it is true ascii character
-        getCh ch False = printf "\\U%08x" (ord ch) :: String -- it is not true ascii character, it must be encoded
-
-        asciiStatus :: String -> [Bool]
-        asciiStatus = map isAscii
+        toCodepoint c = Text.pack $ printf "\\U%08x" (ord c)
+        escape :: Char -> Text
+        escape '\b' = "\\b"
+        escape '\t' = "\\t"
+        escape '\n' = "\\n"
+        escape '\f' = "\\f"
+        escape '\r' = "\\r"
+        escape '"'  = "\\\""
+        escape '\\' = "\\\\"
+        escape c
+          | isControl c = toCodepoint c
+          | isAscii c = Text.singleton c
+          | otherwise = toCodepoint c
 
     showDouble :: Double -> Text
     showDouble d | isInfinite d && d < 0 = "-inf"
