@@ -230,7 +230,7 @@ test-suite tomland-test
                      , hashable
                      , hedgehog >= 1.0.1 && < 1.5
                      , hspec >= 2.7.1 && < 2.12
-                     , hspec-hedgehog ^>= 0.0.1
+                     , hspec-hedgehog >= 0.0.1.1 && < 0.2
                      , hspec-megaparsec >= 2.0.0 && < 2.3.0
                      , megaparsec
                      , directory ^>= 1.3
