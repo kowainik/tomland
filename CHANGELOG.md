@@ -3,12 +3,11 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
-## Unreleased
+## 1.3.3.3 – Jun 7, 2024
 
-* [#412](https://github.com/kowainik/tomland/issues/412):
-  Support GHC-9.4.4.
-* Upgrade `mtl` and `validation-selective` upper boundary.
+* Support up to GHC-9.10.
 * Remove `transformers` dependency.
+* Allow test case to work with `OverloadedStrings`
 
 ## 1.3.3.2 – Oct 5, 2022
 
