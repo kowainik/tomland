@@ -60,10 +60,10 @@ match BiMap{..} key = Codec input output
         Nothing     -> Failure [KeyNotFound key]
         Just anyVal -> whenLeftBiMapError key (backward anyVal) pure
 
-    output :: a -> TomlState a
+    output :: a -> TomlState ()
     output a = do
         anyVal <- eitherToTomlState $ forward a
-        a <$ modify (insertKeyAnyVal key anyVal)
+        modify (insertKeyAnyVal key anyVal)
 
 {- | Throw error on 'Left', or perform a given action with 'Right'.
 
