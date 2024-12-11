@@ -43,6 +43,7 @@ tested-with:         GHC == 8.4.4
                      GHC == 9.4.4
                      GHC == 9.6.3
                      GHC == 9.8.1
+                     GHC == 9.10.1
 
 source-repository head
   type:                git
@@ -136,8 +137,8 @@ library
   build-depends:       bytestring >= 0.10 && < 0.13
                      , containers >= 0.5.7 && < 0.8
                      , deepseq >= 1.4 && < 1.6
-                     , hashable >= 1.3.1.0 && < 1.5
-                     , megaparsec >= 7.0.5 && < 9.7
+                     , hashable >= 1.3.1.0 && < 1.6
+                     , megaparsec >= 7.0.5 && < 9.8
                      , mtl >= 2.2 && < 2.4
                      , parser-combinators >= 1.1.0 && < 1.4
                      , text >= 1.2 && < 2.2
@@ -228,9 +229,9 @@ test-suite tomland-test
   build-depends:       bytestring
                      , containers >= 0.5.7 && < 0.8
                      , hashable
-                     , hedgehog >= 1.0.1 && < 1.5
+                     , hedgehog >= 1.0.1 && < 1.6
                      , hspec >= 2.7.1 && < 2.12
-                     , hspec-hedgehog >= 0.0.1.1 && < 0.2
+                     , hspec-hedgehog >= 0.0.1.1 && < 0.4
                      , hspec-megaparsec >= 2.0.0 && < 2.3.0
                      , megaparsec
                      , directory ^>= 1.3
