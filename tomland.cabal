@@ -135,7 +135,7 @@ library
                            Toml.Type.Value
 
   build-depends:       bytestring >= 0.10 && < 0.13
-                     , containers >= 0.5.7 && < 0.8
+                     , containers >= 0.5.7 && < 0.9
                      , deepseq >= 1.4 && < 1.6
                      , hashable >= 1.3.1.0 && < 1.6
                      , megaparsec >= 7.0.5 && < 9.8
@@ -227,7 +227,7 @@ test-suite tomland-test
                        Test.Toml.Property
 
   build-depends:       bytestring
-                     , containers >= 0.5.7 && < 0.8
+                     , containers >= 0.5.7 && < 0.9
                      , hashable
                      , hedgehog >= 1.0.1 && < 1.6
                      , hspec >= 2.7.1 && < 2.12
