@@ -65,6 +65,7 @@ module Toml.Codec.Combinator.List
     ) where
 
 import Control.Monad.State (gets, modify)
+import Data.Foldable (traverse_)
 import Data.List.NonEmpty (NonEmpty (..), toList)
 import Validation (Validation (..))
 
@@ -80,6 +81,7 @@ import Toml.Type.Key (Key)
 import Toml.Type.TOML (TOML (..), insertTableArrays)
 
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.List.NonEmpty as NonEmpty
 
 
 {- | Codec for list of values. Takes converter for single value and
@@ -159,9 +161,7 @@ list codec key = Codec
         Failure [TableArrayNotFound errKey]
             | errKey == key -> pure []
         Failure errs -> Failure errs
-    , codecWrite = \case
-        [] -> pure []
-        l@(x:xs) -> l <$ codecWrite nonEmptyCodec (x :| xs)
+    , codecWrite = traverse_ (codecWrite nonEmptyCodec) . NonEmpty.nonEmpty
     }
   where
     nonEmptyCodec :: TomlCodec (NonEmpty a)
@@ -213,7 +213,7 @@ nonEmpty codec key = Codec input output
 
 
     -- adds all TOML objects to the existing list if there are some
-    output :: NonEmpty a -> TomlState (NonEmpty a)
+    output :: NonEmpty a -> TomlState ()
     output as = do
         let tomls = fmap (execTomlCodec codec) as
         mTables <- gets $ HashMap.lookup key . tomlTableArrays
@@ -222,4 +222,4 @@ nonEmpty codec key = Codec input output
                 Nothing       -> tomls
                 Just oldTomls -> oldTomls <> tomls
 
-        as <$ modify (insertTableArrays key newTomls)
+        modify (insertTableArrays key newTomls)

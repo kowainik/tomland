@@ -356,7 +356,7 @@ internalMap emptyMap toListMap fromListMap keyCodec valCodec key = Codec input o
             v <- codecRead valCodec toml
             pure (k, v)
 
-    output :: map -> TomlState map
+    output :: map -> TomlState ()
     output dict = do
         let tomls = fmap
                 (\(k, v) -> execTomlCodec keyCodec k <> execTomlCodec valCodec v)
@@ -372,7 +372,7 @@ internalMap emptyMap toListMap fromListMap keyCodec valCodec key = Codec input o
                 Just (t :| ts) ->
                     insertTableArrays key $ t :| (ts ++ tomls)
 
-        dict <$ modify updateAction
+        modify updateAction
 
 internalTableMap
     :: forall map k v
@@ -400,12 +400,12 @@ internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName =
                 whenLeftBiMapError key (forward keyBiMap key) $ \k ->
                     (k,) <$> codecRead (valCodec key) toml
 
-    output :: map -> TomlState map
+    output :: map -> TomlState ()
     output m = do
         mTable <- gets $ Prefix.lookup tableName . tomlTables
         let toml = fromMaybe mempty mTable
         let (_, newToml) = unTomlState updateMapTable toml
-        m <$ modify (insertTable tableName newToml)
+        modify (insertTable tableName newToml)
       where
         updateMapTable :: TomlState ()
         updateMapTable = forM_ (toListMap m) $ \(k, v) -> case backward keyBiMap k of

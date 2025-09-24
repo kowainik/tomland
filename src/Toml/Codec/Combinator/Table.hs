@@ -87,9 +87,9 @@ table codec key = Codec input output
         Nothing   -> Failure [TableNotFound key]
         Just toml -> handleTableErrors codec key toml
 
-    output :: a -> TomlState a
+    output :: a -> TomlState ()
     output a = do
         mTable <- gets $ Prefix.lookup key . tomlTables
         let toml = fromMaybe mempty mTable
         let (_, newToml) = unTomlState (codecWrite codec a) toml
-        a <$ modify (insertTable key newToml)
+        modify (insertTable key newToml)
