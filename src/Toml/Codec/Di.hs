@@ -21,6 +21,7 @@ module Toml.Codec.Di
 
 import Control.Applicative (Alternative (..))
 import Data.Coerce (Coercible, coerce)
+import Data.Foldable (traverse_)
 
 import Toml.Codec.Types (Codec (..), TomlCodec, (<!>))
 
@@ -78,7 +79,7 @@ dimap
     -> TomlCodec b  -- ^ Target 'Codec' object
 dimap f g codec = Codec
     { codecRead  = fmap g . codecRead codec
-    , codecWrite = fmap g . codecWrite codec . f
+    , codecWrite = codecWrite codec . f
     }
 {-# INLINE dimap #-}
 
@@ -108,7 +109,7 @@ dioptional
     -> TomlCodec (Maybe a)
 dioptional Codec{..} = Codec
     { codecRead  = fmap Just . codecRead <!> \_ -> pure Nothing
-    , codecWrite = traverse codecWrite
+    , codecWrite = traverse_ codecWrite
     }
 {-# INLINE dioptional #-}
 
@@ -184,7 +185,7 @@ dimatch match ctor codec = Codec
     { codecRead = fmap ctor . codecRead codec
     , codecWrite = \c -> case match c of
         Nothing -> empty
-        Just d  -> ctor <$> codecWrite codec d
+        Just d  -> codecWrite codec d
     }
 {-# INLINE dimatch #-}
 
