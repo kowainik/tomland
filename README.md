@@ -227,6 +227,14 @@ make it unique:
    Haskell types and `htoml*` libraries use typeclasses-based approach
    via `aeson` library.
 
+## Development
+
+`tomland` uses `hlint`, you can run it through:
+
+```
+hlint .
+```
+
 ## Acknowledgement
 
 Icons made by [Freepik](http://www.freepik.com) from [www.flaticon.com](https://www.flaticon.com/) is licensed by [CC 3.0 BY](http://creativecommons.org/licenses/by/3.0/).
