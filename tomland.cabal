@@ -229,7 +229,7 @@ test-suite tomland-test
   build-depends:       bytestring
                      , containers >= 0.5.7 && < 0.9
                      , hashable
-                     , hedgehog >= 1.0.1 && < 1.6
+                     , hedgehog >= 1.0.1 && < 1.8
                      , hspec >= 2.7.1 && < 2.12
                      , hspec-hedgehog >= 0.0.1.1 && < 0.4
                      , hspec-megaparsec >= 2.0.0 && < 2.3.0
