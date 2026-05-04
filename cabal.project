@@ -2,3 +2,5 @@ packages: .
 
 package tomland
   flags: +build-readme +build-play-tomland
+
+allow-newer: boring:base
