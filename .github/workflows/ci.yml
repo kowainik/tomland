@@ -79,7 +79,7 @@ jobs:
       run: |
         cabal freeze
 
-    - uses: actions/cache@v5
+    - uses: actions/cache@v6
       name: Cache ~/.cabal/store
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
@@ -119,7 +119,7 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
         stack-version: ${{ matrix.stack }}
 
-    - uses: actions/cache@v5
+    - uses: actions/cache@v6
       name: Cache ~/.stack
       with:
         path: ~/.stack
