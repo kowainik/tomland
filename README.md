@@ -214,13 +214,11 @@ benchmarks are also implemented in a way to reflect this difference.
 In addition to the above numbers, `tomland` has several features that
 make it unique:
 
-1. `tomland` is the only Haskell library that has pretty-printing.
-2. `tomland` is compatible with the latest TOML spec while other libraries are not.
-3. `tomland` is bidirectional, which means that your encoding and
+1. `tomland` is bidirectional, which means that your encoding and
    decoding are consistent with each other by construction.
-4. `tomland` provides abilities for `Generic` and `DerivingVia`
+2. `tomland` provides abilities for `Generic` and `DerivingVia`
    deriving out-of-the-box.
-5. Despite being the fastest, `toml-parser` doesn’t support the array
+3. Despite being the fastest, `toml-parser` doesn’t support the array
    of tables and because of that it’s hardly possible to specify the list
    of custom data types in TOML with this library. In addition,
    `toml-parser` doesn’t have ways to convert TOML AST to custom
