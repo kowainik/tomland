@@ -43,16 +43,16 @@ decimalP = do
         case value of
           Left _ -> do
             try more
-          Right _ -> 
+          Right _ ->
             fail "Leading zero."
 
   where
     leadingZeroP :: Parser String
     leadingZeroP = do
-               count 1 (char '0') >>= (\_ -> some digitChar)
+               count 1 (char '0') >> some digitChar
 
     more :: Parser Integer
-    more  = check =<< readMaybe . concat <$> sepBy1 (some digitChar) (char '_')
+    more  = check . readMaybe . concat =<< sepBy1 (some digitChar) (char '_')
 
     check :: Maybe Integer -> Parser Integer
     check = maybe (fail "Not an integer") pure
@@ -64,7 +64,7 @@ numberP :: Parser Integer -> Parser Char -> String -> Parser Integer
 numberP parseInteger parseDigit errorMessage = more
   where
     more :: Parser Integer
-    more = check =<< intValueMaybe . concat <$> sepBy1 (some parseDigit) (char '_')
+    more = check . intValueMaybe . concat =<< sepBy1 (some parseDigit) (char '_')
 
     intValueMaybe :: String -> Maybe Integer
     intValueMaybe = parseMaybe parseInteger . fromString
