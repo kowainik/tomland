@@ -20,6 +20,7 @@ find functions in this module useful.
 module Toml.Codec.Combinator.Common
     ( match
     , whenLeftBiMapError
+    , thenValidate
     ) where
 
 import Control.Monad.State (modify)
@@ -77,3 +78,19 @@ whenLeftBiMapError
 whenLeftBiMapError key val action = case val of
     Right a  -> action a
     Left err -> Failure [BiMapError key err]
+
+
+{- | Perform additional validation after decoding the value with the given codec.
+
+@since 1.3.3.3
+-}
+thenValidate
+    :: (a -> Validation.Validation [TomlDecodeError] a)
+    -> TomlCodec a
+    -> TomlCodec a
+thenValidate f (Codec readC writeC) = Codec readThenValidateC writeC
+  where
+    readThenValidateC toml = case readC toml of
+        Validation.Success success -> f success
+        Validation.Failure errors -> Validation.Failure errors
+
