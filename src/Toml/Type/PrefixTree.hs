@@ -155,7 +155,7 @@ lookupT lk (Branch pref mv prefMap) =
     case keysDiff pref lk of
         Equal       -> mv
         NoPrefix    -> Nothing
-        Diff _ _ _  -> Nothing
+        Diff {}     -> Nothing
         SndIsPref _ -> Nothing
         FstIsPref k -> lookup k prefMap
 
@@ -185,7 +185,7 @@ toListT (Leaf k v) = [(k, v)]
 toListT (Branch pref ma prefMap) = case ma of
     Just a  -> (:) (pref, a)
     Nothing -> id
-    $ map (\(k, v) -> (pref <> k, v)) $ toList prefMap
+    $ map (first ((<>) pref)) $ toList prefMap
 
 {- | Converts 'PrefixMap' to the list of pairs.
 
@@ -224,14 +224,14 @@ differenceWithT f pt1 pt2 = case (pt1, pt2) of
             [(_, aNew)] -> Just $ addPrefixT k aNew
             -- shouldn't happen, but for some reasons
             _ : _ : _ -> Nothing
-        Diff _ _ _ -> Just l
+        Diff {} -> Just l
 
     (br@(Branch p ma pma), Leaf k b) -> case keysDiff p k of
         Equal -> compressTree $ Branch p (ma >>= \a -> f a b) pma
         NoPrefix -> Just br
         FstIsPref kSuf -> compressTree $ Branch p ma (differenceWith f pma $ single kSuf b)
         SndIsPref _ -> Just br
-        Diff _ _ _ -> Just br
+        Diff {} -> Just br
 
     (b1@(Branch p1 ma pma), Branch p2 mb pmb) -> case keysDiff p1 p2 of
         Equal -> compressTree $
@@ -242,4 +242,4 @@ differenceWithT f pt1 pt2 = case (pt1, pt2) of
         SndIsPref p1Suf@(p1Head :|| _) -> case HashMap.lookup p1Head pmb of
             Nothing -> Just b1
             Just ch -> addPrefixT p2 <$> differenceWithT f (Branch p1Suf ma pma) ch
-        Diff _ _ _ -> Just b1
+        Diff {} -> Just b1
