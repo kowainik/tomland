@@ -3,6 +3,37 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## 1.4.0.0 — Unreleased
+
+* [#373](https://github.com/kowainik/tomland/issues/373):
+  Support [TOML spec version 1.1.0](https://toml.io/en/v1.1.0):
+    * `\e` and `\xHH` escape sequences in basic strings.
+    * Seconds may be omitted in times and date-times (`07:32`, `1979-05-27T07:32Z`).
+    * Inline tables may span multiple lines and may have a trailing comma.
+    * Inline tables can be nested inside inline tables and inside arrays of
+      inline tables.
+    * Carriage returns are only allowed as part of a CRLF newline.
+* Bring the parser in line with TOML 1.0.0 rules that were not enforced before:
+    * Whitespace is allowed around dots in keys and inside table headers.
+    * Bare keys are restricted to ASCII letters, digits, `-` and `_`.
+    * Tabs and non-ASCII characters are allowed in basic strings;
+      control characters are rejected in literal strings and comments.
+    * One or two quotation marks are allowed right before the closing
+      delimiter of a multi-line string.
+    * A line-ending backslash may be followed by whitespace before the newline.
+    * Lowercase `t` and `z` are accepted in date-times; time offsets are
+      range-checked.
+    * Leading zeros are rejected in floats and in integers with underscores
+      (`0_1`), and whitespace is not allowed after a sign.
+    * Only a single trailing comma is allowed in arrays.
+    * A key/value pair or table header must be followed by a newline (or a
+      comment and a newline). The multi-line printing mode of
+      `Toml.Type.Printer` now keeps `[` on the same line as `key =` so that
+      its output is valid TOML.
+* __Breaking change:__ `Toml.Parser.Item.Table` now holds a list of
+  `TomlItem`s instead of key/value pairs, so that nested inline tables can be
+  represented.
+
 ## 1.3.3.3 – Jun 7, 2024
 
 * Support up to GHC-9.10.

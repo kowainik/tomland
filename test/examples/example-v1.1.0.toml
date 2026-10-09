@@ -1,0 +1,41 @@
+# Features introduced or clarified in TOML v1.1.0
+
+[strings]
+escape    = "bell: \e[0m"                     # \e is U+001B
+hex       = "caf\xe9 \x41\x42\x43"             # \xHH escapes
+tab       = "a	b"                              # raw tabs are allowed
+quotes    = """"one quote" and ""two quotes"""""
+apostrophe = ''''single' and ''double'''''
+trimmed   = """
+    joined \
+       across \  
+       lines"""
+
+[dates]
+time-no-seconds  = 13:37
+local-no-seconds = 1979-05-27T07:32
+utc-no-seconds   = 1979-05-27 07:32Z
+offset-no-seconds = 1979-05-27 07:32-07:00
+lowercase        = 1979-05-27t07:32:00z
+fractional       = 1979-05-27T00:32:00.999999-07:00
+
+[inline]
+single = { x = 1, y = 2, }
+multi = {
+    name = "Donald",      # comments are fine here
+    email = "donald@example.com",
+    address = {
+        city = "Duckburg",
+        zip = "00000",
+    },
+}
+people = [
+    { name = "Huey", tags = [ "red", ] },
+    { name = "Dewey", tags = [
+        "blue",
+    ] },
+]
+
+[ keys . with . spaces ]
+"quoted key" = true
+bare-key_1 = false
