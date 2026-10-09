@@ -70,6 +70,10 @@ tomlSpecs = do
             parseToml "[table] \n key1 = \"some string\"\nkey2 = 123" t
         it "can parse an empty TOML table" $
             parseToml "[table]" $ mkToml (table "table" empty)
+        it "ignores whitespace inside table headers" $ do
+            parseToml "[ table ]" $ mkToml (table "table" empty)
+            parseToml "[ a . b ]" $ mkToml (table "a.b" empty)
+            parseToml "[[ a . b ]]" $ mkToml (tableArray "a.b" (empty :| []))
         it "fails if a table header is not on a single line" $ do
             tomlFailOn "[tbl\n]"
             tomlFailOn "[tbl\n.sub]"
