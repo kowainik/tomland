@@ -35,6 +35,11 @@ doubleSpecs = describe "doubleP" $ do
         doubleSatisfies "nan"  isNaN
         doubleSatisfies "+nan" isNaN
         doubleSatisfies "-nan" isNaN
+    it "fails on leading zeros or whitespace after the sign" $ do
+        doubleFailOn "03.14"
+        doubleFailOn "+03.14"
+        doubleFailOn "-03.14"
+        doubleFailOn "+ 3.14"
     it "fails if `inf` or `nan` are not all lowercase" $ do
         doubleFailOn "Inf"
         doubleFailOn "INF"

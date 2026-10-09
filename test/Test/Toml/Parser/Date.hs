@@ -6,7 +6,7 @@ import Data.Time (LocalTime (..), TimeOfDay (..))
 import Test.Hspec (Spec, describe, it)
 
 import Test.Toml.Parser.Common (dateTimeFailOn, day1, hours1, makeOffset, makeZoned, offset0,
-                                offset710, parseDateTime)
+                                offset710, parseDateTime, tomlFailOn)
 import Toml.Type (UValue (..))
 
 
@@ -22,6 +22,20 @@ dateSpecs = describe "dateTimeP" $ do
     it "can parse a date-time with an offset when the T delimiter is replaced with a space" $
         parseDateTime "1979-05-27 07:32:00Z" $
             makeZoned day1 hours1 offset0
+    it "can parse a date-time with lowercase t and z" $ do
+        parseDateTime "1979-05-27t07:32:00z" $
+            makeZoned day1 hours1 offset0
+        parseDateTime "1979-05-27t07:32:00"
+            (ULocal $ LocalTime day1 hours1)
+    it "can parse times without seconds" $ do
+        parseDateTime "07:32" (UHours hours1)
+        parseDateTime "1979-05-27T07:32" (ULocal $ LocalTime day1 hours1)
+        parseDateTime "1979-05-27 07:32Z" (makeZoned day1 hours1 offset0)
+        parseDateTime "1979-05-27 07:32-07:00" (makeZoned day1 hours1 (makeOffset (-7) 0))
+        parseDateTime "1979-05-27T00:32+07:10" (makeZoned day1 (TimeOfDay 0 32 0) offset710)
+    it "fails if the offset is out of range" $ do
+        tomlFailOn "d = 1979-05-27T07:32:00+25:00"
+        tomlFailOn "d = 1979-05-27T07:32:00+12:60"
     it "can parse a date-time without an offset" $ do
         parseDateTime "1979-05-27T17:32:00"
             (ULocal $ LocalTime day1 (TimeOfDay 17 32 0))
