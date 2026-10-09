@@ -14,13 +14,13 @@ module Toml.Parser.Value
        , boolP
        , dateTimeP
        , doubleP
+       , inlineTableP
        , integerP
        , valueP
-       , anyValueP
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, count, option, optional, sepBy1)
+import Control.Applicative.Combinators (between, count, option, optional, sepBy1, sepEndBy)
 import Control.Monad (when)
 import Data.Fixed (Pico)
 import Data.String (fromString)
@@ -32,8 +32,10 @@ import Text.Read (readMaybe)
 
 import Toml.Parser.Core (Parser, binDigitChar, binary, char, digitChar, hexDigitChar, hexadecimal,
                          lexeme, octDigitChar, octal, scn, signed, string, text, try, (<?>))
+import Toml.Parser.Key (keyP)
 import Toml.Parser.String (textP)
-import Toml.Type (AnyValue, UValue (..), typeCheck)
+import Toml.Type.Key (Key)
+import Toml.Type.UValue (UValue (..))
 
 
 {- | Parser for decimal digits with underscores between them, e.g. @1_000@.
@@ -212,17 +214,26 @@ arrayP = lexeme (between (char '[' *> scn) (char ']') elements) <?> "array"
     spComma :: Parser ()
     spComma = char ',' *> scn
 
+{- | Parser for inline tables. Newlines and comments are allowed between the
+key-value pairs, and a trailing comma is allowed after the last one. The
+result is not validated: duplicate keys are detected by
+'Toml.Parser.Validate.validateItems'.
+
+@since 1.4.0.0
+-}
+inlineTableP :: Parser [(Key, UValue)]
+inlineTableP = between (text "{" *> scn) (text "}") (pairP `sepEndBy` (text "," *> scn))
+    <?> "inline table"
+  where
+    pairP :: Parser (Key, UValue)
+    pairP = (,) <$> (keyP <* text "=") <*> (valueP <* scn)
+
 -- | Parser for 'UValue'.
 valueP :: Parser UValue
 valueP = UText    <$> textP
      <|> UBool    <$> boolP
      <|> UArray   <$> arrayP
+     <|> UTable   <$> inlineTableP
      <|> dateTimeP
      <|> UDouble  <$> try doubleP
      <|> UInteger <$> integerP
-
--- | Uses 'valueP' and typechecks it.
-anyValueP :: Parser AnyValue
-anyValueP = typeCheck <$> valueP >>= \case
-    Left err -> fail $ show err
-    Right v  -> pure v

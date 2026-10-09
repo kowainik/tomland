@@ -53,6 +53,16 @@ arraySpecs = describe "arrayP" $ do
         parseArray
             "[1, [2], [[3]]]"
             [int1, UArray [int2], UArray [UArray [int3]]]
+    it "can parse inline tables inside arrays" $ do
+        parseArray
+            "[{a = 1}, 'x']"
+            [UTable [("a", int1)], UText "x"]
+        parseArray
+            "[[{}]]"
+            [UArray [UTable []]]
+        parseArray
+            "[ { a = { b = 1 }, c = [ { d = 2 } ] } ]"
+            [UTable [("a", UTable [("b", int1)]), ("c", UArray [UTable [("d", int2)]])]]
     it "can parse multiline arrays" $
         parseArray
             "[\n1,\n2\n]"

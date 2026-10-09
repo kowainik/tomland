@@ -20,6 +20,9 @@ listSpec = parallel $ describe "Combinator.List: Roundtrip tests" $ do
     codecRoundtrip "[Either Int Text] (Array)"
         (Toml.arrayOf $ Toml._Either Toml._Int Toml._Text)
         (Gen.genList $ Gen.genEither Gen.genInt Gen.genText)
+    codecRoundtrip "[Either Int Int] (Array of values and tables)"
+        (Toml.arrayOf $ Toml._Either Toml._Int $ Toml._Table $ Toml.int "a")
+        (Gen.genList $ Gen.genEither Gen.genInt Gen.genInt)
     codecRoundtrip "NonEmpty Int (Array)"
         (Toml.arrayNonEmptyOf Toml._Int)
         (Gen.genNonEmpty Gen.genInt)

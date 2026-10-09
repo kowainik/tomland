@@ -93,6 +93,10 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
         decodeExact (Toml.list (Toml.int "x") "foo") "[[foo]]\nx = 1\ny = 'abc'" `shouldBe`
             Left [NotExactDecode $ mkToml $ tableArray "foo" $ ("y" =: "abc") NE.:| []]
 
+    it "exact decode inline array of tables" $
+        decodeExact (Toml.list (Toml.int "x") "foo") "foo = [{ x = 1 }, { x = 2 }]" `shouldBe`
+            Right [1, 2]
+
     -- map
     it "map: decodes to an empty map when field is missing" $
         decode (Toml.map (Toml.int "key") (Toml.text "val") "foo") "" `shouldBe`

@@ -16,6 +16,7 @@ import qualified Hedgehog.Gen as Gen
 
 import qualified Test.Toml.Gen as G
 import qualified Toml.Codec.BiMap.Conversion as B
+import qualified Toml.Codec.Combinator.Primitive as Toml
 
 
 conversionSpec :: Spec
@@ -52,6 +53,10 @@ conversionSpec = parallel $ describe "BiMap Rountrip Property tests" $ do
         it "LByteStringArray" $ testBiMap B._LByteStringArray G.genLByteString
         it "Array (Either Int Text)" $
             testBiMap (B._Array $ B._Either B._Int B._Text) (G.genList $ G.genEither G.genInt G.genText)
+        it "Array (Either Int (Table Int))" $
+            testBiMap (B._Array $ B._Either B._Int $ B._Table $ Toml.int "a")
+                      (G.genList $ G.genEither G.genInt G.genInt)
+        it "Table (Int)" $ testBiMap (B._Table $ Toml.int "a") G.genInt
 
     describe "Custom" $ do
         it "EnumBounded (Ordering)" $ testBiMap B._EnumBounded $ Gen.enumBounded @_ @Ordering

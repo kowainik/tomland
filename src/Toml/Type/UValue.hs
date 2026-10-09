@@ -15,14 +15,12 @@ Intermediate untype value representation used for parsing.
 
 module Toml.Type.UValue
        ( UValue (..)
-       , typeCheck
        ) where
 
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
 
-import Toml.Type.AnyValue (AnyValue (..))
-import Toml.Type.Value (TypeMismatchError, Value (..))
+import Toml.Type.Key (Key)
 
 
 {- | Untyped value of @TOML@. You shouldn't use this type in your
@@ -40,6 +38,10 @@ data UValue
     | UDay !Day
     | UHours !TimeOfDay
     | UArray ![UValue]
+    | UTable ![(Key, UValue)]
+      -- ^ Inline table: list of @key = value@ pairs, not yet validated.
+      --
+      -- @since 1.4.0.0
     deriving stock (Show)
 
 -- | @since 0.0.0
@@ -55,22 +57,5 @@ instance Eq UValue where
     (UDay a)      == (UDay b)      = a == b
     (UHours a)    == (UHours b)    = a == b
     (UArray a1)   == (UArray a2)   = a1 == a2
+    (UTable t1)   == (UTable t2)   = t1 == t2
     _             == _             = False
-
-{- | Ensures that 'UValue's represents type-safe version of @toml@.
-
-@since 0.0.0
--}
-typeCheck :: UValue -> Either TypeMismatchError AnyValue
-typeCheck (UBool b)    = rightAny $ Bool b
-typeCheck (UInteger n) = rightAny $ Integer n
-typeCheck (UDouble f)  = rightAny $ Double f
-typeCheck (UText s)    = rightAny $ Text s
-typeCheck (UZoned d)   = rightAny $ Zoned d
-typeCheck (ULocal d)   = rightAny $ Local d
-typeCheck (UDay d)     = rightAny $ Day d
-typeCheck (UHours d)   = rightAny $ Hours d
-typeCheck (UArray a)   = AnyValue . Array <$> traverse typeCheck a
-
-rightAny :: Value t -> Either l AnyValue
-rightAny = Right . AnyValue

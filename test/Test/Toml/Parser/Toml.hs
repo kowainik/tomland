@@ -8,12 +8,12 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Text (Text)
 import Test.Hspec (Spec, describe, it)
 
-import Test.Toml.Parser.Common (day2, failOn, parseToml, tomlFailOn)
+import Test.Toml.Parser.Common (day2, failOn, parseToml, tomlFailOn, tomlInvalid)
 import Toml.Parser.Item (keyValP)
+import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.Type.Key (pattern (:||))
 import Toml.Type.TOML (TOML (..))
-import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Value (Value (..), array)
 
 import qualified Data.List.NonEmpty as NE
@@ -43,9 +43,26 @@ tomlSpecs = do
             failOn keyValP "\"x\"\n=\n1"
         it "works if the value is broken over multiple lines" $
             parseToml "x=[1, \n2\n]" $ mkToml ("x" =: array [1, 2])
-        it "can parse arrays with elements of different types" $
+        it "can parse arrays with elements of different types" $ do
             parseToml "x = [1, \"a\", 2.5]" $
                 mkToml ("x" =: Array [AnyValue (Integer 1), AnyValue (Text "a"), AnyValue (Double 2.5)])
+            parseToml "x = [1, { a = 1, t = { b = 2 } }]" $
+                mkToml $ "x" =: Array
+                    [ AnyValue (Integer 1)
+                    , AnyValue $ Table $ mkToml $ do
+                        "a" =: 1
+                        table "t" $ "b" =: 2
+                    ]
+            parseToml "x = [[{ a = 1 }], [{ a = 2 }]]" $
+                mkToml $ "x" =: Array
+                    [ AnyValue $ Array [AnyValue $ Table $ mkToml $ "a" =: 1]
+                    , AnyValue $ Array [AnyValue $ Table $ mkToml $ "a" =: 2]
+                    ]
+        it "fails on duplicate keys inside inline tables in arrays" $ do
+            tomlInvalid "x = [1, { a = 1, a = 2 }]"
+            tomlInvalid "x = [{ a = 1 }, { a = 1, a = 2 }]"
+            parseToml "x = [{ a = 1 }, { a = 2 }]" $
+                mkToml $ "x" =: Array [AnyValue $ Table $ mkToml $ "a" =: 1, AnyValue $ Table $ mkToml $ "a" =: 2]
         it "fails if the value is not specified" $
             tomlFailOn "x="
         it "fails if there is no newline between key/value pairs" $ do
@@ -117,9 +134,33 @@ tomlSpecs = do
                     table "a" $ "b" =: 1
                     "c" =: 2
             parseToml "t = [ { a = { b = 1 } } ]" $
-                mkToml $ tableArray "t" $ table "a" ("b" =: 1) :| []
+                mkToml $ "t" =: Array [AnyValue $ Table $ mkToml $ table "a" $ "b" =: 1]
             parseToml "t = { a = [ { b = 1 }, { b = 2 } ] }" $
-                mkToml $ table "t" $ tableArray "a" $ "b" =: 1 :| ["b" =: 2]
+                mkToml $ table "t" $ "a" =: Array
+                    [AnyValue $ Table $ mkToml $ "b" =: 1, AnyValue $ Table $ mkToml $ "b" =: 2]
+        it "treats dotted keys, headers and inline tables as the same table" $ do
+            let t = mkToml $ table "a" $ table "b" $ "c" =: 1
+            parseToml "a.b.c = 1" t
+            parseToml "[a]\nb.c = 1" t
+            parseToml "[a.b]\nc = 1" t
+            parseToml "a = { b = { c = 1 } }" t
+            parseToml "a.b = { c = 1 }" t
+        it "produces the same document regardless of header order" $ do
+            let t = mkToml $ table "a" $ do
+                    "y" =: 2
+                    table "b" $ "x" =: 1
+                    table "c" $ "z" =: 3
+            parseToml "[a.b]\nx = 1\n[a]\ny = 2\n[a.c]\nz = 3" t
+            parseToml "[a]\ny = 2\n[a.b]\nx = 1\n[a.c]\nz = 3" t
+            parseToml "[a.c]\nz = 3\n[a.b]\nx = 1\n[a]\ny = 2" t
+        it "fails on redefined tables and keys" $ do
+            tomlInvalid "[a.b]\n[a]\n[a.b]"
+            tomlInvalid "[a]\nb.c = 1\n[a.b]"
+            tomlInvalid "a = 1\na.b = 2"
+            tomlInvalid "a = { b = 1 }\na.c = 2"
+            tomlInvalid "[[a.b]]\n[a]\nb.y = 2"
+            tomlInvalid "spelling = 1\n\"spelling\" = 2"
+            tomlInvalid "a = []\n[[a]]"
         it "can parse a table followed by an inline table" $
             parseToml "[table1] \n  key1 = \"some string\" \n table2 = {key2 = 123}" $
                 mkToml $
@@ -172,7 +213,8 @@ tomlSpecs = do
             let arr = mkToml $ tableArray "array" $ NE.fromList $ replicate 1000 empty
             parseToml (mconcat $ replicate 1000 "[[array]]\n") arr
         it "can parse an inline array of tables" $ do
-            let arr = mkToml $ tableArray "table" $ NE.fromList ["key1" =: "some string", "key2" =: 123]
+            let arr = mkToml $ "table" =: Array
+                    [AnyValue $ Table $ mkToml $ "key1" =: "some string", AnyValue $ Table $ mkToml $ "key2" =: 123]
             parseToml "table = [{key1 = \"some string\"}, {key2 = 123}]" arr
 
     describe "TOML" $ do

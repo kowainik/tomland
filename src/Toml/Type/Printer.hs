@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GADTs #-}
+
+{-# LANGUAGE PatternSynonyms #-}
 
 {- |
 Module                  : Toml.Type.Printer
@@ -21,31 +23,28 @@ module Toml.Type.Printer
        , prettyOptions
        , prettyKey
        , prettyPiece
+       , prettyValue
        ) where
 
-import GHC.Exts (sortWith)
 import Data.Bifunctor (first)
 import Data.Char (isAscii, isAsciiLower, isAsciiUpper, isDigit, ord)
 import Data.Function (on)
-import Data.HashMap.Strict (HashMap)
 import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semigroup (stimes)
 import Data.Text (Text)
 import Data.Time (ZonedTime, defaultTimeLocale, formatTime)
-
+import GHC.Exts (sortWith)
 import Text.Printf (printf)
 
 import Toml.Type.AnyValue (AnyValue (..))
-import Toml.Type.Key (Key (..), Piece (..))
-import Toml.Type.PrefixTree (PrefixMap, PrefixTree (..))
-import Toml.Type.TOML (TOML (..))
+import Toml.Type.Key (Key (..), Piece (..), pattern (:||))
+import Toml.Type.TOML (Entry (..), TOML (..), TableKind (..))
 import Toml.Type.Value (Value (..))
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
-
 
 
 {- | Configures the pretty printer.
@@ -74,10 +73,9 @@ data PrintOptions = PrintOptions
       MultiLine:
 
       @
-      foo =
-          [ a
-          , b
-          ]
+      foo = [ a
+            , b
+            ]
       @
 
       Default is 'OneLine'.
@@ -102,18 +100,15 @@ data Lines = OneLine | MultiLine
 For example, this
 
 @
-TOML
-    { tomlPairs  = HashMap.fromList
-          [("title", AnyValue $ Text "TOML example")]
-    , tomlTables = PrefixTree.fromList
-          [( "example" <| "owner"
-           , mempty
-                 { tomlPairs  = HashMap.fromList
-                       [("name", AnyValue $ Text "Kowainik")]
-                 }
-           )]
-    , tomlTableArrays = mempty
-    }
+TOML $ HashMap.fromList
+    [ ("title", EValue $ AnyValue $ Text "TOML example")
+    , ("example", ETable ImplicitTable $ TOML $ HashMap.fromList
+          [ ("owner", ETable HeaderTable $ TOML $ HashMap.fromList
+                [ ("name", EValue $ AnyValue $ Text "Kowainik") ]
+            )
+          ]
+      )
+    ]
 @
 
 will be translated to this
@@ -124,6 +119,10 @@ title = "TOML Example"
 [example.owner]
   name = \"Kowainik\"
 @
+
+Tables are printed according to their 'TableKind': 'HeaderTable's as
+@[table]@ sections, 'DottedTable's as dotted keys, 'InlineTable's inline and
+'ImplicitTable's without a header of their own.
 
 @since 0.0.0
 -}
@@ -143,10 +142,9 @@ prettyTomlInd :: PrintOptions -- ^ Printing options
               -> Text         -- ^ Accumulator for table names
               -> TOML         -- ^ Given 'TOML'
               -> [Text]       -- ^ Pretty result
-prettyTomlInd options i prefix TOML{..} = concat
-    [ prettyKeyValue    options i tomlPairs
-    , prettyTables      options i prefix tomlTables
-    , prettyTableArrays options i prefix tomlTableArrays
+prettyTomlInd options i prefix toml = concat
+    [ map (tabWith options i <>) (prettyPairs options "" toml)
+    , prettyTables options i prefix toml
     ]
 
 {- | Converts a key to text, quoting the pieces that are not bare keys.
@@ -170,14 +168,95 @@ prettyPiece (Piece p)
     isBareKeyChar :: Char -> Bool
     isBareKeyChar c = isAsciiLower c || isAsciiUpper c || isDigit c || c == '_' || c == '-'
 
--- | Returns pretty formatted  key-value pairs of the 'TOML'.
-prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> [Text]
-prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toList
+{- | Lines of the form @key = value@ for a table, without indentation:
+values, inline tables, and the (flattened) contents of dotted and implicit
+tables.
+-}
+prettyPairs :: PrintOptions -> Text -> TOML -> [Text]
+prettyPairs options keyPrefix = mapOrdered pairText options . entryList
   where
-    kvText :: (Key, AnyValue) -> Text
-    kvText (k, AnyValue v) =
-      tabWith options i <> prettyKey k <> " = " <> valText v
+    pairText :: (Key, Entry) -> [Text]
+    pairText (k, entry) = case entry of
+        EValue (AnyValue v)  -> [key <> " = " <> prettyValue options v]
+        ETable InlineTable t -> [key <> " = " <> prettyInlineTable options t]
+        ETable HeaderTable _ -> []
+        ETable _ t           -> prettyPairs options (key <> ".") t
+        ETableArray _        -> []
+      where
+        key :: Text
+        key = keyPrefix <> prettyKey k
 
+{- | Returns pretty formatted tables section of the 'TOML': first all
+sub-tables, then all arrays of tables.
+-}
+prettyTables :: PrintOptions -> Int -> Text -> TOML -> [Text]
+prettyTables options i prefix toml =
+    mapOrdered tableText options (entryList toml) ++ mapOrdered arrayText options (entryList toml)
+  where
+    tableText :: (Key, Entry) -> [Text]
+    tableText (k, entry) = case entry of
+        ETable HeaderTable t -> section ("[" <> addPrefix k prefix <> "]") t
+        ETable InlineTable _ -> []
+        ETable _ t           -> prettyTables options i (addPrefix k prefix) t
+        _                    -> []
+
+    arrayText :: (Key, Entry) -> [Text]
+    arrayText (k, entry) = case entry of
+        ETableArray ts -> concatMap (section ("[[" <> addPrefix k prefix <> "]]")) ts
+        _              -> []
+
+    -- Each "" results in an empty line, inserted above table names.
+    -- We don't want empty lines between a table name and a subtable name.
+    section :: Text -> TOML -> [Text]
+    section header sub =
+        "" : tabWith options i <> header :
+        dropWhile (== "") (prettyTomlInd options (i + 1) name' sub)
+      where
+        name' :: Text
+        name' = Text.dropAround (`elem` ("[]" :: String)) header
+
+    addPrefix :: Key -> Text -> Text
+    addPrefix k pref
+        | Text.null pref = prettyKey k
+        | otherwise      = pref <> "." <> prettyKey k
+
+{- | Prints a 'TOML' as an inline table, e.g. @{ a = 1, b = { c = 2 } }@.
+Used for tables that appear as array elements.
+
+@since 1.4.0.0
+-}
+prettyInlineTable :: PrintOptions -> TOML -> Text
+prettyInlineTable options toml
+    | null entries = "{}"
+    | otherwise    = "{ " <> Text.intercalate ", " entries <> " }"
+  where
+    entries :: [Text]
+    entries = inlineEntries ""  toml
+
+    inlineEntries :: Text -> TOML -> [Text]
+    inlineEntries keyPrefix = mapOrdered entryText options . entryList
+      where
+        entryText :: (Key, Entry) -> [Text]
+        entryText (k, entry) = case entry of
+            EValue (AnyValue v)  -> [key <> " = " <> prettyValue options v]
+            ETable DottedTable t -> inlineEntries (key <> ".") t
+            ETable _ t           -> [key <> " = " <> prettyInlineTable options t]
+            ETableArray ts       -> [key <> " = " <> inlineArray ts]
+          where
+            key :: Text
+            key = keyPrefix <> prettyKey k
+
+    inlineArray :: NonEmpty TOML -> Text
+    inlineArray ts = "[" <> Text.intercalate ", " (map (prettyInlineTable options) (NonEmpty.toList ts)) <> "]"
+
+{- | Converts a single 'Value' to text. Arrays are printed according to
+'printOptionsLines'; tables are printed as inline tables.
+
+@since 1.4.0.0
+-}
+prettyValue :: PrintOptions -> Value t -> Text
+prettyValue options = valText
+  where
     valText :: Value t -> Text
     valText (Bool b)    = Text.toLower $ showText b
     valText (Integer n) = showText n
@@ -188,13 +267,13 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
     valText (Day d)     = showText d
     valText (Hours h)   = showText h
     valText (Array a)   = withLines options anyText a
+    valText (Table t)   = prettyInlineTable options t
 
     anyText :: AnyValue -> Text
     anyText (AnyValue v) = valText v
 
     showText :: Show a => a -> Text
     showText = Text.pack . show
-
 
     -- Basic string: escapes quotes, backslashes and control characters,
     -- and encodes all non-ASCII characters as @\U@ escapes.
@@ -232,58 +311,11 @@ escapeChar escapeNonAscii c = case c of
       | escapeNonAscii && not (isAscii c) -> Text.pack $ printf "\\U%08x" (ord c)
       | otherwise                    -> Text.singleton c
 
--- | Returns pretty formatted tables section of the 'TOML'.
-prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> [Text]
-prettyTables options i pref asPieces = mapOrdered (prettyTable . snd) options asKeys
-  where
-    asKeys :: [(Key, PrefixTree TOML)]
-    asKeys = map (first pieceToKey) $ HashMap.toList asPieces
-
-    pieceToKey :: Piece -> Key
-    pieceToKey = Key . pure
-
-    prettyTable :: PrefixTree TOML -> [Text]
-    prettyTable (Leaf k toml) =
-        let name = addPrefix k pref
-        -- Each "" results in an empty line, inserted above table names
-        in "": tabWith options i <> prettyTableName name :
-        -- We don't want empty lines between a table name and a subtable name
-             dropWhile (== "") (prettyTomlInd options (i + 1) name toml)
-
-    prettyTable (Branch k mToml prefMap) =
-        let name  = addPrefix k pref
-            nextI = i + 1
-            toml  = case mToml of
-                        Nothing -> []
-                        Just t  -> prettyTomlInd options nextI name t
-        -- Each "" results in an empty line, inserted above table names
-        in "": tabWith options i <> prettyTableName name :
-        -- We don't want empty lines between a table name and a subtable name
-             dropWhile (== "") (toml ++ prettyTables options nextI name prefMap)
-
-    prettyTableName :: Text -> Text
-    prettyTableName n = "[" <> n <> "]"
-
-prettyTableArrays :: PrintOptions -> Int -> Text -> HashMap Key (NonEmpty TOML) -> [Text]
-prettyTableArrays options i pref = mapOrdered arrText options . HashMap.toList
-  where
-    arrText :: (Key, NonEmpty TOML) -> [Text]
-    arrText (k, ne) =
-      let name = addPrefix k pref
-          render toml =
-            -- Each "" results in an empty line, inserted above array names
-            "": tabWith options i <> "[[" <> name <> "]]" :
-            -- We don't want empty lines between an array name and a subtable name
-              dropWhile (== "") (prettyTomlInd options (i + 1) name toml)
-      in concatMap render $ NonEmpty.toList ne
-
------------------------------------------------------
--- Helper functions
------------------------------------------------------
-
--- Returns an indentation prefix
 tabWith :: PrintOptions -> Int -> Text
 tabWith PrintOptions{..} n = Text.replicate (n * printOptionsIndent) " "
+
+entryList :: TOML -> [(Key, Entry)]
+entryList = map (first (:|| [])) . HashMap.toList . unTOML
 
 -- Returns a proper sorting function
 mapOrdered :: ((Key, v) -> [t]) -> PrintOptions -> [(Key, v)] -> [t]
@@ -291,12 +323,8 @@ mapOrdered f options = case printOptionsSorting options of
     Just sorter -> concatMap f . sortBy (sorter `on` fst)
     Nothing     -> concatMap f . sortWith fst
 
--- Adds next part of the table name to the accumulator.
-addPrefix :: Key -> Text -> Text
-addPrefix key = \case
-    "" -> prettyKey key
-    prefix -> prefix <> "." <> prettyKey key
-
+{- | Print the array according to the 'printOptionsLines' option.
+-}
 withLines :: PrintOptions -> (AnyValue -> Text) -> [AnyValue] -> Text
 withLines PrintOptions{..} valTxt a = case printOptionsLines of
     OneLine -> "[" <> Text.intercalate ", " (map valTxt a) <> "]"

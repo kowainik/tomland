@@ -20,8 +20,8 @@ Existential wrapper over 'Value' type and matching functions.
 
 module Toml.Type.AnyValue
        ( AnyValue (..)
-       , reifyAnyValues
        , toMArray
+       , reifyAnyValues
 
          -- * Matching
        , MatchError (..)
@@ -35,6 +35,7 @@ module Toml.Type.AnyValue
        , matchDay
        , matchHours
        , matchArray
+       , matchTable
        , applyAsToAny
        ) where
 
@@ -44,8 +45,8 @@ import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Type.Equality ((:~:) (..))
 import GHC.Generics (Generic)
 
+import Toml.Type.TOML (TOML)
 import Toml.Type.Value (AnyValue (..), TValue (..), TypeMismatchError, Value (..), sameValue)
-
 
 -- | Value type mismatch error.
 data MatchError = MatchError
@@ -115,6 +116,15 @@ matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError 
 matchArray matchValue (Array a) = mapM matchValue a
 matchArray _          value     = mkMatchError TArray value
 {-# INLINE matchArray #-}
+
+{- | Extract 'TOML' from a 'Table' value.
+
+@since 1.4.0.0
+-}
+matchTable :: Value t -> Either MatchError TOML
+matchTable (Table t) = Right t
+matchTable value     = mkMatchError TTable value
+{-# INLINE matchTable #-}
 
 -- | Make function that works with 'AnyValue' also work with specific 'Value'.
 applyAsToAny :: (AnyValue -> r) -> (Value t -> r)

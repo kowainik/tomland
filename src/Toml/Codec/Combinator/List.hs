@@ -77,9 +77,8 @@ import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState)
 import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Key (Key)
-import Toml.Type.TOML (TOML (..), insertTableArrays)
+import Toml.Type.TOML (insertTableArrays, lookupTableArray)
 
-import qualified Data.HashMap.Strict as HashMap
 
 
 {- | Codec for list of values. Takes converter for single value and
@@ -207,7 +206,7 @@ nonEmpty :: forall a . TomlCodec a -> Key -> TomlCodec (NonEmpty a)
 nonEmpty codec key = Codec input output
   where
     input :: TomlEnv (NonEmpty a)
-    input = \t -> case HashMap.lookup key $ tomlTableArrays t of
+    input = \t -> case lookupTableArray key t of
         Nothing    -> Failure [TableArrayNotFound key]
         Just tomls -> traverse (handleTableErrors codec key) tomls
 
@@ -216,7 +215,7 @@ nonEmpty codec key = Codec input output
     output :: NonEmpty a -> TomlState (NonEmpty a)
     output as = do
         let tomls = fmap (execTomlCodec codec) as
-        mTables <- gets $ HashMap.lookup key . tomlTableArrays
+        mTables <- gets $ lookupTableArray key
 
         let newTomls = case mTables of
                 Nothing       -> tomls

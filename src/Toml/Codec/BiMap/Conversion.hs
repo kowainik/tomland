@@ -50,6 +50,7 @@ module Toml.Codec.BiMap.Conversion
       -- * Arrays
     , _Array
     , _Either
+    , _Table
     , _NonEmpty
     , _Set
     , _HashSet
@@ -103,6 +104,9 @@ import Text.Read (readEither)
 
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap, TomlBiMapError (..), iso, mkAnyValueBiMap, prism,
                          tShow, wrongConstructor)
+import Toml.Codec.Error (prettyTomlDecodeErrors)
+import Validation (Validation (..))
+import Toml.Codec.Types (Codec (..), TomlCodec, TomlState (..))
 import Toml.Parser (TomlParseError (..), parseKey)
 import Toml.Type.AnyValue (AnyValue (..), matchBool, matchDay, matchDouble,
                            matchHours, matchInteger, matchLocal, matchText, matchZoned,
@@ -406,6 +410,33 @@ _Either l r = BiMap
     , backward = \v -> case backward l v of
         Right a  -> Right (Left a)
         Left err -> either (const $ Left err) (Right . Right) (backward r v)
+    }
+
+{- | Turns a 'TomlCodec' into a 'BiMap' between a value and an inline 'Table'.
+Useful for tables inside arrays with elements of different types:
+
+@
+__data__ Item = Item { name :: Text, price :: Double }
+
+itemCodec :: TomlCodec Item
+itemCodec = ...
+
+itemsCodec :: TomlCodec [Either Text Item]
+itemsCodec = Toml.arrayOf (Toml._Either Toml._Text (Toml._Table itemCodec)) "items"
+@
+
+For an array consisting only of tables, prefer 'Toml.Codec.Combinator.List.list'.
+
+@since 1.4.0.0
+-}
+_Table :: TomlCodec a -> TomlBiMap a AnyValue
+_Table codec = BiMap
+    { forward  = Right . AnyValue . Table . \a -> snd $ unTomlState (codecWrite codec a) mempty
+    , backward = \(AnyValue v) -> case v of
+        Table toml -> case codecRead codec toml of
+            Success a    -> Right a
+            Failure errs -> Left $ ArbitraryError $ prettyTomlDecodeErrors errs
+        _ -> first WrongValue $ mkMatchError TTable v
     }
 
 {- | Takes a 'BiMap' of a value and returns a 'BiMap' for a 'NonEmpty'

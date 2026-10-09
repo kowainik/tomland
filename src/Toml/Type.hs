@@ -19,8 +19,6 @@ module Toml.Type
 
       -- $printer
     , module Toml.Type.Printer
-      -- $prefix
-    , module Toml.Type.PrefixTree
       -- $key
     , module Toml.Type.Key
       -- $uvalue
@@ -34,7 +32,6 @@ module Toml.Type
 import Toml.Type.AnyValue
 -- import Toml.Type.Edsl
 import Toml.Type.Key
-import Toml.Type.PrefixTree
 import Toml.Type.Printer
 import Toml.Type.TOML
 import Toml.Type.UValue
@@ -53,12 +50,8 @@ work with the 'TOML' type instead of raw text.
 Pretty-printer for 'TOML'.
 -}
 
-{- $prefix
-'PrefixMap' and 'PrefixTree' types that help representing 'TOML' AST.
--}
-
 {- $key
-Key in key-value pairs and table names. Also 'Key' in 'PrefixMap'.
+Key in key-value pairs and table names.
 -}
 
 {- $uvalue

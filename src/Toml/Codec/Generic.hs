@@ -346,6 +346,20 @@ list. Lists in TOML can have two types: __primitive__ and __table of arrays__.
 class HasItemCodec a where
     hasItemCodec :: Either (TomlBiMap a AnyValue) (TomlCodec a)
 
+{- | Elements that can be either of two types, e.g. for arrays with values of
+different types.
+
+@since 1.4.0.0
+-}
+instance (HasItemCodec a, HasItemCodec b) => HasItemCodec (Either a b) where
+    hasItemCodec = Left $ Toml._Either (itemBiMap @a) (itemBiMap @b)
+    {-# INLINE hasItemCodec #-}
+
+-- | 'BiMap' for an array element: either the element's own 'BiMap' or its
+-- 'TomlCodec' turned into an inline-table 'BiMap' with 'Toml._Table'.
+itemBiMap :: forall a . HasItemCodec a => TomlBiMap a AnyValue
+itemBiMap = either id Toml._Table hasItemCodec
+
 -- | @since 1.1.0.0
 instance HasItemCodec Bool where
     hasItemCodec = Left Toml._Bool

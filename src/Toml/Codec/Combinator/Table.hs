@@ -46,9 +46,7 @@ import Validation (Validation (..))
 import Toml.Codec.Error (TomlDecodeError (..))
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState (..))
 import Toml.Type.Key (Key)
-import Toml.Type.TOML (TOML (..), insertTable)
-
-import qualified Toml.Type.PrefixTree as Prefix
+import Toml.Type.TOML (TOML, insertTable, lookupTable)
 
 
 
@@ -83,13 +81,13 @@ table :: forall a . TomlCodec a -> Key -> TomlCodec a
 table codec key = Codec input output
   where
     input :: TomlEnv a
-    input = \t -> case Prefix.lookup key $ tomlTables t of
+    input = \t -> case lookupTable key t of
         Nothing   -> Failure [TableNotFound key]
         Just toml -> handleTableErrors codec key toml
 
     output :: a -> TomlState a
     output a = do
-        mTable <- gets $ Prefix.lookup key . tomlTables
+        mTable <- gets $ lookupTable key
         let toml = fromMaybe mempty mTable
         let (_, newToml) = unTomlState (codecWrite codec a) toml
         a <$ modify (insertTable key newToml)
