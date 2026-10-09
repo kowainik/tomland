@@ -23,7 +23,7 @@ module Toml.Parser.Item
        , keyValP
        ) where
 
-import Control.Applicative (liftA2, many)
+import Control.Applicative (many)
 import Control.Applicative.Combinators.NonEmpty (sepEndBy1)
 import Control.Monad.Combinators (between, sepEndBy)
 import Data.Foldable (asum)
@@ -64,10 +64,14 @@ setTableName new = \case
     TableArrayName _ -> TableArrayName new
     item -> item
 
-{- | Table that contains only @key = val@ pairs.
+{- | Contents of an inline table: a list of @key = val@ pairs, where a value can
+itself be an inline table or an array of inline tables. Only the 'KeyVal',
+'InlineTable' and 'InlineTableArray' constructors of 'TomlItem' appear here.
+
+@since 1.4.0.0
 -}
 newtype Table = Table
-    { unTable :: [(Key, AnyValue)]
+    { unTable :: [TomlItem]
     } deriving stock (Show)
       deriving newtype (Eq)
 
@@ -82,7 +86,7 @@ inlineTableP :: Parser Table
 inlineTableP =
     fmap Table
     $ between (text "{" *> scn) (text "}")
-    $ (liftA2 (,) (keyP <* text "=") anyValueP <* scn) `sepEndBy` (text "," *> scn)
+    $ (keyValP <* scn) `sepEndBy` (text "," *> scn)
 
 -- | Parser for inline arrays of tables.
 inlineTableArrayP :: Parser (NonEmpty Table)

@@ -180,8 +180,7 @@ validateItemForest = go mempty
             go (toml { tomlTableArrays = newArray }) nodes
 
     createTomlFromTable :: Table -> Either ValidationError TOML
-    createTomlFromTable (Table table) =
-        go mempty $ map (\(k, v) -> Node (KeyVal k v) []) table
+    createTomlFromTable (Table items) = go mempty $ map (\item -> Node item []) items
 
 
 

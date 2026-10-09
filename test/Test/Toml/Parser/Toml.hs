@@ -105,6 +105,17 @@ tomlSpecs = do
         it "fails on consecutive commas in an inline table" $ do
             tomlFailOn "t = { a = 1,, }"
             tomlFailOn "t = { , }"
+        it "can parse nested inline tables" $ do
+            parseToml "t = { a = { b = {} } }" $
+                mkToml $ table "t" $ table "a" $ table "b" empty
+            parseToml "t = { a = { b = 1 }, c = 2 }" $
+                mkToml $ table "t" $ do
+                    table "a" $ "b" =: 1
+                    "c" =: 2
+            parseToml "t = [ { a = { b = 1 } } ]" $
+                mkToml $ tableArray "t" $ table "a" ("b" =: 1) :| []
+            parseToml "t = { a = [ { b = 1 }, { b = 2 } ] }" $
+                mkToml $ table "t" $ tableArray "a" $ "b" =: 1 :| ["b" =: 2]
         it "can parse a table followed by an inline table" $
             parseToml "[table1] \n  key1 = \"some string\" \n table2 = {key2 = 123}" $
                 mkToml $
