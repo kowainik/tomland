@@ -59,10 +59,11 @@ The changelog is available [on GitHub][2].
   depends on the order of headers in the file. `Eq` on `TOML` ignores table
   kinds. Use `lookupEntry`, `lookupValue`, `lookupTable`,
   `lookupTableArray` and the `insert*` functions instead of the record fields.
-    * __Breaking change:__ `TOML` is no longer a record: the `tomlPairs`,
-      `tomlTables` and `tomlTableArrays` fields are gone, and
-      `Toml.Type.PrefixTree` is deprecated (its `toList` no longer
-      duplicates the first key piece). `groupItems`, `groupWithParent` and
+    * __Breaking change:__ `TOML` is no longer a record. `tomlPairs`,
+      `tomlTables` and `tomlTableArrays` remain as deprecated read-only
+      functions with their old types, and `Toml.Type.PrefixTree` remains as a
+      deprecated module (its `toList` no longer duplicates the first key
+      piece); both go away in 1.5. `groupItems`, `groupWithParent` and
       `validateItemForest` are removed from `Toml.Parser.Validate`.
     * __Breaking change:__ `Piece` holds the key text without quotes, so
       `key`, `"key"` and `'key'` are the same key. The `IsString Key` instance
@@ -85,6 +86,35 @@ The changelog is available [on GitHub][2].
       and `nonEmpty` codecs read both forms.
     * The printer renders control characters in strings as `\uXXXX`
       escapes instead of Haskell escapes such as `\ESC`.
+
+### Migrating from 1.3
+
+* __`Array` holds `AnyValue`s.__ Construct with `array [Integer 1, Integer 2]`
+  (or `Array [AnyValue (Integer 1), ...]`) and match elements with
+  `\(AnyValue v) -> ...`. Arrays can mix types, so there is no way back to
+  `[Value t]`; `reifyAnyValues` is kept, deprecated, for code that wants to
+  insist on one type.
+* __`Piece` is unquoted.__ `Piece "\"a.b\""` used to be the quoted key
+  `"a.b"`; it is now a key whose text contains two quote characters. Write
+  `Piece "a.b"` (or the `Key` literal `"\"a.b\""`), and let the printer add the
+  quotes. This is a behavioural change that the compiler cannot flag.
+* __Reading the AST.__ Replace uses of the record fields with `lookupValue`,
+  `lookupTable`, `lookupTableArray` or `lookupEntry`, which accept dotted keys
+  and do not depend on how the document spelled its tables. The deprecated
+  `tomlPairs`, `tomlTables` and `tomlTableArrays` functions keep old
+  read-only code compiling in the meantime.
+* __Building the AST.__ `insertKeyVal`, `insertTable` and
+  `insertTableArrays` are unchanged; `mempty` is still the empty document.
+* __Removed without replacement.__ `Toml.Type.UValue.typeCheck` and
+  `Toml.Parser.Value.anyValueP`: typing a parsed value now requires
+  validating the inline tables it may contain, see
+  `Toml.Parser.Validate.validateValue`.
+* __Matching on `Value`, `TValue` or `UValue`.__ They gained the `Table`,
+  `TTable` and `UTable` constructors; exhaustive matches need a new case.
+* __Key `BiMap`s.__ `_KeyText` and `_KeyString` still use TOML key syntax,
+  but the spelling is normalised: a piece is quoted only when it is not a bare
+  key, and always with double quotes, so `"foo"` reads as `foo` and `'x y'` as
+  `"x y"`.
 
 ## 1.3.3.3 – Jun 7, 2024
 

@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 {- |
 Module                  : Toml.Type.TOML
@@ -39,15 +40,25 @@ module Toml.Type.TOML
 
          -- * Difference
        , tomlDiff
+
+         -- * Deprecated accessors
+       , tomlPairs
+       , tomlTables
+       , tomlTableArrays
        ) where
 
+import Data.Bifunctor (first)
+import Data.HashMap.Strict (HashMap)
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (isNothing)
 
-import Toml.Type.Key (Key (..), pattern (:||))
+import Toml.Type.Key (Key (..), Piece, pattern (:||), (<|))
+import Toml.Type.PrefixTree (PrefixMap)
 import Toml.Type.Value (AnyValue (..), Entry (..), TOML (..), TableKind (..), Value)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List.NonEmpty as NE
+import qualified Toml.Type.PrefixTree as Prefix
 import qualified Toml.Type.Value as Value
 
 
@@ -209,3 +220,69 @@ tomlDiff (TOML t1) (TOML t2) = TOML $ HashMap.differenceWith entryDiff t1 t2
         if diff == mempty
         then tomlListDiff as bs
         else diff : tomlListDiff as bs
+
+----------------------------------------------------------------------------
+-- Deprecated accessors
+----------------------------------------------------------------------------
+
+{- | The key-value pairs of a document as a flat map, as the @tomlPairs@ field
+of tomland 1.3 held them: values inside tables created by dotted keys (or
+implicitly by headers) appear under their dotted key, so @a.b = 1@ yields the
+key @a.b@. Values inside tables defined by headers or inline are not included,
+nor are inline arrays of tables, which 'tomlTableArrays' lists.
+
+@since 1.4.0.0
+-}
+tomlPairs :: TOML -> HashMap Key AnyValue
+tomlPairs = HashMap.fromList . flatten
+  where
+    flatten :: TOML -> [(Key, AnyValue)]
+    flatten = concatMap entry . HashMap.toList . unTOML
+
+    entry :: (Piece, Entry) -> [(Key, AnyValue)]
+    entry (p, e@(EValue v))
+        | isNothing (entryTableArray e)            = [(p :|| [], v)]
+    entry (p, ETable kind t) | isTransparent kind  = first (p <|) <$> flatten t
+    entry _                                        = []
+{-# DEPRECATED tomlPairs "Use lookupValue or lookupEntry; the flat map does not exist anymore since tomland-1.4." #-}
+
+{- | The sub-tables of a document as a prefix map, as the @tomlTables@ field
+of tomland 1.3 held them: tables defined by headers or inline, keyed by their
+full key relative to this document.
+
+@since 1.4.0.0
+-}
+tomlTables :: TOML -> PrefixMap TOML
+tomlTables = Prefix.fromList . tables
+  where
+    tables :: TOML -> [(Key, TOML)]
+    tables = concatMap entry . HashMap.toList . unTOML
+
+    entry :: (Piece, Entry) -> [(Key, TOML)]
+    entry (p, ETable kind t)
+        | isTransparent kind = first (p <|) <$> tables t
+        | otherwise          = [(p :|| [], t)]
+    entry _ = []
+{-# DEPRECATED tomlTables "Use lookupTable or lookupEntry; the prefix map does not exist anymore since tomland-1.4." #-}
+
+{- | The arrays of tables of a document, as the @tomlTableArrays@ field of
+tomland 1.3 held them, keyed by their full key relative to this document.
+Both @[[key]]@ headers and inline arrays of tables are included.
+
+@since 1.4.0.0
+-}
+tomlTableArrays :: TOML -> HashMap Key (NonEmpty TOML)
+tomlTableArrays = HashMap.fromList . arrays
+  where
+    arrays :: TOML -> [(Key, NonEmpty TOML)]
+    arrays = concatMap entry . HashMap.toList . unTOML
+
+    entry :: (Piece, Entry) -> [(Key, NonEmpty TOML)]
+    entry (p, e) | Just ts <- entryTableArray e    = [(p :|| [], ts)]
+    entry (p, ETable kind t) | isTransparent kind  = first (p <|) <$> arrays t
+    entry _                                        = []
+{-# DEPRECATED tomlTableArrays "Use lookupTableArray or lookupEntry since tomland-1.4." #-}
+
+-- | Tables that had no identity of their own in the tomland 1.3 representation.
+isTransparent :: TableKind -> Bool
+isTransparent kind = kind == DottedTable || kind == ImplicitTable
