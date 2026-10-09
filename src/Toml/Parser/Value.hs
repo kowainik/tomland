@@ -20,8 +20,7 @@ module Toml.Parser.Value
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (between, count, option, optional, sepBy1, sepEndBy,
-                                        skipMany)
+import Control.Applicative.Combinators (between, count, option, optional, sepBy1)
 import Data.Fixed (Pico)
 import Data.Time (Day, LocalTime (..), TimeOfDay, ZonedTime (..), fromGregorianValid,
                   makeTimeOfDayValid, minutesToTimeZone)
@@ -30,7 +29,7 @@ import Data.String (fromString)
 import Text.Read (readMaybe)
 import Text.Megaparsec (observing, parseMaybe)
 
-import Toml.Parser.Core (Parser, char, digitChar, hexDigitChar, octDigitChar, binDigitChar, hexadecimal, octal, binary, lexeme, sc, signed,
+import Toml.Parser.Core (Parser, char, digitChar, hexDigitChar, octDigitChar, binDigitChar, hexadecimal, octal, binary, lexeme, sc, scn, signed,
                          string, text, try, (<?>))
 import Toml.Parser.String (textP)
 import Toml.Type (AnyValue, UValue (..), typeCheck)
@@ -201,17 +200,18 @@ picoTruncated = do
 {- | Parser for array of values. This parser tries to parse first element of
 array, pattern-matches on this element and uses parser according to this first
 element. This allows to prevent parsing of heterogeneous arrays.
+
+Newlines and comments are allowed between the elements. A single trailing comma
+is allowed after the last element.
 -}
 arrayP :: Parser [UValue]
-arrayP = lexeme (between (char '[' *> sc) (char ']') elements) <?> "array"
+arrayP = lexeme (between (char '[' *> scn) (char ']') elements) <?> "array"
   where
     elements :: Parser [UValue]
     elements = option [] $ do -- Zero or more elements
-        v   <- valueP -- Parse the first value to determine the type
-        sep <- optional spComma
-        vs  <- case sep of
-            Nothing -> pure []
-            Just _  -> (element v `sepEndBy` spComma) <* skipMany spComma
+        v  <- valueP <* scn -- Parse the first value to determine the type
+        vs <- many (try (spComma *> element v) <* scn)
+        _  <- optional spComma
         pure (v:vs)
 
     element :: UValue -> Parser UValue
@@ -227,7 +227,7 @@ arrayP = lexeme (between (char '[' *> sc) (char ']') elements) <?> "array"
         UArray   _ -> UArray   <$> arrayP
 
     spComma :: Parser ()
-    spComma = char ',' *> sc
+    spComma = char ',' *> scn
 
 -- | Parser for 'UValue'.
 valueP :: Parser UValue

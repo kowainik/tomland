@@ -49,8 +49,12 @@ arraySpecs = describe "arrayP" $ do
             "[1, 2,]"
             [int1, int2]
         parseArray
-            "[1, 2, 3, , ,]"
-            [int1, int2, int3]
+            "[1, 2,\n]"
+            [int1, int2]
+    it "fails on more than one terminating comma or on consecutive commas" $ do
+        arrayFailOn "[1, 2, 3, , ,]"
+        arrayFailOn "[1,,2]"
+        arrayFailOn "[,]"
     it "allows an arbitrary number of comments and newlines before or after a value" $
         parseArray
             "[\n\n#c\n1, #c 2 \n 2, \n\n\n 3, #c \n #c \n 4]"

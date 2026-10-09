@@ -6,7 +6,7 @@ module Test.Toml.Parser.Toml
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Text (Text)
-import Test.Hspec (Spec, describe, it, xit)
+import Test.Hspec (Spec, describe, it)
 
 import Test.Toml.Parser.Common (day2, failOn, parseToml, tomlFailOn)
 import Toml.Parser.Item (keyValP)
@@ -36,7 +36,7 @@ tomlSpecs = do
             parseToml "x    =1"   toml
             parseToml "x\t= 1 "   toml
             parseToml "\"x\" = 1" $ mkToml ("\"x\"" =: 1)
-        xit "fails if the key, equals sign, and value are not on the same line" $ do
+        it "fails if the key, equals sign, and value are not on the same line" $ do
             failOn keyValP "x\n=\n1"
             failOn keyValP "x=\n1"
             failOn keyValP "\"x\"\n=\n1"
@@ -44,6 +44,21 @@ tomlSpecs = do
             parseToml "x=[1, \n2\n]" $ mkToml ("x" =: Array [1, 2])
         it "fails if the value is not specified" $
             tomlFailOn "x="
+        it "fails if there is no newline between key/value pairs" $ do
+            tomlFailOn "a = 1 b = 2"
+            tomlFailOn "a = \"x\" b = \"y\""
+            tomlFailOn "0=0r=false"
+        it "allows comments and CRLF line endings after key/value pairs" $ do
+            parseToml "x = 1 # comment\r\ny = 2\r\n" $ mkToml ("x" =: 1 >> "y" =: 2)
+            parseToml "# only a comment" $ mkToml empty
+            parseToml "x = 1 #\tcomment with a tab" $ mkToml ("x" =: 1)
+        it "fails on control characters in comments or on a bare carriage return" $ do
+            tomlFailOn "x = 1 # \SOH"
+            tomlFailOn "x = 1 # \DEL"
+            tomlFailOn "x = 1 # \r y = 2"
+            tomlFailOn "x = 1\r"
+            tomlFailOn "\r"
+            tomlFailOn "x = 1\v"
 
     describe "tables" $ do
         it "can parse a TOML table" $ do
@@ -55,6 +70,11 @@ tomlSpecs = do
             parseToml "[table] \n key1 = \"some string\"\nkey2 = 123" t
         it "can parse an empty TOML table" $
             parseToml "[table]" $ mkToml (table "table" empty)
+        it "fails if a table header is not on a single line" $ do
+            tomlFailOn "[tbl\n]"
+            tomlFailOn "[tbl\n.sub]"
+            tomlFailOn "[tbl] key = 1"
+            tomlFailOn "[[arr]] key = 1"
         it "can parse a table with subarrays" $ do
             let t = mkToml $
                         table "table" $
@@ -70,6 +90,17 @@ tomlSpecs = do
                         "key2" =: 123
         it "can parse an empty inline TOML table" $
             parseToml "table = {}" $ mkToml (table "table" empty)
+        it "can parse an inline table spanning multiple lines" $ do
+            let t = mkToml $ table "t" $ do
+                    "a" =: 1
+                    "b" =: 2
+            parseToml "t = {\n  a = 1, # comment\n  b = 2,\n}" t
+            parseToml "t = {#comment\n\ta = 1,#comment\n\tb = 2#comment\n}#comment" t
+            parseToml "t = { a = 1, b = 2, }" t
+            parseToml "t = {\n}" $ mkToml (table "t" empty)
+        it "fails on consecutive commas in an inline table" $ do
+            tomlFailOn "t = { a = 1,, }"
+            tomlFailOn "t = { , }"
         it "can parse a table followed by an inline table" $
             parseToml "[table1] \n  key1 = \"some string\" \n table2 = {key2 = 123}" $
                 mkToml $

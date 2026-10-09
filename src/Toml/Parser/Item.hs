@@ -29,7 +29,7 @@ import Control.Monad.Combinators (between, sepEndBy)
 import Data.Foldable (asum)
 import Data.List.NonEmpty (NonEmpty)
 
-import Toml.Parser.Core (Parser, eof, sc, text, try, (<?>))
+import Toml.Parser.Core (Parser, eof, lineEndP, scn, text, try, (<?>))
 import Toml.Parser.Key (keyP, tableArrayNameP, tableNameP)
 import Toml.Parser.Value (anyValueP)
 import Toml.Type.AnyValue (AnyValue)
@@ -75,17 +75,19 @@ newtype Table = Table
 -- Parser
 ----------------------------------------------------------------------------
 
--- | Parser for inline tables.
+{- | Parser for inline tables. Newlines and comments are allowed between the
+key-value pairs, and a trailing comma is allowed after the last one.
+-}
 inlineTableP :: Parser Table
 inlineTableP =
     fmap Table
-    $ between (text "{") (text "}")
-    $ liftA2 (,) (keyP <* text "=") anyValueP `sepEndBy` text ","
+    $ between (text "{" *> scn) (text "}")
+    $ (liftA2 (,) (keyP <* text "=") anyValueP <* scn) `sepEndBy` (text "," *> scn)
 
 -- | Parser for inline arrays of tables.
 inlineTableArrayP :: Parser (NonEmpty Table)
-inlineTableArrayP = between (text "[") (text "]")
-    $ inlineTableP `sepEndBy1` text ","
+inlineTableArrayP = between (text "[" *> scn) (text "]")
+    $ (inlineTableP <* scn) `sepEndBy1` (text "," *> scn)
 
 -- | Parser for a single item in the TOML file.
 tomlItemP :: Parser TomlItem
@@ -110,6 +112,9 @@ keyValP = do
         , KeyVal key <$> anyValueP <?> "key-value pair"
         ]
 
--- | Parser for the full content of the .toml file.
+{- | Parser for the full content of the .toml file. Every item must be
+followed by a newline (or the end of input); only comments may follow an item
+on the same line.
+-}
 tomlP :: Parser [TomlItem]
-tomlP = sc *> many tomlItemP <* eof
+tomlP = scn *> many (tomlItemP <* lineEndP) <* eof
