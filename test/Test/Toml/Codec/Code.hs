@@ -29,7 +29,7 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
                      , "1 | a = 'foo"
                      , "  |         ^"
                      , "unexpected end of input"
-                     , "expecting '''"
+                     , "expecting ''' or literal string character"
                      ]
                  ]
     it "fails decode text as Toml.int" $
