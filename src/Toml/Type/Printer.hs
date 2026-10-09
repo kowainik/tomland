@@ -279,7 +279,7 @@ addPrefix key = \case
 withLines :: PrintOptions -> (Value t -> Text) -> [Value t] -> Text
 withLines PrintOptions{..} valTxt a = case printOptionsLines of
     OneLine -> "[" <> Text.intercalate ", " (map valTxt a) <> "]"
-    MultiLine -> off <> "[ " <> Text.intercalate (off <> ", ") (map valTxt a) <> off <> "]"
+    MultiLine -> "[ " <> Text.intercalate (off <> ", ") (map valTxt a) <> off <> "]"
   where
     off :: Text
     off = "\n" <> stimes printOptionsIndent " "
