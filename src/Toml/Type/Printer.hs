@@ -28,7 +28,7 @@ import Data.Char (isAscii, ord)
 import Data.Coerce (coerce)
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
-import Data.List (sortBy, foldl')
+import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semigroup (stimes)
 import Data.Text (Text)
@@ -180,21 +180,10 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
     showText = Text.pack . show
 
 
-    -- | Function encodes all non-ascii characters in TOML defined form using the isAscii function
+    -- Basic string: escapes quotes, backslashes and control characters,
+    -- and encodes all non-ASCII characters as @\U@ escapes.
     showTextUnicode :: Text -> Text
-    showTextUnicode text = Text.pack $ show finalText
-      where
-        xss = Text.unpack text
-        finalText = foldl' (\acc (ch, asciiCh) -> acc ++ getCh ch asciiCh) "" asciiArr
-
-        asciiArr = zip xss $ asciiStatus xss
-
-        getCh :: Char -> Bool -> String
-        getCh ch True  = [ch] -- it is true ascii character
-        getCh ch False = printf "\\U%08x" (ord ch) :: String -- it is not true ascii character, it must be encoded
-
-        asciiStatus :: String -> [Bool]
-        asciiStatus = map isAscii
+    showTextUnicode text = "\"" <> Text.concatMap (escapeChar True) text <> "\""
 
     showDouble :: Double -> Text
     showDouble d | isInfinite d && d < 0 = "-inf"
@@ -210,6 +199,22 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
             = (\(x,y) -> x ++ ":" ++ y)
             . (\z -> splitAt (length z - 2) z)
             . formatTime defaultTimeLocale "%z"
+
+{- | Escapes one character of a basic string. Non-ASCII characters are
+encoded as @\U@ escapes only when the first argument is 'True'.
+-}
+escapeChar :: Bool -> Char -> Text
+escapeChar escapeNonAscii c = case c of
+    '"'  -> "\\\""
+    '\\' -> "\\\\"
+    '\b' -> "\\b"
+    '\t' -> "\\t"
+    '\n' -> "\\n"
+    '\f' -> "\\f"
+    '\r' -> "\\r"
+    _ | c < ' ' || c == '\DEL'       -> Text.pack $ printf "\\u%04X" (ord c)
+      | escapeNonAscii && not (isAscii c) -> Text.pack $ printf "\\U%08x" (ord c)
+      | otherwise                    -> Text.singleton c
 
 -- | Returns pretty formatted tables section of the 'TOML'.
 prettyTables :: PrintOptions -> Int -> Text -> PrefixMap TOML -> [Text]

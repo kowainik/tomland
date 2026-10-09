@@ -6,11 +6,11 @@ module Test.Toml.Type.Printer
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Ord (comparing)
-import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, shouldReturn)
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, shouldBe, shouldReturn)
 
 import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.Type.Key (Key (..), (<|))
-import Toml.Type.Printer (PrintOptions (..), Lines(..), defaultOptions, prettyOptions)
+import Toml.Type.Printer (PrintOptions (..), Lines(..), defaultOptions, pretty, prettyOptions)
 import Toml.Type.TOML (TOML)
 import Toml.Type.Value (Value (..))
 
@@ -25,6 +25,9 @@ printerSpec = describe "Toml.Type.Printer: Golden tests for pretty-printing" $ d
     test "pretty_unformatted" noFormatting
     test "pretty_custom_sorted" noFormatting { printOptionsSorting = Just spamEgg }
     test "pretty_lines" defaultOptions { printOptionsLines = MultiLine }
+    it "escapes control and non-ASCII characters in strings" $
+        pretty (mkToml $ "x" =: Text "a\ESCb\DEL\1234\n")
+            `shouldBe` "x = \"a\\u001Bb\\u007F\\U000004d2\\n\"\n"
   where
     test :: String -> PrintOptions -> SpecWith (Arg Expectation)
     test name options = it ("Golden " ++ name) $
