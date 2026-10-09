@@ -21,7 +21,7 @@ import GHC.Generics (Generic)
 import Toml (TomlCodec, TomlParseError (..), pretty, (.=), (<!>))
 import Toml.Codec.Generic (ByteStringAsBytes (..), HasCodec (..), TomlTableStrip (..),
                            stripTypeNameCodec)
-import Toml.Type (TOML (..), Value (..))
+import Toml.Type (TOML (..), Value (..), array)
 import Toml.Type.Edsl (mkToml, table, (=:))
 
 import qualified Data.Text.IO as TIO
@@ -245,14 +245,14 @@ main = do
 myToml :: TOML
 myToml = mkToml $ do
     "a" =: Bool True
-    "list" =: Array ["one", "two"]
-    "time" =: Array [Day (fromGregorian 2018 3 29)]
+    "list" =: array ["one", "two"]
+    "time" =: array [Day (fromGregorian 2018 3 29)]
     table "table.name.1" $ do
         "aInner" =: 1
-        "listInner" =: Array [Bool True, Bool False]
+        "listInner" =: array [Bool True, Bool False]
         table "1" $ do
             "aInner11" =: 11
-            "listInner11" =: Array [0, 1]
+            "listInner11" =: array [0, 1]
         table "2" $
             "Inner12" =: "12"
     table "table.name.2" $

@@ -13,7 +13,8 @@ import Toml.Parser.Item (keyValP)
 import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.Type.Key (pattern (:||))
 import Toml.Type.TOML (TOML (..))
-import Toml.Type.Value (Value (..))
+import Toml.Type.AnyValue (AnyValue (..))
+import Toml.Type.Value (Value (..), array)
 
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
@@ -27,7 +28,7 @@ tomlSpecs = do
             parseToml "x= 1"  $ mkToml ("x" =: 1)
             parseToml "x =5.2" $ mkToml ("x" =: Double 5.2)
             parseToml "x = true" $ mkToml ("x" =: Bool True)
-            parseToml "x= [1, 2, 3]" $ mkToml ("x" =: Array [1, 2, 3])
+            parseToml "x= [1, 2, 3]" $ mkToml ("x" =: array [1, 2, 3])
             parseToml "x =1920-12-10" $ mkToml ("x" =: Day day2)
         it "ignores white spaces around key names and values" $ do
             let toml = mkToml ("x" =: 1)
@@ -41,7 +42,10 @@ tomlSpecs = do
             failOn keyValP "x=\n1"
             failOn keyValP "\"x\"\n=\n1"
         it "works if the value is broken over multiple lines" $
-            parseToml "x=[1, \n2\n]" $ mkToml ("x" =: Array [1, 2])
+            parseToml "x=[1, \n2\n]" $ mkToml ("x" =: array [1, 2])
+        it "can parse arrays with elements of different types" $
+            parseToml "x = [1, \"a\", 2.5]" $
+                mkToml ("x" =: Array [AnyValue (Integer 1), AnyValue (Text "a"), AnyValue (Double 2.5)])
         it "fails if the value is not specified" $
             tomlFailOn "x="
         it "fails if there is no newline between key/value pairs" $ do
@@ -136,40 +140,40 @@ tomlSpecs = do
         it "can parse an empty array" $
             parseToml "[[array]]" $ mkToml $ tableArray "array" (empty :| [])
         it "can parse an array of key/values" $ do
-            let array = mkToml $
+            let arr = mkToml $
                         tableArray "array" $
                             "key1" =: "some string" :|
                             ["key2" =: 123]
 
             parseToml "[[array]]\n key1 = \"some string\"\n \
-                       \[[array]]\n key2 = 123" array
+                       \[[array]]\n key2 = 123" arr
         it "can parse an array of tables" $ do
             let table1 = table "table1" ("key1" =: "some string")
                 table2 = table "table2" ("key2" =: 123)
-                array = mkToml $ tableArray "array" $ table1 :| [table2]
+                arr = mkToml $ tableArray "array" $ table1 :| [table2]
 
             parseToml "[[array]]\n[array.table1] \n key1 = \"some string\"\n \
-                       \[[array]]\n[array.table2] \n key2 = 123" array
+                       \[[array]]\n[array.table2] \n key2 = 123" arr
         it "can parse an array of array" $ do
-            let arr = tableArray "subarray" ("key1" =: "some string" :| ["key2" =: 123])
-                array = mkToml $ tableArray "array" (arr :| [])
+            let sub = tableArray "subarray" ("key1" =: "some string" :| ["key2" =: 123])
+                arr = mkToml $ tableArray "array" (sub :| [])
 
             parseToml "[[array]] \n [[array.subarray]] \nkey1 = \"some string\"\n \
-                       \[[array.subarray]] \nkey2 = 123" array
+                       \[[array.subarray]] \nkey2 = 123" arr
         it "can parse an array of arrays" $ do
             let
                 arr1 = tableArray "table-1" ("key1" =: Text "some string" :| [])
                 arr2 = tableArray "table-2" ("key2" =: Integer 123 :| [])
-                array = mkToml $ tableArray "array" $ (arr1 >> arr2) :| []
+                arr = mkToml $ tableArray "array" $ (arr1 >> arr2) :| []
 
             parseToml "[[array]]\n [[array.table-1]] \nkey1 = \"some string\"\n \
-                                     \[[array.table-2]] \nkey2 = 123" array
+                                     \[[array.table-2]] \nkey2 = 123" arr
         it "can parse very large arrays" $ do
-            let array = mkToml $ tableArray "array" $ NE.fromList $ replicate 1000 empty
-            parseToml (mconcat $ replicate 1000 "[[array]]\n") array
+            let arr = mkToml $ tableArray "array" $ NE.fromList $ replicate 1000 empty
+            parseToml (mconcat $ replicate 1000 "[[array]]\n") arr
         it "can parse an inline array of tables" $ do
-            let array = mkToml $ tableArray "table" $ NE.fromList ["key1" =: "some string", "key2" =: 123]
-            parseToml "table = [{key1 = \"some string\"}, {key2 = 123}]" array
+            let arr = mkToml $ tableArray "table" $ NE.fromList ["key1" =: "some string", "key2" =: 123]
+            parseToml "table = [{key1 = \"some string\"}, {key2 = 123}]" arr
 
     describe "TOML" $ do
         it "can parse TOML files" $

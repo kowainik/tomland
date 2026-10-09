@@ -62,7 +62,7 @@ corresponding 'TOML' looks like:
 TOML
     { tomlPairs = fromList
         [ ( "server" :| [ "port" ] , Integer 8080)
-        , ( "server" :| [ "codes" ] , Array [ Integer 5 , Integer 10 , Integer 42])
+        , ( "server" :| [ "codes" ] , array [ Integer 5 , Integer 10 , Integer 42])
         , ( "server" :| [ "description" ] , Text "This is production server.")
         ]
     , tomlTables = fromList

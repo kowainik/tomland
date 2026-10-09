@@ -38,31 +38,14 @@ module Toml.Type.AnyValue
        , applyAsToAny
        ) where
 
-import Control.DeepSeq (NFData, rnf)
+import Control.DeepSeq (NFData)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import Data.Type.Equality ((:~:) (..))
 import GHC.Generics (Generic)
 
-import Toml.Type.Value (TValue (..), TypeMismatchError (..), Value (..), sameValue)
+import Toml.Type.Value (AnyValue (..), TValue (..), TypeMismatchError, Value (..), sameValue)
 
-
-{- | Existential wrapper for 'Value'.
-
-@since 0.0.0
--}
-data AnyValue = forall (t :: TValue) . AnyValue (Value t)
-
-instance Show AnyValue where
-    show (AnyValue v) = show v
-
-instance Eq AnyValue where
-    (AnyValue val1) == (AnyValue val2) = case sameValue val1 val2 of
-        Right Refl -> val1 == val2
-        Left _     -> False
-
-instance NFData AnyValue where
-    rnf (AnyValue val) = rnf val
 
 -- | Value type mismatch error.
 data MatchError = MatchError
@@ -129,7 +112,7 @@ matchHours value     = mkMatchError THours value
 
 -- | Extract list of elements of type @a@ from array.
 matchArray :: (AnyValue -> Either MatchError a) -> Value t -> Either MatchError [a]
-matchArray matchValue (Array a) = mapM (applyAsToAny matchValue) a
+matchArray matchValue (Array a) = mapM matchValue a
 matchArray _          value     = mkMatchError TArray value
 {-# INLINE matchArray #-}
 
@@ -137,15 +120,18 @@ matchArray _          value     = mkMatchError TArray value
 applyAsToAny :: (AnyValue -> r) -> (Value t -> r)
 applyAsToAny f = f . AnyValue
 
--- | Checks whether all elements inside given list of 'AnyValue' have the same
--- type as given 'Value'. Returns list of @Value t@ without given 'Value'.
+{- | Function for creating 'Array' from list of 'AnyValue'. Since arrays can
+hold values of different types, this function never fails; it is kept for
+backwards compatibility.
+-}
+toMArray :: [AnyValue] -> Either MatchError (Value 'TArray)
+toMArray = Right . Array
+{-# INLINE toMArray #-}
+
+{- | Checks whether all elements inside given list of 'AnyValue' have the same
+type as given 'Value'. Returns list of @Value t@ without given 'Value'.
+-}
 reifyAnyValues :: Value t -> [AnyValue] -> Either TypeMismatchError [Value t]
 reifyAnyValues _ []                 = Right []
 reifyAnyValues v (AnyValue av : xs) = sameValue v av >>= \Refl -> (av :) <$> reifyAnyValues v xs
-
--- | Function for creating 'Array' from list of 'AnyValue'.
-toMArray :: [AnyValue] -> Either MatchError (Value 'TArray)
-toMArray [] = Right $ Array []
-toMArray (AnyValue x : xs) = case reifyAnyValues x xs of
-    Left TypeMismatchError{..} -> mkMatchError typeExpected x
-    Right vals                 -> Right $ Array (x : vals)
+{-# DEPRECATED reifyAnyValues "Arrays hold values of different types since tomland-1.4; match on the elements' AnyValue instead." #-}

@@ -20,10 +20,9 @@ module Toml.Type.UValue
 
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime, zonedTimeToUTC)
-import Data.Type.Equality ((:~:) (..))
 
 import Toml.Type.AnyValue (AnyValue (..))
-import Toml.Type.Value (TypeMismatchError, Value (..), sameValue)
+import Toml.Type.Value (TypeMismatchError, Value (..))
 
 
 {- | Untyped value of @TOML@. You shouldn't use this type in your
@@ -71,18 +70,7 @@ typeCheck (UZoned d)   = rightAny $ Zoned d
 typeCheck (ULocal d)   = rightAny $ Local d
 typeCheck (UDay d)     = rightAny $ Day d
 typeCheck (UHours d)   = rightAny $ Hours d
-typeCheck (UArray a)   = case a of
-    []   -> rightAny $ Array []
-    x:xs -> do
-        AnyValue v <- typeCheck x
-        AnyValue . Array <$> checkElem v xs
-  where
-    checkElem :: Value t -> [UValue] -> Either TypeMismatchError [Value t]
-    checkElem v []     = Right [v]
-    checkElem v (x:xs) = do
-        AnyValue vx <- typeCheck x
-        Refl <- sameValue v vx
-        (v :) <$> checkElem vx xs
+typeCheck (UArray a)   = AnyValue . Array <$> traverse typeCheck a
 
 rightAny :: Value t -> Either l AnyValue
 rightAny = Right . AnyValue

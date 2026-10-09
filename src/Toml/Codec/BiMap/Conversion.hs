@@ -49,6 +49,7 @@ module Toml.Codec.BiMap.Conversion
 
       -- * Arrays
     , _Array
+    , _Either
     , _NonEmpty
     , _Set
     , _HashSet
@@ -89,7 +90,6 @@ module Toml.Codec.BiMap.Conversion
     ) where
 
 import Control.Category ((>>>))
-import Control.Monad ((>=>))
 import Data.Bifunctor (bimap, first)
 import Data.ByteString (ByteString)
 import Data.Coerce (Coercible, coerce)
@@ -104,9 +104,9 @@ import Text.Read (readEither)
 import Toml.Codec.BiMap (BiMap (..), TomlBiMap, TomlBiMapError (..), iso, mkAnyValueBiMap, prism,
                          tShow, wrongConstructor)
 import Toml.Parser (TomlParseError (..), parseKey)
-import Toml.Type.AnyValue (AnyValue (..), applyAsToAny, matchBool, matchDay, matchDouble,
+import Toml.Type.AnyValue (AnyValue (..), matchBool, matchDay, matchDouble,
                            matchHours, matchInteger, matchLocal, matchText, matchZoned,
-                           mkMatchError, toMArray)
+                           mkMatchError)
 import Toml.Type.Key (Key (..))
 import Toml.Type.Printer (prettyKey)
 import Toml.Type.Value (TValue (..), Value (..))
@@ -381,15 +381,32 @@ _Array :: forall a . TomlBiMap a AnyValue -> TomlBiMap [a] AnyValue
 _Array elementBimap = BiMap toAnyValue fromAnyValue
   where
     toAnyValue :: [a] -> Either TomlBiMapError AnyValue
-    toAnyValue = mapM (forward elementBimap) >=> bimap WrongValue AnyValue . toMArray
+    toAnyValue = fmap (AnyValue . Array) . mapM (forward elementBimap)
 
     fromAnyValue :: AnyValue -> Either TomlBiMapError [a]
-    fromAnyValue (AnyValue v) = matchElements (backward elementBimap) v
+    fromAnyValue (AnyValue (Array a)) = mapM (backward elementBimap) a
+    fromAnyValue (AnyValue val)       = first WrongValue $ mkMatchError TArray val
 
-    -- can't reuse matchArray here :(
-    matchElements :: (AnyValue -> Either TomlBiMapError a) -> Value t -> Either TomlBiMapError [a]
-    matchElements match (Array a) = mapM (applyAsToAny match) a
-    matchElements _ val           = first WrongValue $ mkMatchError TArray val
+{- | Combines two 'BiMap's into a 'BiMap' for 'Either'. Decoding tries the
+first 'BiMap' and falls back to the second one; if both fail, the error of the
+first one is returned. Useful for arrays with elements of different types:
+
+@
+__data__ Config = Config { items :: [Either Int Text] }
+
+configCodec :: TomlCodec Config
+configCodec = Config \<$\> Toml.arrayOf (Toml._Either Toml._Int Toml._Text) "items" .= items
+@
+
+@since 1.4.0.0
+-}
+_Either :: TomlBiMap a AnyValue -> TomlBiMap b AnyValue -> TomlBiMap (Either a b) AnyValue
+_Either l r = BiMap
+    { forward  = either (forward l) (forward r)
+    , backward = \v -> case backward l v of
+        Right a  -> Right (Left a)
+        Left err -> either (const $ Left err) (Right . Right) (backward r v)
+    }
 
 {- | Takes a 'BiMap' of a value and returns a 'BiMap' for a 'NonEmpty'
 list of values and 'AnyValue' as an array. Usually used as the

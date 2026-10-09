@@ -34,6 +34,17 @@ The changelog is available [on GitHub][2].
   `TomlItem`s instead of key/value pairs, so that nested inline tables can be
   represented.
 
+* [#248](https://github.com/kowainik/tomland/issues/248):
+  Support arrays with elements of different types:
+    * __Breaking change:__ the `Array` constructor of `Value` now holds
+      `[AnyValue]` instead of `[Value t]`. Use the new `array` function to
+      build an array from values of the same type.
+    * `AnyValue` is now defined in `Toml.Type.Value` (and re-exported from
+      `Toml.Type.AnyValue`); `reifyAnyValues` is deprecated and `toMArray` no
+      longer fails.
+    * New `_Either` `BiMap` to decode such arrays, e.g.
+      `arrayOf (_Either _Int _Text)`.
+
 ## 1.3.3.3 – Jun 7, 2024
 
 * Support up to GHC-9.10.

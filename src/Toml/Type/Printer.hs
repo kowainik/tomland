@@ -174,7 +174,10 @@ prettyKeyValue options i = mapOrdered (\kv -> [kvText kv]) options . HashMap.toL
     valText (Local l)   = showText l
     valText (Day d)     = showText d
     valText (Hours h)   = showText h
-    valText (Array a)   = withLines options valText a
+    valText (Array a)   = withLines options anyText a
+
+    anyText :: AnyValue -> Text
+    anyText (AnyValue v) = valText v
 
     showText :: Show a => a -> Text
     showText = Text.pack . show
@@ -281,7 +284,7 @@ addPrefix key = \case
     "" -> prettyKey key
     prefix -> prefix <> "." <> prettyKey key
 
-withLines :: PrintOptions -> (Value t -> Text) -> [Value t] -> Text
+withLines :: PrintOptions -> (AnyValue -> Text) -> [AnyValue] -> Text
 withLines PrintOptions{..} valTxt a = case printOptionsLines of
     OneLine -> "[" <> Text.intercalate ", " (map valTxt a) <> "]"
     MultiLine -> "[ " <> Text.intercalate (off <> ", ") (map valTxt a) <> off <> "]"

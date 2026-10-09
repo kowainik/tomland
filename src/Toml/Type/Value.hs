@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE KindSignatures     #-}
@@ -26,8 +27,12 @@ module Toml.Type.Value
 
          -- * Value
        , Value (..)
+       , array
        , eqValueList
        , valueType
+
+         -- * Existential wrapper
+       , AnyValue (..)
 
          -- * Type checking
        , TypeMismatchError (..)
@@ -183,8 +188,9 @@ lt2 = 00:32:00.999999
     -}
     Hours :: TimeOfDay -> Value 'THours
 
-    {- | Array of values. According to TOML specification all values in array
-      should have the same type. This is guaranteed statically with this type.
+    {- | Array of values. Since TOML 1.0.0 the elements of an array may have
+      different types, so the elements are wrapped in 'AnyValue'. Use 'array'
+      to build an array from a list of values of the same type.
 
 @
 arr1 = [ 1, 2, 3 ]
@@ -192,11 +198,42 @@ arr2 = [ "red", "yellow", "green" ]
 arr3 = [ [ 1, 2 ], [3, 4, 5] ]
 arr4 = [ "all", \'strings\', """are the same""", \'\'\'type\'\'\']
 arr5 = [ [ 1, 2 ], ["a", "b", "c"] ]
-
-arr6 = [ 1, 2.0 ] # INVALID
+arr6 = [ 1, 2.0, "three" ]
 @
+
+    @since 1.4.0.0: the elements are 'AnyValue's instead of @Value t@.
     -}
-    Array  :: [Value t] -> Value 'TArray
+    Array  :: [AnyValue] -> Value 'TArray
+
+{- | Builds an 'Array' from values of the same type.
+
+@
+__>>>__ array [Integer 1, Integer 2]
+Array [Integer 1,Integer 2]
+@
+
+@since 1.4.0.0
+-}
+array :: [Value t] -> Value 'TArray
+array = Array . map AnyValue
+{-# INLINE array #-}
+
+{- | Existential wrapper for 'Value'.
+
+@since 0.0.0
+-}
+data AnyValue = forall (t :: TValue) . AnyValue (Value t)
+
+instance Show AnyValue where
+    show (AnyValue v) = show v
+
+instance Eq AnyValue where
+    (AnyValue val1) == (AnyValue val2) = case sameValue val1 val2 of
+        Right Refl -> val1 == val2
+        Left _     -> False
+
+instance NFData AnyValue where
+    rnf (AnyValue val) = rnf val
 
 -- | @since 0.0.0
 deriving stock instance Show (Value t)
@@ -235,7 +272,7 @@ instance Eq (Value t) where
     (Local a)    == (Local b)    = a == b
     (Day a)      == (Day b)      = a == b
     (Hours a)    == (Hours b)    = a == b
-    (Array a1)   == (Array a2)   = eqValueList a1 a2
+    (Array a1)   == (Array a2)   = a1 == a2
 
 {- | Compare list of 'Value' of possibly different types.
 

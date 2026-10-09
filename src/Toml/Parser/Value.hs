@@ -195,34 +195,19 @@ picoTruncated = do
         Nothing   -> int
         Just frc' -> int ++ "." ++ frc'
 
-{- | Parser for array of values. This parser tries to parse first element of
-array, pattern-matches on this element and uses parser according to this first
-element. This allows to prevent parsing of heterogeneous arrays.
-
-Newlines and comments are allowed between the elements. A single trailing comma
-is allowed after the last element.
+{- | Parser for array of values. Elements may have different types. Newlines
+and comments are allowed between the elements. A single trailing comma is
+allowed after the last element.
 -}
 arrayP :: Parser [UValue]
 arrayP = lexeme (between (char '[' *> scn) (char ']') elements) <?> "array"
   where
     elements :: Parser [UValue]
     elements = option [] $ do -- Zero or more elements
-        v  <- valueP <* scn -- Parse the first value to determine the type
-        vs <- many (try (spComma *> element v) <* scn)
+        v  <- valueP <* scn
+        vs <- many (try (spComma *> valueP) <* scn)
         _  <- optional spComma
         pure (v:vs)
-
-    element :: UValue -> Parser UValue
-    element = \case
-        UBool    _ -> UBool    <$> boolP
-        UZoned   _ -> dayLocalZoned
-        ULocal   _ -> dayLocalZoned
-        UDay     _ -> UDay     <$> dayP
-        UHours   _ -> UHours   <$> hoursP
-        UDouble  _ -> UDouble  <$> try doubleP
-        UInteger _ -> UInteger <$> integerP
-        UText    _ -> UText    <$> textP
-        UArray   _ -> UArray   <$> arrayP
 
     spComma :: Parser ()
     spComma = char ',' *> scn

@@ -30,6 +30,7 @@ module Test.Toml.Gen
        , genIntSet
 
        , genMap
+       , genEither
 
        , genText
        , genString
@@ -72,11 +73,11 @@ import GHC.Exts (fromList)
 import Hedgehog (Gen, Range)
 import Numeric.Natural (Natural)
 
-import Toml.Type.AnyValue (AnyValue (..), toMArray)
+import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Key (pattern (:||), Key (..), Piece (..))
 import Toml.Type.PrefixTree (PrefixMap, PrefixTree (..))
 import Toml.Type.TOML (TOML (..))
-import Toml.Type.Value (TValue (..), Value (..))
+import Toml.Type.Value (TValue (..), Value (..), array)
 
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Char as Char
@@ -284,6 +285,9 @@ genIntSet = fromList <$> genList genInt
 genMap :: Ord k => Gen k -> Gen v -> Gen (Map k v)
 genMap genK genV = Map.fromList <$> genSmallList (liftA2 (,) genK genV)
 
+genEither :: Gen a -> Gen b -> Gen (Either a b)
+genEither genA genB = Gen.choice [Left <$> genA, Right <$> genB]
+
 -- | Generatates control sympol.
 genEscapeSequence :: Gen Text
 genEscapeSequence = Gen.element
@@ -358,11 +362,7 @@ noneArrayList =
     ]
 
 genArrayFrom :: Gen AnyValue -> Gen (Value 'TArray)
-genArrayFrom noneArray = do
-    eVal <- toMArray <$> Gen.list (Range.constant 0 5) noneArray
-    case eVal of
-        Left err  -> error $ show err
-        Right val -> pure val
+genArrayFrom genElem = Array <$> Gen.list (Range.constant 0 5) genElem
 
 {- | Generate arrays and nested arrays. For example:
 
@@ -390,8 +390,10 @@ Array
 -}
 genArray :: Gen (Value 'TArray)
 genArray = Gen.recursive Gen.choice
-    [Gen.choice $ map genArrayFrom noneArrayList]
-    [Array <$> Gen.list (Range.constant 0 5) genArray]
+    [ Gen.choice $ map genArrayFrom noneArrayList  -- elements of the same type
+    , genArrayFrom $ Gen.choice noneArrayList      -- elements of different types
+    ]
+    [ array <$> Gen.list (Range.constant 0 5) genArray ]
 
 -- filters
 

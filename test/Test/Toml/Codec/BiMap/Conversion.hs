@@ -50,6 +50,8 @@ conversionSpec = parallel $ describe "BiMap Rountrip Property tests" $ do
         it "IntSet"           $ testBiMap B._IntSet G.genIntSet
         it "ByteStringArray"  $ testBiMap B._ByteStringArray G.genByteString
         it "LByteStringArray" $ testBiMap B._LByteStringArray G.genLByteString
+        it "Array (Either Int Text)" $
+            testBiMap (B._Array $ B._Either B._Int B._Text) (G.genList $ G.genEither G.genInt G.genText)
 
     describe "Custom" $ do
         it "EnumBounded (Ordering)" $ testBiMap B._EnumBounded $ Gen.enumBounded @_ @Ordering
