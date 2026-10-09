@@ -37,14 +37,9 @@ bareKeyPieceP = lexeme $ takeWhile1P (Just "bare key character") isBareKeyChar
     isBareKeyChar :: Char -> Bool
     isBareKeyChar c = isAsciiLower c || isAsciiUpper c || isDigit c || c == '_' || c == '-'
 
--- | Parser for 'Piece'.
+-- | Parser for 'Piece'. Quoted pieces are stored without their quotes.
 keyComponentP :: Parser Piece
-keyComponentP = Piece <$>
-    (bareKeyPieceP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))
-  where
-    -- adds " or ' to both sides
-    quote :: Text -> Text -> Text
-    quote q t = q <> t <> q
+keyComponentP = Piece <$> (bareKeyPieceP <|> basicStringP <|> literalStringP)
 
 {- | Parser for 'Key': dot-separated list of 'Piece'. Whitespace around dots is
 ignored.

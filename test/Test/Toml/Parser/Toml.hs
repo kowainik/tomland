@@ -133,7 +133,7 @@ tomlSpecs = do
                         table "table2" $
                             "key2" =: 123
         it "allows the name of the table to be any valid TOML key" $ do
-            parseToml "dog.\"tater.man\"={}" $ mkToml $ table ("dog" :|| ["\"tater.man\""]) empty
+            parseToml "dog.\"tater.man\"={}" $ mkToml $ table ("dog" :|| ["tater.man"]) empty
             parseToml "j.\"ʞ\".'l'={}" $ mkToml $ table "j.\"ʞ\".'l'" empty
 
     describe "array of tables" $ do

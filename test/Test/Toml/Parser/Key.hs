@@ -26,12 +26,18 @@ keySpecs = describe "keyP" $ do
             tomlFailOn "key\12290 = 1"
     context "when the key is a quoted key" $ do
         it "can parse keys that follow the exact same rules as basic strings" $ do
-            parseKey (dquote "127.0.0.1") ("\"127.0.0.1\"" :|| [])
-            parseKey (dquote "character encoding") "\"character encoding\""
-            parseKey (dquote "ʎǝʞ") "\"ʎǝʞ\""
+            parseKey (dquote "127.0.0.1") ("127.0.0.1" :|| [])
+            parseKey (dquote "character encoding") ("character encoding" :|| [])
+            parseKey (dquote "ʎǝʞ") ("ʎǝʞ" :|| [])
+            parseKey (dquote "esc\\u0061ped\\n") ("escaped\n" :|| [])
+            parseKey (dquote "") ("" :|| [])
         it "can parse keys that follow the exact same rules as literal strings" $ do
-            parseKey (squote "key2") "'key2'"
-            parseKey (squote "quoted \"value\"") "'quoted \"value\"'"
+            parseKey (squote "key2") ("key2" :|| [])
+            parseKey (squote "quoted \"value\"") ("quoted \"value\"" :|| [])
+        it "treats bare and quoted spellings of a key as the same key" $ do
+            parseKey (dquote "key") "key"
+            parseKey (squote "key") "key"
+            parseKey "a.\"b\".'c'" ("a" :|| ["b", "c"])
         it "fails on multi-line strings used as keys" $ do
             tomlFailOn "\"\"\"key\"\"\" = 1"
             tomlFailOn (squote3 "key" <> " = 1")
@@ -40,11 +46,11 @@ keySpecs = describe "keyP" $ do
             parseKey "name"           "name"
             parseKey "physical.color" "physical.color"
             parseKey "physical.shape" "physical.shape"
-            parseKey "site.\"google.com\"" ("site" :|| ["\"google.com\""])
+            parseKey "site.\"google.com\"" ("site" :|| ["google.com"])
         it "ignores whitespaces around dot-separated parts" $ do
             parseKey "a . b . c. d" ("a" :|| ["b", "c", "d"])
             parseKey "fruit. color" ("fruit" :|| ["color"])
-            parseKey "a\t.\t\"b\" . 'c'" ("a" :|| ["\"b\"", "'c'"])
+            parseKey "a\t.\t\"b\" . 'c'" ("a" :|| ["b", "c"])
     context "when the key is symbols only" $ do
         it "parses Haskell comments" $
             parseKey "--" "--"
@@ -55,4 +61,4 @@ keySpecs = describe "keyP" $ do
             parseKey "__"  "__"
             parseKey "___" "___"
         it "parses quotes" $
-            parseKey "\".\"" $ "\".\"" :|| []
+            parseKey "\".\"" $ "." :|| []

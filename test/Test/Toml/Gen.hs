@@ -30,6 +30,7 @@ module Test.Toml.Gen
        , genIntSet
 
        , genMap
+       , genTableMap
        , genEither
 
        , genText
@@ -59,6 +60,7 @@ import Control.Monad (forM, replicateM)
 import Data.ByteString (ByteString)
 import Data.Fixed (Fixed (..))
 import Data.Hashable (Hashable)
+import Data.List (isPrefixOf)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
@@ -76,11 +78,11 @@ import Numeric.Natural (Natural)
 import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Key (pattern (:||), Key (..), Piece (..))
 import Toml.Type.PrefixTree (PrefixMap, PrefixTree (..))
+import Toml.Type.Printer (prettyKey)
 import Toml.Type.TOML (TOML (..))
 import Toml.Type.Value (TValue (..), Value (..), array)
 
 import qualified Data.ByteString.Lazy as LB
-import qualified Data.Char as Char
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
@@ -107,9 +109,12 @@ genAnyValue :: Gen AnyValue
 genAnyValue = Gen.choice $
     (AnyValue <$> genArray) : noneArrayList
 
--- | Generate either a bare piece, or a quoted piece
+{- | Generate either a bare piece, a piece with the characters that are
+special in keys (dots, quotes, backslashes, spaces), or a piece with arbitrary
+characters. The last two have to be quoted by the printer.
+-}
 genPiece :: Gen Piece
-genPiece = Piece <$> Gen.choice [bare, quoted]
+genPiece = Piece <$> Gen.choice [bare, punctuated, arbitrary]
   where
     bare :: Gen Text
     bare = liftA2 Text.cons Gen.alpha $ Gen.text (Range.constant 1 10) alphadashes
@@ -117,23 +122,12 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     alphadashes :: Gen Char
     alphadashes = Gen.choice [Gen.alphaNum, Gen.element ("_-" :: [Char])]
 
-    quoted :: Gen Text
-    quoted = genNotEscape $ Gen.choice
-        [ quotedWith '"' (\x -> x /= '\\' && notControl x)
-        , quotedWith '\'' notControl
-        ]
+    punctuated :: Gen Text
+    punctuated = Gen.text (Range.constant 0 10) $
+        Gen.choice [Gen.alphaNum, Gen.element (".\"'\\ " :: [Char])]
 
-    quotedWith :: Char -> (Char -> Bool) -> Gen Text
-    quotedWith c isAllowed = wrapChar c <$> Gen.text (Range.constant 1 10) allowedChar
-      where
-        allowedChar :: Gen Char
-        allowedChar = Gen.filter (\x -> x /= c && isAllowed x) Gen.unicode
-
-    wrapChar :: Char -> Text -> Text
-    wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
-
-    notControl :: Char -> Bool
-    notControl = not . Char.isControl
+    arbitrary :: Gen Text
+    arbitrary = Gen.text (Range.constant 0 10) Gen.unicode
 
 genKey :: Gen Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
@@ -284,6 +278,24 @@ genIntSet = fromList <$> genList genInt
 
 genMap :: Ord k => Gen k -> Gen v -> Gen (Map k v)
 genMap genK genV = Map.fromList <$> genSmallList (liftA2 (,) genK genV)
+
+{- | Generates a map with 'Text' keys suitable for
+'Toml.Codec.Combinator.Map.tableMap' with 'Toml.Codec.BiMap.Conversion._KeyText':
+keys are printed TOML keys, and no key is a prefix of another (a TOML key
+cannot be both a value and a table).
+-}
+genTableMap :: Gen v -> Gen (Map Text v)
+genTableMap genV =
+    Map.mapKeys prettyKey <$> Gen.filter noPrefixConflict (genMap genKey genV)
+  where
+    noPrefixConflict :: Map Key v -> Bool
+    noPrefixConflict m = and
+        [ not (pieces a `isPrefixOf` pieces b)
+        | a <- Map.keys m, b <- Map.keys m, a /= b
+        ]
+
+    pieces :: Key -> [Piece]
+    pieces = NE.toList . unKey
 
 genEither :: Gen a -> Gen b -> Gen (Either a b)
 genEither genA genB = Gen.choice [Left <$> genA, Right <$> genB]

@@ -20,12 +20,12 @@ module Toml.Type.Printer
        , pretty
        , prettyOptions
        , prettyKey
+       , prettyPiece
        ) where
 
 import GHC.Exts (sortWith)
 import Data.Bifunctor (first)
-import Data.Char (isAscii, ord)
-import Data.Coerce (coerce)
+import Data.Char (isAscii, isAsciiLower, isAsciiUpper, isDigit, ord)
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import Data.List (sortBy)
@@ -149,13 +149,26 @@ prettyTomlInd options i prefix TOML{..} = concat
     , prettyTableArrays options i prefix tomlTableArrays
     ]
 
-{- | Converts a key to text
+{- | Converts a key to text, quoting the pieces that are not bare keys.
 
 @since 0.0.0
 -}
 prettyKey :: Key -> Text
-prettyKey = Text.intercalate "." . NonEmpty.toList . coerce
+prettyKey = Text.intercalate "." . map prettyPiece . NonEmpty.toList . unKey
 {-# INLINE prettyKey #-}
+
+{- | Converts a key piece to text: bare if it consists of ASCII letters,
+digits, @-@ and @_@ only, a quoted basic string otherwise.
+
+@since 1.4.0.0
+-}
+prettyPiece :: Piece -> Text
+prettyPiece (Piece p)
+    | not (Text.null p) && Text.all isBareKeyChar p = p
+    | otherwise = "\"" <> Text.concatMap (escapeChar False) p <> "\""
+  where
+    isBareKeyChar :: Char -> Bool
+    isBareKeyChar c = isAsciiLower c || isAsciiUpper c || isDigit c || c == '_' || c == '-'
 
 -- | Returns pretty formatted  key-value pairs of the 'TOML'.
 prettyKeyValue :: PrintOptions -> Int -> HashMap Key AnyValue -> [Text]

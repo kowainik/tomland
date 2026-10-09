@@ -45,6 +45,13 @@ The changelog is available [on GitHub][2].
     * New `_Either` `BiMap` to decode such arrays, e.g.
       `arrayOf (_Either _Int _Text)`.
 
+* __Breaking change:__ `Piece` holds the key text without quotes, so
+  `key`, `"key"` and `'key'` are the same key. The `IsString Key` instance
+  understands quoted pieces, and the printer quotes pieces that are not bare
+  keys. `_KeyText` and `_KeyString` still use TOML key syntax, so a piece that
+  is not a bare key appears quoted (`site."google.com"`), now always with
+  double quotes.
+
 ## 1.3.3.3 – Jun 7, 2024
 
 * Support up to GHC-9.10.

@@ -6,7 +6,6 @@ import Data.Foldable (toList)
 import Test.Hspec (Spec, describe, parallel)
 
 import Test.Toml.Codec.Combinator.Common (codecRoundtrip)
-import Toml.Type.Printer (prettyKey)
 
 import qualified Test.Toml.Gen as Gen
 import qualified Toml.Codec.BiMap.Conversion as Toml
@@ -22,8 +21,8 @@ mapSpec = parallel $ describe "Combinator.Map: Roundtrip tests" $ do
         (Gen.genMap Gen.genInt Gen.genText)
     codecRoundtrip "Map Text Int (tableMap)"
         (Toml.tableMap Toml._KeyText Toml.int)
-        (Gen.genMap (prettyKey <$> Gen.genKey) Gen.genInt)
+        (Gen.genTableMap Gen.genInt)
     -- TODO: handle empty lists in values.
     codecRoundtrip "Map Text [Int] (tableMap)"
         (Toml.tableMap Toml._KeyText (Toml.list $ Toml.int "val"))
-        (Gen.genMap (prettyKey <$> Gen.genKey) (toList <$> Gen.genNonEmpty Gen.genInt))
+        (Gen.genTableMap (toList <$> Gen.genNonEmpty Gen.genInt))

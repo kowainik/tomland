@@ -38,6 +38,9 @@ validateSpec = describe "Parser Validation tests" $ do
         [TableArrayName "tableArray", TableName "tableArray"]
         (SameNameTableArray "tableArray")
     validationFail
+        [keyVal "key", keyVal "\"key\""]
+        (DuplicateKey "key")
+    validationFail
         [inlineTable "inline", TableName "inline"]
         (DuplicateTable "inline")
     validationFail

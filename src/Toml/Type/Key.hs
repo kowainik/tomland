@@ -28,7 +28,7 @@ module Toml.Type.Key
     ) where
 
 import Control.DeepSeq (NFData)
-import Data.Coerce (coerce)
+import Data.Char (chr, digitToInt, isHexDigit, isSpace)
 import Data.Hashable (Hashable)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.String (IsString (..))
@@ -39,8 +39,12 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text as Text
 
 
-{- | Represents the key piece of some layer.
+{- | Represents the key piece of some layer. The text is the key itself,
+without quotes: the pieces of @site."google.com"@ are @site@ and
+@google.com@. Whether a piece needs to be quoted when printed is decided by
+the printer.
 
+@since 1.4.0.0: quotes are no longer part of the piece.
 @since 0.0.0
 -}
 newtype Piece = Piece
@@ -58,7 +62,7 @@ site."google.com"
 is represented like
 
 @
-Key (Piece "site" :| [Piece "\\"google.com\\""])
+Key (Piece "site" :| [Piece "google.com"])
 @
 
 @since 0.0.0
@@ -75,21 +79,85 @@ newtype Key = Key
 type Prefix = Key
 
 {- | Split a dot-separated string into 'Key'. Empty string turns into a 'Key'
-with single element — empty 'Piece'.
+with single element — empty 'Piece'. Quoted pieces are supported: the string
+@site.\"google.com\"@ gives the two pieces @site@ and @google.com@, and the
+usual escape sequences of basic strings are interpreted inside double quotes
+(an invalid @\\x@, @\\u@ or @\\U@ escape is an error). Whitespace around dots
+is ignored.
 
-This instance is not safe for now. Use carefully. If you try to use as a key
-string like this @site.\"google.com\"@ you will have list of three components
-instead of desired two.
-
+@since 1.4.0.0: quoted pieces are recognised.
 @since 0.1.0
 -}
 instance IsString Key where
     fromString :: String -> Key
-    fromString = \case
-        "" -> Key ("" :| [])
-        s  -> case Text.splitOn "." (fromString s) of
-            []   -> error "Text.splitOn returned empty string"  -- can't happen
-            x:xs -> coerce @(NonEmpty Text) @Key (x :| xs)
+    fromString s = case splitPieces s of
+        []     -> Key ("" :| [])
+        p : ps -> Key (fmap (Piece . Text.pack) (p :| ps))
+
+{- | Splits a string into key pieces on dots that are outside quotes, and
+strips the quotes.
+-}
+splitPieces :: String -> [String]
+splitPieces = go
+  where
+    go :: String -> [String]
+    go str = case dropWhile isSpace str of
+        '"' : rest   -> let (piece, after) = basic rest in piece : next after
+        '\'' : rest -> let (piece, after) = break (== '\'') rest in piece : next (drop 1 after)
+        other        -> let (piece, after) = break (== '.') other
+                        in trimEnd piece : next after
+
+    -- after a piece: optional whitespace, then either end or a dot
+    next :: String -> [String]
+    next str = case dropWhile isSpace str of
+        '.' : rest -> go rest
+        _          -> []
+
+    basic :: String -> (String, String)
+    basic = \case
+        []            -> ([], [])
+        '"' : rest    -> ([], rest)
+        '\\' : c : rest ->
+            let (x, rest') = unescape c rest
+                (piece, after) = basic rest'
+            in (x : piece, after)
+        c : rest      -> let (piece, after) = basic rest in (c : piece, after)
+
+    -- the character after a backslash, and the rest of the string
+    unescape :: Char -> String -> (Char, String)
+    unescape = \case
+        'n' -> (,) '\n'
+        't' -> (,) '\t'
+        'r' -> (,) '\r'
+        'b' -> (,) '\b'
+        'f' -> (,) '\f'
+        'e' -> (,) '\ESC'
+        'x' -> hexEscape 'x' 2
+        'u' -> hexEscape 'u' 4
+        'U' -> hexEscape 'U' 8
+        '"' -> (,) '"'
+        '\\' -> (,) '\\'
+        c   -> error $ "Invalid escape sequence in key: \\" <> [c]
+
+    hexEscape :: Char -> Int -> String -> (Char, String)
+    hexEscape prefix n str = case splitAt n str of
+        (digits, rest)
+            | length digits == n
+            , all isHexDigit digits
+            , Just c <- toUnicode (foldl (\acc d -> 16 * acc + digitToInt d) 0 digits)
+            -> (c, rest)
+            | otherwise
+            -> error $ "Invalid escape sequence in key: \\" <> [prefix] <> digits
+
+    -- Unicode scalar values, as in "Toml.Parser.String"
+    toUnicode :: Int -> Maybe Char
+    toUnicode x
+        | x >= 0      && x <= 0xD7FF   = Just (chr x)
+        | x >= 0xE000 && x <= 0x10FFFF = Just (chr x)
+        | otherwise                    = Nothing
+
+    trimEnd :: String -> String
+    trimEnd = reverse . dropWhile isSpace . reverse
 
 {- | Bidirectional pattern synonym for constructing and deconstructing 'Key's.
 -}
