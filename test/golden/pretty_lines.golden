@@ -2,8 +2,7 @@ a = "a"
 b = "bb"
 c = "cccc"
 d = "ddd"
-list = 
-  [ "one"
+list = [ "one"
   , "two"
   ]
 

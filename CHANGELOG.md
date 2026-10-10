@@ -3,6 +3,119 @@
 `tomland` uses [PVP Versioning][1].
 The changelog is available [on GitHub][2].
 
+## 1.4.0.0 — Unreleased
+
+* [#373](https://github.com/kowainik/tomland/issues/373):
+  Support [TOML spec version 1.1.0](https://toml.io/en/v1.1.0):
+    * `\e` and `\xHH` escape sequences in basic strings.
+    * Seconds may be omitted in times and date-times (`07:32`, `1979-05-27T07:32Z`).
+    * Inline tables may span multiple lines and may have a trailing comma.
+    * Inline tables can be nested inside inline tables and inside arrays of
+      inline tables.
+    * Carriage returns are only allowed as part of a CRLF newline.
+* Bring the parser in line with TOML 1.0.0 rules that were not enforced before:
+    * Whitespace is allowed around dots in keys and inside table headers.
+    * Bare keys are restricted to ASCII letters, digits, `-` and `_`.
+    * Tabs and non-ASCII characters are allowed in basic strings;
+      control characters are rejected in literal strings and comments.
+    * One or two quotation marks are allowed right before the closing
+      delimiter of a multi-line string.
+    * A line-ending backslash may be followed by whitespace before the newline.
+    * Lowercase `t` and `z` are accepted in date-times; time offsets are
+      range-checked.
+    * Leading zeros are rejected in floats and in integers with underscores
+      (`0_1`), and whitespace is not allowed after a sign.
+    * Only a single trailing comma is allowed in arrays.
+    * A key/value pair or table header must be followed by a newline (or a
+      comment and a newline). The multi-line printing mode of
+      `Toml.Type.Printer` now keeps `[` on the same line as `key =` so that
+      its output is valid TOML.
+* [#248](https://github.com/kowainik/tomland/issues/248):
+  Support arrays with elements of different types, including inline tables
+  inside arrays:
+    * __Breaking change:__ the `Array` constructor of `Value` now holds
+      `[AnyValue]` instead of `[Value t]`. Use the new `array` function to
+      build an array from values of the same type.
+    * New `Table :: TOML -> Value 'TTable` constructor (and `TTable` in
+      `TValue`) for inline tables that are elements of arrays. An inline table
+      that is the direct value of a key is stored as an `InlineTable` entry.
+    * New `_Either` and `_Table` `BiMap`s to decode such arrays, e.g.
+      `arrayOf (_Either _Int (_Table itemCodec))`, and a
+      `HasItemCodec (Either a b)` instance for generic codecs.
+    * `AnyValue` is now defined in `Toml.Type.Value` (and re-exported from
+      `Toml.Type.AnyValue`); `matchTable` is added, and `reifyAnyValues` is
+      deprecated and `toMArray` no longer fails.
+    * The printer renders tables inside arrays as inline tables.
+    * __Breaking change:__ `Toml.Parser.Item.TomlItem` now carries an untyped
+      `UValue` in `KeyVal`; the `InlineTable`, `InlineTableArray` and `Table`
+      definitions are removed. `UValue` gains `UTable`, and `typeCheck` is
+      replaced by `Toml.Parser.Validate.validateValue`.
+* [#264](https://github.com/kowainik/tomland/issues/264):
+  New representation of the TOML AST. `TOML` is now a map from one key
+  `Piece` to an `Entry`: a value, a sub-table (with its `TableKind`:
+  header, implicit, dotted or inline), or an array of tables. Every level of
+  nesting is one piece deep, so `a.b.c = 1`, `[a.b]` with `c = 1` and
+  `a = { b = { c = 1 } }` produce the same document, and the result no longer
+  depends on the order of headers in the file. `Eq` on `TOML` ignores table
+  kinds. Use `lookupEntry`, `lookupValue`, `lookupTable`,
+  `lookupTableArray` and the `insert*` functions instead of the record fields.
+    * __Breaking change:__ `TOML` is no longer a record. `tomlPairs`,
+      `tomlTables` and `tomlTableArrays` remain as deprecated read-only
+      functions with their old types, and `Toml.Type.PrefixTree` remains as a
+      deprecated module (its `toList` no longer duplicates the first key
+      piece); both go away in 1.5. `groupItems`, `groupWithParent` and
+      `validateItemForest` are removed from `Toml.Parser.Validate`.
+    * __Breaking change:__ `Piece` holds the key text without quotes, so
+      `key`, `"key"` and `'key'` are the same key. The `IsString Key` instance
+      understands quoted pieces, and the printer quotes pieces that are not
+      bare keys. `_KeyText` and `_KeyString` still use TOML key syntax, so a
+      piece that is not a bare key appears quoted (`site."google.com"`), now
+      always with double quotes.
+    * The validator now enforces the TOML 1.1 rules for defining and
+      extending tables: inline tables are closed, tables created by dotted
+      keys cannot be reopened with a header or extended from another table,
+      arrays of tables cannot be extended through dotted keys, and keys and
+      tables cannot be redefined. New `ExtendClosedTable` validation error.
+      All invalid documents of the official `toml-test` suite for TOML 1.1.0
+      are now rejected, and all valid ones are accepted.
+    * `Toml.int "a.b"` and `Toml.table (Toml.int "b") "a"` now read and write
+      the same place. `tableMap` sees the keys of tables created by dotted
+      keys or implicitly by headers as dotted keys.
+    * An inline array of inline tables, `key = [ {..}, {..} ]`, is kept as an
+      array value instead of being turned into `[[key]]` tables; the `list`
+      and `nonEmpty` codecs read both forms.
+    * The printer renders control characters in strings as `\uXXXX`
+      escapes instead of Haskell escapes such as `\ESC`.
+
+### Migrating from 1.3
+
+* __`Array` holds `AnyValue`s.__ Construct with `array [Integer 1, Integer 2]`
+  (or `Array [AnyValue (Integer 1), ...]`) and match elements with
+  `\(AnyValue v) -> ...`. Arrays can mix types, so there is no way back to
+  `[Value t]`; `reifyAnyValues` is kept, deprecated, for code that wants to
+  insist on one type.
+* __`Piece` is unquoted.__ `Piece "\"a.b\""` used to be the quoted key
+  `"a.b"`; it is now a key whose text contains two quote characters. Write
+  `Piece "a.b"` (or the `Key` literal `"\"a.b\""`), and let the printer add the
+  quotes. This is a behavioural change that the compiler cannot flag.
+* __Reading the AST.__ Replace uses of the record fields with `lookupValue`,
+  `lookupTable`, `lookupTableArray` or `lookupEntry`, which accept dotted keys
+  and do not depend on how the document spelled its tables. The deprecated
+  `tomlPairs`, `tomlTables` and `tomlTableArrays` functions keep old
+  read-only code compiling in the meantime.
+* __Building the AST.__ `insertKeyVal`, `insertTable` and
+  `insertTableArrays` are unchanged; `mempty` is still the empty document.
+* __Removed without replacement.__ `Toml.Type.UValue.typeCheck` and
+  `Toml.Parser.Value.anyValueP`: typing a parsed value now requires
+  validating the inline tables it may contain, see
+  `Toml.Parser.Validate.validateValue`.
+* __Matching on `Value`, `TValue` or `UValue`.__ They gained the `Table`,
+  `TTable` and `UTable` constructors; exhaustive matches need a new case.
+* __Key `BiMap`s.__ `_KeyText` and `_KeyString` still use TOML key syntax,
+  but the spelling is normalised: a piece is quoted only when it is not a bare
+  key, and always with double quotes, so `"foo"` reads as `foo` and `'x y'` as
+  `"x y"`.
+
 ## 1.3.3.3 – Jun 7, 2024
 
 * Support up to GHC-9.10.

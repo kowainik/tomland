@@ -16,43 +16,39 @@ be assembled to TOML AST later.
 
 module Toml.Parser.Item
        ( TomlItem (..)
-       , Table (..)
        , setTableName
 
        , tomlP
        , keyValP
        ) where
 
-import Control.Applicative (liftA2, many)
-import Control.Applicative.Combinators.NonEmpty (sepEndBy1)
-import Control.Monad.Combinators (between, sepEndBy)
+import Control.Applicative (many)
 import Data.Foldable (asum)
-import Data.List.NonEmpty (NonEmpty)
 
-import Toml.Parser.Core (Parser, eof, sc, text, try, (<?>))
+import Toml.Parser.Core (Parser, eof, lineEndP, scn, text, try, (<?>))
 import Toml.Parser.Key (keyP, tableArrayNameP, tableNameP)
-import Toml.Parser.Value (anyValueP)
-import Toml.Type.AnyValue (AnyValue)
+import Toml.Parser.Value (valueP)
 import Toml.Type.Key (Key)
+import Toml.Type.UValue (UValue)
 
 
 {- | One item of a TOML file. It could be either:
 
 * A name of a table
 * A name of a table array
-* Key-value pair
-* Inline table
-* Inline array of tables
+* Key-value pair, where the value is not yet validated: it may be an inline
+  table or an array of inline tables
 
 Knowing a list of 'TomlItem's, it's possible to construct 'Toml.Type.TOML.TOML'
 from this information.
+
+@since 1.4.0.0: 'KeyVal' holds an untyped 'UValue'; the @InlineTable@ and
+@InlineTableArray@ constructors are gone.
 -}
 data TomlItem
     = TableName !Key
     | TableArrayName !Key
-    | KeyVal !Key !AnyValue
-    | InlineTable !Key !Table
-    | InlineTableArray !Key !(NonEmpty Table)
+    | KeyVal !Key !UValue
     deriving stock (Show, Eq)
 
 {- | Changes name of table to a new one. Works only for 'TableName' and
@@ -64,28 +60,9 @@ setTableName new = \case
     TableArrayName _ -> TableArrayName new
     item -> item
 
-{- | Table that contains only @key = val@ pairs.
--}
-newtype Table = Table
-    { unTable :: [(Key, AnyValue)]
-    } deriving stock (Show)
-      deriving newtype (Eq)
-
 ----------------------------------------------------------------------------
 -- Parser
 ----------------------------------------------------------------------------
-
--- | Parser for inline tables.
-inlineTableP :: Parser Table
-inlineTableP =
-    fmap Table
-    $ between (text "{") (text "}")
-    $ liftA2 (,) (keyP <* text "=") anyValueP `sepEndBy` text ","
-
--- | Parser for inline arrays of tables.
-inlineTableArrayP :: Parser (NonEmpty Table)
-inlineTableArrayP = between (text "[") (text "]")
-    $ inlineTableP `sepEndBy1` text ","
 
 -- | Parser for a single item in the TOML file.
 tomlItemP :: Parser TomlItem
@@ -95,21 +72,13 @@ tomlItemP = asum
     , keyValP
     ]
 
-{- | parser for @"key = val"@ pairs; can be one of three forms:
-
-1. key = { ... }
-2. key = [ {...}, {...}, ... ]
-3. key = ...
--}
+-- | Parser for @key = value@ pairs.
 keyValP :: Parser TomlItem
-keyValP = do
-    key <- keyP <* text "="
-    asum
-        [ InlineTable key <$> inlineTableP <?> "inline table"
-        , InlineTableArray key <$> try inlineTableArrayP <?> "inline array of tables"
-        , KeyVal key <$> anyValueP <?> "key-value pair"
-        ]
+keyValP = KeyVal <$> (keyP <* text "=") <*> valueP <?> "key-value pair"
 
--- | Parser for the full content of the .toml file.
+{- | Parser for the full content of the .toml file. Every item must be
+followed by a newline (or the end of input); only comments may follow an item
+on the same line.
+-}
 tomlP :: Parser [TomlItem]
-tomlP = sc *> many tomlItemP <* eof
+tomlP = scn *> many (tomlItemP <* lineEndP) <* eof

@@ -29,7 +29,7 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
                      , "1 | a = 'foo"
                      , "  |         ^"
                      , "unexpected end of input"
-                     , "expecting '''"
+                     , "expecting ''' or literal string character"
                      ]
                  ]
     it "fails decode text as Toml.int" $
@@ -92,6 +92,10 @@ codeSpec = describe "Codec.Code decode tests on different TomlDecodeErrors" $ do
     it "fails to exact decode table array with redundant field" $
         decodeExact (Toml.list (Toml.int "x") "foo") "[[foo]]\nx = 1\ny = 'abc'" `shouldBe`
             Left [NotExactDecode $ mkToml $ tableArray "foo" $ ("y" =: "abc") NE.:| []]
+
+    it "exact decode inline array of tables" $
+        decodeExact (Toml.list (Toml.int "x") "foo") "foo = [{ x = 1 }, { x = 2 }]" `shouldBe`
+            Right [1, 2]
 
     -- map
     it "map: decodes to an empty map when field is missing" $

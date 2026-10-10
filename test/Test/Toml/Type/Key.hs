@@ -2,13 +2,18 @@ module Test.Toml.Type.Key
     ( keySpec
     ) where
 
+import Control.Exception (evaluate)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.String (fromString)
 import Hedgehog (forAll, tripping)
-import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, shouldBe)
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, anyErrorCall, describe, it, shouldBe,
+                   shouldThrow)
 import Test.Hspec.Hedgehog (hedgehog)
 
 import Test.Toml.Gen (genKey)
-import Toml.Type.Key (KeysDiff (..), keysDiff)
+import Toml.Type.Key (Key (..), KeysDiff (..), keysDiff)
 
+import qualified Data.Text as Text
 import qualified Toml.Parser as Parser
 import qualified Toml.Type.Printer as Printer
 
@@ -16,12 +21,24 @@ import qualified Toml.Type.Printer as Printer
 keySpec :: Spec
 keySpec = describe "TOML Key" $ do
     keyRoundtripSpec
+    keyStringSpec
     keysDiffSpec
 
 keyRoundtripSpec :: SpecWith (Arg Expectation)
 keyRoundtripSpec = it "Key printing: fromString . prettyKey ≡ id" $ hedgehog $ do
     key <- forAll genKey
     tripping key Printer.prettyKey Parser.parseKey
+
+keyStringSpec :: Spec
+keyStringSpec = describe "IsString Key" $ do
+    it "fromString . prettyKey ≡ id" $ hedgehog $ do
+        key <- forAll genKey
+        tripping key Printer.prettyKey (Just . fromString @Key . Text.unpack)
+    it "interprets fixed-width escapes in quoted pieces" $ do
+        "\"\\x61\\u0062\\U00000063\"" `shouldBe` ("abc" :: Key)
+        "a.\"\\u002e\"" `shouldBe` Key ("a" :| ["."])
+    it "rejects unknown escapes in quoted pieces" $
+        evaluate (Printer.prettyKey "\"\\q\"") `shouldThrow` anyErrorCall
 
 keysDiffSpec :: Spec
 keysDiffSpec = describe "Key difference" $ do

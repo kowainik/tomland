@@ -34,6 +34,7 @@ data SmallType = SmallType
     , smallTypeDay       :: !Day
     , smallTypeMaybeWord :: !(Maybe Word)
     , smallTypeListInt   :: ![Int]
+    , smallTypeEithers   :: ![Either Int Text]
     , smallTypeBS        :: !ByteStringAsBytes
     } deriving stock (Eq, Show, Generic)
 
@@ -45,6 +46,7 @@ smallTypeCodec = SmallType
     <*> Toml.day "day" .= smallTypeDay
     <*> Toml.dioptional (Toml.word "maybe.word") .= smallTypeMaybeWord
     <*> Toml.arrayOf Toml._Int "list.int" .= smallTypeListInt
+    <*> Toml.arrayOf (Toml._Either Toml._Int Toml._Text) "list.either" .= smallTypeEithers
     <*> Toml.diwrap (Toml.byteStringArray "bs") .= smallTypeBS
 
 genSmallType :: Gen SmallType
@@ -55,5 +57,6 @@ genSmallType = do
     smallTypeDay       <- Gen.genDay
     smallTypeMaybeWord <- Gen.maybe Gen.genWord
     smallTypeListInt   <- Gen.genSmallList Gen.genInt
+    smallTypeEithers   <- Gen.genSmallList (Gen.genEither Gen.genInt Gen.genText)
     smallTypeBS        <- ByteStringAsBytes <$> Gen.genByteString
     pure SmallType{..}

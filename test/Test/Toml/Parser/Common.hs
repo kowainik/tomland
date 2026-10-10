@@ -18,6 +18,7 @@ module Test.Toml.Parser.Common
        , doubleFailOn
        , textFailOn
        , tomlFailOn
+       , tomlInvalid
        , quoteWith
        , squote
        , dquote
@@ -39,7 +40,8 @@ module Test.Toml.Parser.Common
 import Data.Text (Text)
 import Data.Time (Day, LocalTime (..), TimeOfDay (..), TimeZone, ZonedTime (..), fromGregorian,
                   minutesToTimeZone)
-import Test.Hspec (Expectation)
+import Data.Either (isLeft)
+import Test.Hspec (Expectation, shouldSatisfy)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
 import Text.Megaparsec (Parsec, ShowErrorComponent, parse)
 #if __GLASGOW_HASKELL__ <= 804
@@ -57,6 +59,8 @@ import Toml.Parser.Value (arrayP, boolP, dateTimeP, doubleP, integerP)
 import Toml.Type.Key (Key (..))
 import Toml.Type.TOML (TOML (..))
 import Toml.Type.UValue (UValue (..))
+
+import qualified Toml.Parser as Toml
 
 
 parseX
@@ -115,6 +119,10 @@ doubleFailOn    = failOn doubleP
 integerFailOn   = failOn integerP
 textFailOn      = failOn textP
 tomlFailOn      = failOn tomlP
+
+-- | The document parses syntactically but is rejected by validation.
+tomlInvalid :: Text -> Expectation
+tomlInvalid given = Toml.parse given `shouldSatisfy` isLeft
 
 -- Surround given text with quotes.
 quoteWith :: Text -> Text -> Text

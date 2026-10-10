@@ -17,12 +17,13 @@ module Toml.Parser.String
        ) where
 
 import Control.Applicative (Alternative (..))
-import Control.Applicative.Combinators (count, manyTill, optional)
-import Data.Char (chr, isControl)
+import Control.Applicative.Combinators (count, count', optional, skipMany)
+import Control.Monad (void)
+import Data.Char (chr)
 import Data.Text (Text)
 
-import Toml.Parser.Core (Parser, anySingle, char, eol, hexDigitChar, lexeme, satisfy, space, string,
-                         tab, try, (<?>))
+import Toml.Parser.Core (Parser, anySingle, char, eol, hexDigitChar, lexeme, satisfy, sc, string,
+                         takeWhile1P, takeWhileP, try, (<?>))
 
 import qualified Data.Text as Text
 
@@ -41,11 +42,12 @@ textP = (multilineBasicStringP   <?> "multiline basic string")
     <|> (basicStringP            <?> "basic string")
     <?> "text"
 
-{- | Parse a non-control character (control character is a non-printing
-character of the Latin-1 subset of Unicode).
+{- | Whether a character may appear unescaped inside a string. Control
+characters (U+0000 to U+001F and U+007F) are not allowed, except for tab. Any
+other Unicode character (including non-ASCII ones) is allowed.
 -}
-nonControlCharP :: Parser Text
-nonControlCharP = Text.singleton <$> satisfy (not . isControl) <?> "non-control char"
+isStringChar :: Char -> Bool
+isStringChar c = c == '\t' || (c >= ' ' && c /= '\DEL')
 
 -- | Parse escape sequences inside basic strings.
 escapeSequenceP :: Parser Text
@@ -55,18 +57,18 @@ escapeSequenceP = char '\\' *> anySingle >>= \case
     'n'  -> pure "\n"
     'f'  -> pure "\f"
     'r'  -> pure "\r"
+    'e'  -> pure "\ESC"
     '"'  -> pure "\""
     '\\' -> pure "\\"
-    'u'  -> hexUnicodeP 4
-    'U'  -> hexUnicodeP 8
+    'x'  -> hexUnicodeP 'x' 2
+    'u'  -> hexUnicodeP 'u' 4
+    'U'  -> hexUnicodeP 'U' 8
     c    -> fail $ "Invalid escape sequence: " <> "\\" <> [c]
   where
-    hexUnicodeP :: Int -> Parser Text
-    hexUnicodeP n = count n hexDigitChar >>= \x -> case toUnicode $ hexToInt x of
+    hexUnicodeP :: Char -> Int -> Parser Text
+    hexUnicodeP prefix n = count n hexDigitChar >>= \x -> case toUnicode $ hexToInt x of
         Just c  -> pure (Text.singleton c)
-        Nothing -> fail $ "Invalid unicode character: \\"
-            <> (if n == 4 then "u" else "U")
-            <> x
+        Nothing -> fail $ "Invalid unicode character: \\" <> [prefix] <> x
       where
         hexToInt :: String -> Int
         hexToInt xs = read $ "0x" ++ xs
@@ -81,43 +83,77 @@ escapeSequenceP = char '\\' *> anySingle >>= \case
 
 -- | Parser for basic string in double quotes.
 basicStringP :: Parser Text
-basicStringP = lexeme $ mconcat <$> (char '"' *> charP `manyTill` char '"')
+basicStringP = lexeme $ mconcat <$> (char '"' *> many charP <* char '"')
   where
     charP :: Parser Text
-    charP = escapeSequenceP <|> nonControlCharP
+    charP = escapeSequenceP <|> takeWhile1P (Just "basic string character") isBasicChar
+
+    isBasicChar :: Char -> Bool
+    isBasicChar c = isStringChar c && c /= '"' && c /= '\\'
 
 -- | Parser for literal string in single quotes.
 literalStringP :: Parser Text
-literalStringP = lexeme $ Text.pack <$> (char '\'' *> nonEolCharP `manyTill` char '\'')
+literalStringP = lexeme $
+    char '\'' *> takeWhileP (Just "literal string character") isLiteralChar <* char '\''
   where
-    nonEolCharP :: Parser Char
-    nonEolCharP = satisfy (\c -> c /= '\n' && c /= '\r')
+    isLiteralChar :: Char -> Bool
+    isLiteralChar c = isStringChar c && c /= '\''
 
--- | Generic parser for multiline string. Used in 'multilineBasicStringP' and
--- 'multilineLiteralStringP'.
-multilineP :: Parser Text -> Parser Text -> Parser Text
-multilineP quotesP allowedCharP = lexeme $ mconcat <$>
-    (quotesP *> optional eol *> allowedCharP `manyTill` quotesP)
+{- | Generic parser for multiline string. Used in 'multilineBasicStringP' and
+'multilineLiteralStringP'.
+
+The closing delimiter is three quote characters; one or two additional quote
+characters immediately before it are part of the string content, so that
+e.g. @""""one quote""""@ is the string @"one quote"@.
+-}
+multilineP :: Char -> Parser Text -> Parser Text
+multilineP quote allowedCharP = lexeme $ do
+    _ <- string delimiter
+    _ <- optional eol
+    go []
+  where
+    delimiter :: Text
+    delimiter = Text.replicate 3 (Text.singleton quote)
+
+    -- closing delimiter followed by up to two extra quote characters
+    closingP :: Parser Text
+    closingP = string delimiter *> (Text.pack <$> count' 0 2 (char quote))
+
+    go :: [Text] -> Parser Text
+    go acc = (closingP >>= \extra -> pure (mconcat (reverse (extra : acc))))
+        <|> (allowedCharP >>= \t -> go (t : acc))
 
 -- Parser for basic multiline string in """ quotes.
 multilineBasicStringP :: Parser Text
-multilineBasicStringP = multilineP quotesP allowedCharP
+multilineBasicStringP = multilineP '"' allowedCharP
   where
-    quotesP :: Parser Text
-    quotesP = string "\"\"\""
-
     allowedCharP :: Parser Text
-    allowedCharP = lineEndingBackslashP <|> escapeSequenceP <|> nonControlCharP <|> eol
+    allowedCharP = lineEndingBackslashP
+        <|> escapeSequenceP
+        <|> takeWhile1P (Just "basic string character") isBasicChar
+        <|> Text.singleton <$> char '"'
+        <|> eol
 
+    isBasicChar :: Char -> Bool
+    isBasicChar c = isStringChar c && c /= '"' && c /= '\\'
+
+    -- A backslash which is the last non-whitespace character on a line
+    -- trims all whitespace and newlines up to the next non-whitespace character.
     lineEndingBackslashP :: Parser Text
-    lineEndingBackslashP = Text.empty <$ try (char '\\' >> eol >> space)
+    lineEndingBackslashP = Text.empty <$ (try (char '\\' *> sc *> eol) *> skipWhitespaceAndNewlines)
+
+    skipWhitespaceAndNewlines :: Parser ()
+    skipWhitespaceAndNewlines = skipMany $
+        void (satisfy (\c -> c == ' ' || c == '\t' || c == '\n')) <|> void (string "\r\n")
 
 -- Parser for literal multiline string in ''' quotes.
 multilineLiteralStringP :: Parser Text
-multilineLiteralStringP = multilineP quotesP allowedCharP
+multilineLiteralStringP = multilineP '\'' allowedCharP
   where
-    quotesP :: Parser Text
-    quotesP = string "'''"
-
     allowedCharP :: Parser Text
-    allowedCharP = nonControlCharP <|> eol <|> Text.singleton <$> tab
+    allowedCharP = takeWhile1P (Just "literal string character") isLiteralChar
+        <|> Text.singleton <$> char '\''
+        <|> eol
+
+    isLiteralChar :: Char -> Bool
+    isLiteralChar c = isStringChar c && c /= '\''

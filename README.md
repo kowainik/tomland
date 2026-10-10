@@ -19,7 +19,7 @@ TOML as a configuration for your tool or application, you can use
 `tomland` to easily convert in both ways between textual TOML
 representation and Haskell types.
 
-✍️ `tomland` supports [TOML spec version 0.5.0](https://github.com/toml-lang/toml/wiki#v050-compliant).
+✍️ `tomland` supports [TOML spec version 1.1.0](https://toml.io/en/v1.1.0).
 
 The following blog post has more details about the library design and
 internal implementation details:

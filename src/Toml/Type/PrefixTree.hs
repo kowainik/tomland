@@ -15,6 +15,7 @@ Implementation of prefix tree for TOML AST.
 -}
 
 module Toml.Type.PrefixTree
+    {-# DEPRECATED "The TOML AST no longer uses prefix trees; use the lookup and insert functions of Toml.Type.TOML. This module will be removed in tomland-1.5." #-}
     (
       -- * Non-empty prefix tree
       PrefixTree (..)
@@ -38,12 +39,11 @@ module Toml.Type.PrefixTree
 import Prelude hiding (lookup)
 
 import Control.DeepSeq (NFData)
-import Data.Bifunctor (first)
 import Data.Foldable (foldl')
 import Data.HashMap.Strict (HashMap)
 import GHC.Generics (Generic)
 
-import Toml.Type.Key (pattern (:||), Key, KeysDiff (..), Piece, Prefix, keysDiff, (<|))
+import Toml.Type.Key (pattern (:||), Key, KeysDiff (..), Piece, Prefix, keysDiff)
 
 import qualified Data.HashMap.Strict as HashMap
 
@@ -192,7 +192,7 @@ toListT (Branch pref ma prefMap) = case ma of
 @since 0.0.0
 -}
 toList :: PrefixMap a -> [(Key, a)]
-toList = concatMap (\(p, tr) -> first (p <|) <$> toListT tr) . HashMap.toList
+toList = concatMap (toListT . snd) . HashMap.toList
 
 {- | Difference of two 'PrefixMap's. Returns elements of the first 'PrefixMap'
 that are not existing in the second one.

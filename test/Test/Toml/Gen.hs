@@ -30,6 +30,8 @@ module Test.Toml.Gen
        , genIntSet
 
        , genMap
+       , genTableMap
+       , genEither
 
        , genText
        , genString
@@ -44,9 +46,7 @@ module Test.Toml.Gen
        , genZonedTime
 
          -- ** @TOML@ specific
-       , genVal
        , genKey
-       , genPrefixMap
        , genToml
 
          -- ** Other
@@ -54,11 +54,11 @@ module Test.Toml.Gen
        ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad (forM, replicateM)
+import Control.Monad (replicateM)
 import Data.ByteString (ByteString)
 import Data.Fixed (Fixed (..))
 import Data.Hashable (Hashable)
-import Data.HashMap.Strict (HashMap)
+import Data.List (isPrefixOf)
 import Data.HashSet (HashSet)
 import Data.IntSet (IntSet)
 import Data.List.NonEmpty (NonEmpty)
@@ -72,14 +72,13 @@ import GHC.Exts (fromList)
 import Hedgehog (Gen, Range)
 import Numeric.Natural (Natural)
 
-import Toml.Type.AnyValue (AnyValue (..), toMArray)
-import Toml.Type.Key (pattern (:||), Key (..), Piece (..))
-import Toml.Type.PrefixTree (PrefixMap, PrefixTree (..))
-import Toml.Type.TOML (TOML (..))
-import Toml.Type.Value (TValue (..), Value (..))
+import Toml.Type.AnyValue (AnyValue (..))
+import Toml.Type.Key (Key (..), Piece (..))
+import Toml.Type.Printer (prettyKey)
+import Toml.Type.TOML (TOML, insertKeyAnyVal, insertTable, insertTableArrays)
+import Toml.Type.Value (TValue (..), Value (..), array)
 
 import qualified Data.ByteString.Lazy as LB
-import qualified Data.Char as Char
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
@@ -87,7 +86,6 @@ import qualified Data.Text.Lazy as L
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
-import qualified Toml.Type.PrefixTree as Toml (fromList)
 
 
 ----------------------------------------------------------------------------
@@ -96,19 +94,17 @@ import qualified Toml.Type.PrefixTree as Toml (fromList)
 
 -- @TOML@ specific
 
-type V = Int
-
-genVal :: Gen V
-genVal = Gen.int (Range.constant 0 256)
-
 -- | Generates random value of 'AnyValue' type.
 genAnyValue :: Gen AnyValue
 genAnyValue = Gen.choice $
     (AnyValue <$> genArray) : noneArrayList
 
--- | Generate either a bare piece, or a quoted piece
+{- | Generate either a bare piece, a piece with the characters that are
+special in keys (dots, quotes, backslashes, spaces), or a piece with arbitrary
+characters. The last two have to be quoted by the printer.
+-}
 genPiece :: Gen Piece
-genPiece = Piece <$> Gen.choice [bare, quoted]
+genPiece = Piece <$> Gen.choice [bare, punctuated, arbitrary]
   where
     bare :: Gen Text
     bare = liftA2 Text.cons Gen.alpha $ Gen.text (Range.constant 1 10) alphadashes
@@ -116,23 +112,12 @@ genPiece = Piece <$> Gen.choice [bare, quoted]
     alphadashes :: Gen Char
     alphadashes = Gen.choice [Gen.alphaNum, Gen.element ("_-" :: [Char])]
 
-    quoted :: Gen Text
-    quoted = genNotEscape $ Gen.choice
-        [ quotedWith '"' (\x -> x /= '\\' && notControl x)
-        , quotedWith '\'' notControl
-        ]
+    punctuated :: Gen Text
+    punctuated = Gen.text (Range.constant 0 10) $
+        Gen.choice [Gen.alphaNum, Gen.element (".\"'\\ " :: [Char])]
 
-    quotedWith :: Char -> (Char -> Bool) -> Gen Text
-    quotedWith c isAllowed = wrapChar c <$> Gen.text (Range.constant 1 10) allowedChar
-      where
-        allowedChar :: Gen Char
-        allowedChar = Gen.filter (\x -> x /= c && isAllowed x) Gen.unicode
-
-    wrapChar :: Char -> Text -> Text
-    wrapChar c = Text.cons c . (`Text.append` Text.singleton c)
-
-    notControl :: Char -> Bool
-    notControl = not . Char.isControl
+    arbitrary :: Gen Text
+    arbitrary = Gen.text (Range.constant 0 10) Gen.unicode
 
 genKey :: Gen Key
 genKey = Key <$> Gen.nonEmpty (Range.constant 1 10) genPiece
@@ -143,56 +128,37 @@ genKeyAnyValue = liftA2 (,) genKey genAnyValue
 genKeyAnyValueList :: Gen [(Key, AnyValue)]
 genKeyAnyValueList = Gen.list (Range.linear 0 10) genKeyAnyValue
 
--- Generates key-value pair for PrefixMap
-genEntry :: Gen (Piece, Key)
-genEntry = genKey >>= \case
-    key@(piece :|| _) -> pure (piece, key)
-
-genPrefixMap :: Gen (PrefixMap V)
-genPrefixMap = do
-    entries <- Gen.list (Range.linear 0 10) genEntry
-    kvps    <- forM entries $ \(piece, key) -> do
-        tree <- genPrefixTree key
-        pure (piece, tree)
-
-    pure $ fromList kvps
-
-genPrefixTree :: Key -> Gen (PrefixTree V)
-genPrefixTree key = Gen.recursive
-    -- list picker generator combinator
-    Gen.choice
-    -- non-recursive generators
-    [ Leaf key <$> genVal ]
-    -- recursive generators
-    [ genPrefixMap >>= genBranch ]
-  where
-    genBranch :: PrefixMap V -> Gen (PrefixTree V)
-    genBranch prefMap = do
-        prefVal <- Gen.maybe genVal
-        pure $ Branch key prefVal prefMap
-
 makeToml :: [(Key, AnyValue)] -> TOML
-makeToml kv = TOML (fromList kv) mempty mempty
+makeToml = foldr (\(k, v) -> insertKeyAnyVal k v) mempty
 
+-- | Generates a 'TOML' document, with sub-tables and arrays of tables.
 genToml :: Gen TOML
-genToml = Gen.recursive
+genToml = genTomlWith True
+
+{- | Generates a 'TOML' without arrays of tables. Used for inline tables
+(tables inside arrays), which cannot contain @[[table]]@ headers.
+-}
+genInlineToml :: Gen TOML
+genInlineToml = genTomlWith False
+
+genTomlWith :: Bool -> Gen TOML
+genTomlWith withArrays = Gen.recursive
     Gen.choice
     [ makeToml <$> genKeyAnyValueList ]
-    [ TOML <$> keyValues <*> tables <*> arrays ]
-  where
-    keyValues :: Gen (HashMap Key AnyValue)
-    keyValues = fromList <$> genKeyAnyValueList
-
-    tables :: Gen (PrefixMap TOML)
-    tables = fmap Toml.fromList
-        $ Gen.list (Range.linear 0 5)
-        $ (,) <$> genKey <*> genToml
-
-    arrays :: Gen (HashMap Key (NonEmpty TOML))
-    arrays = fmap fromList $ Gen.list (Range.linear 0 10) $ do
-        key <- genKey
-        arr <- Gen.list (Range.linear 1 10) genToml
-        pure (key, NE.fromList arr)
+    [ do
+        kvs    <- genKeyAnyValueList
+        tables <- Gen.list (Range.linear 0 5) $ (,) <$> genKey <*> genTomlWith withArrays
+        arrays <- if withArrays
+            then Gen.list (Range.linear 0 10) $ do
+                key <- genKey
+                arr <- Gen.list (Range.linear 1 10) $ genTomlWith withArrays
+                pure (key, NE.fromList arr)
+            else pure []
+        pure
+            $ foldr (\(k, arr) -> insertTableArrays k arr)
+                (foldr (\(k, sub) -> insertTable k sub) (makeToml kvs) tables)
+                arrays
+    ]
 
 -- Date generators
 
@@ -284,6 +250,27 @@ genIntSet = fromList <$> genList genInt
 genMap :: Ord k => Gen k -> Gen v -> Gen (Map k v)
 genMap genK genV = Map.fromList <$> genSmallList (liftA2 (,) genK genV)
 
+{- | Generates a map with 'Text' keys suitable for
+'Toml.Codec.Combinator.Map.tableMap' with 'Toml.Codec.BiMap.Conversion._KeyText':
+keys are printed TOML keys, and no key is a prefix of another (a TOML key
+cannot be both a value and a table).
+-}
+genTableMap :: Gen v -> Gen (Map Text v)
+genTableMap genV =
+    Map.mapKeys prettyKey <$> Gen.filter noPrefixConflict (genMap genKey genV)
+  where
+    noPrefixConflict :: Map Key v -> Bool
+    noPrefixConflict m = and
+        [ not (pieces a `isPrefixOf` pieces b)
+        | a <- Map.keys m, b <- Map.keys m, a /= b
+        ]
+
+    pieces :: Key -> [Piece]
+    pieces = NE.toList . unKey
+
+genEither :: Gen a -> Gen b -> Gen (Either a b)
+genEither genA genB = Gen.choice [Left <$> genA, Right <$> genB]
+
 -- | Generatates control sympol.
 genEscapeSequence :: Gen Text
 genEscapeSequence = Gen.element
@@ -358,11 +345,12 @@ noneArrayList =
     ]
 
 genArrayFrom :: Gen AnyValue -> Gen (Value 'TArray)
-genArrayFrom noneArray = do
-    eVal <- toMArray <$> Gen.list (Range.constant 0 5) noneArray
-    case eVal of
-        Left err  -> error $ show err
-        Right val -> pure val
+genArrayFrom genElem = Array <$> Gen.list (Range.constant 0 5) genElem
+
+-- | Generate an array whose elements may be inline tables.
+genArrayWithTables :: Gen (Value 'TArray)
+genArrayWithTables = Array <$> Gen.list (Range.constant 0 4)
+    (Gen.frequency $ (2, AnyValue . Table <$> genInlineToml) : map (\g -> (1, g)) noneArrayList)
 
 {- | Generate arrays and nested arrays. For example:
 
@@ -390,8 +378,12 @@ Array
 -}
 genArray :: Gen (Value 'TArray)
 genArray = Gen.recursive Gen.choice
-    [Gen.choice $ map genArrayFrom noneArrayList]
-    [Array <$> Gen.list (Range.constant 0 5) genArray]
+    [ Gen.choice $ map genArrayFrom noneArrayList  -- elements of the same type
+    , genArrayFrom $ Gen.choice noneArrayList      -- elements of different types
+    ]
+    [ array <$> Gen.list (Range.constant 0 5) genArray
+    , genArrayWithTables
+    ]
 
 -- filters
 

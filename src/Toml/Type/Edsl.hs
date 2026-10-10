@@ -35,7 +35,7 @@ exampleToml = 'mkToml' $ __do__
     \"key1\" '=:' 1
     \"key2\" '=:' Bool True
     'table' \"meme-quotes\" $
-        \"quote1\" '=:' Array [\"Oh\", \"Hi\", \"Mark\"]
+        \"quote1\" '=:' 'array' [\"Oh\", \"Hi\", \"Mark\"]
     'tableArray' \"arrayName\" $
         \"elem1\" '=:' \"yes\" :|
         [ 'table' \"elem2\" $ \"deep\" '=:' Integer 7

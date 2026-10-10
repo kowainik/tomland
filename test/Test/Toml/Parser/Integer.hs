@@ -119,5 +119,10 @@ integerSpecs = describe "integerP" $ do
             integerFailOn "0x1214adf_"
             integerFailOn "0o1_15_41_"
             integerFailOn "0o1215147_"
+        it "doesn't parse leading zeros separated by underscore or whitespace after the sign" $ do
+            integerFailOn "0_0"
+            integerFailOn "+0_1"
+            integerFailOn "+ 1"
+            integerFailOn "- 1"
             
        

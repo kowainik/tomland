@@ -88,15 +88,15 @@ import Toml.Codec.BiMap (BiMap (..), TomlBiMap)
 import Toml.Codec.Code (execTomlCodec)
 import Toml.Codec.Combinator.Common (whenLeftBiMapError)
 import Toml.Codec.Types (Codec (..), TomlCodec, TomlEnv, TomlState (..))
-import Toml.Type.Key (Key, pattern (:||))
-import Toml.Type.TOML (TOML (..), insertTable, insertTableArrays)
+import Toml.Type.Key (Key, Piece, pattern (:||), (<|))
+import Toml.Type.TOML (Entry (..), TOML (..), TableKind (..), insertTable, insertTableArrays,
+                       lookupTable, lookupTableArray)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 
-import qualified Toml.Type.PrefixTree as Prefix
 
 
 {- | Bidirectional codec for 'Map'. It takes birectional converter for keys and
@@ -349,7 +349,7 @@ internalMap :: forall map k v
 internalMap emptyMap toListMap fromListMap keyCodec valCodec key = Codec input output
   where
     input :: TomlEnv map
-    input = \t -> case HashMap.lookup key $ tomlTableArrays t of
+    input = \t -> case lookupTableArray key t of
         Nothing -> Success emptyMap
         Just tomls -> fmap fromListMap $ for (NE.toList tomls) $ \toml -> do
             k <- codecRead keyCodec toml
@@ -362,7 +362,7 @@ internalMap emptyMap toListMap fromListMap keyCodec valCodec key = Codec input o
                 (\(k, v) -> execTomlCodec keyCodec k <> execTomlCodec valCodec v)
                 (toListMap dict)
 
-        mTables <- gets $ HashMap.lookup key . tomlTableArrays
+        mTables <- gets $ lookupTableArray key
 
         let updateAction :: TOML -> TOML
             updateAction = case mTables of
@@ -373,6 +373,18 @@ internalMap emptyMap toListMap fromListMap keyCodec valCodec key = Codec input o
                     insertTableArrays key $ t :| (ts ++ tomls)
 
         dict <$ modify updateAction
+
+{- | Keys of the entries of a table, as seen by 'tableMap': tables created
+by dotted keys or implicitly by a header of a sub-table are flattened, so
+that @a.b = 1@ and @[a.b]@ both yield the key @a.b@.
+-}
+mapKeys :: TOML -> [Key]
+mapKeys = concatMap entryKey . HashMap.toList . unTOML
+  where
+    entryKey :: (Piece, Entry) -> [Key]
+    entryKey (p, ETable kind t)
+        | kind == DottedTable || kind == ImplicitTable = fmap (p <|) (mapKeys t)
+    entryKey (p, _) = [p :|| []]
 
 internalTableMap
     :: forall map k v
@@ -390,19 +402,16 @@ internalTableMap emptyMap toListMap fromListMap keyBiMap valCodec tableName =
     Codec input output
   where
     input :: TomlEnv map
-    input = \t -> case Prefix.lookup tableName $ tomlTables t of
+    input = \t -> case lookupTable tableName t of
         Nothing -> Success emptyMap
         Just toml ->
-            let valKeys = HashMap.keys $ tomlPairs toml
-                tableKeys = fmap (:|| []) $ HashMap.keys $ tomlTables toml
-                tableArrayKey = HashMap.keys $ tomlTableArrays toml
-            in fmap fromListMap $ for (valKeys <> tableKeys <> tableArrayKey) $ \key ->
+            fmap fromListMap $ for (mapKeys toml) $ \key ->
                 whenLeftBiMapError key (forward keyBiMap key) $ \k ->
                     (k,) <$> codecRead (valCodec key) toml
 
     output :: map -> TomlState map
     output m = do
-        mTable <- gets $ Prefix.lookup tableName . tomlTables
+        mTable <- gets $ lookupTable tableName
         let toml = fromMaybe mempty mTable
         let (_, newToml) = unTomlState updateMapTable toml
         m <$ modify (insertTable tableName newToml)

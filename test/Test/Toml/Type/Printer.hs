@@ -6,13 +6,14 @@ module Test.Toml.Type.Printer
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Ord (comparing)
-import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, shouldReturn)
+import Test.Hspec (Arg, Expectation, Spec, SpecWith, describe, it, shouldBe, shouldReturn)
 
+import Toml.Type.AnyValue (AnyValue (..))
 import Toml.Type.Edsl (empty, mkToml, table, tableArray, (=:))
 import Toml.Type.Key (Key (..), (<|))
-import Toml.Type.Printer (PrintOptions (..), Lines(..), defaultOptions, prettyOptions)
+import Toml.Type.Printer (PrintOptions (..), Lines(..), defaultOptions, pretty, prettyOptions)
 import Toml.Type.TOML (TOML)
-import Toml.Type.Value (Value (..))
+import Toml.Type.Value (Value (..), array)
 
 import qualified Data.Text.IO as T
 
@@ -25,7 +26,25 @@ printerSpec = describe "Toml.Type.Printer: Golden tests for pretty-printing" $ d
     test "pretty_unformatted" noFormatting
     test "pretty_custom_sorted" noFormatting { printOptionsSorting = Just spamEgg }
     test "pretty_lines" defaultOptions { printOptionsLines = MultiLine }
+    it "prints arrays with elements of different types" $
+        pretty (mkToml $ "x" =: Array [AnyValue (Integer 1), AnyValue (Text "a"), AnyValue (Bool True)])
+            `shouldBe` "x = [1, \"a\", true]\n"
+    it "escapes control and non-ASCII characters in strings" $
+        pretty (mkToml $ "x" =: Text "a\ESCb\DEL\1234\n")
+            `shouldBe` "x = \"a\\u001Bb\\u007F\\U000004d2\\n\"\n"
+    it "prints tables inside arrays as inline tables" $ do
+        let inner = mkToml $ do
+                "a" =: 1
+                table "t" $ "b" =: 2
+                tableArray "arr" ("c" =: 3 :| [empty])
+        pretty (mkToml $ "x" =: Array [AnyValue (Table inner), AnyValue (Integer 4)])
+            `shouldBe` "x = [{ a = 1, arr = [{ c = 3 }, {}], t = { b = 2 } }, 4]\n"
+        pretty (mkToml $ "x" =: Array [AnyValue (Table empty_), AnyValue (Array [])])
+            `shouldBe` "x = [{}, []]\n"
   where
+    empty_ :: TOML
+    empty_ = mkToml empty
+
     test :: String -> PrintOptions -> SpecWith (Arg Expectation)
     test name options = it ("Golden " ++ name) $
         T.readFile ("test/golden/" ++ name ++ ".golden")
@@ -43,7 +62,7 @@ example = mkToml $ do
     table "foo" empty
     table "doo" empty
     table "baz" empty
-    "list" =: Array ["one", "two"]
+    "list" =: array ["one", "two"]
     tableArray "deepest" $
       "ping" =: "pong"
       :| [empty]

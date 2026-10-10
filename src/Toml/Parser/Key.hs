@@ -20,34 +20,32 @@ module Toml.Parser.Key
 import Control.Applicative (Alternative (..))
 import Control.Applicative.Combinators.NonEmpty (sepBy1)
 import Control.Monad.Combinators (between)
+import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Text (Text)
 
-import Toml.Parser.Core (Parser, alphaNumChar, char, lexeme, text)
+import Toml.Parser.Core (Parser, lexeme, takeWhile1P, text)
 import Toml.Parser.String (basicStringP, literalStringP)
 import Toml.Type.Key (Key (..), Piece (..))
 
-import qualified Data.Text as Text
 
-
--- | Parser for bare key piece, like @foo@.
+{- | Parser for bare key piece, like @foo@. Bare keys may only contain ASCII
+letters, ASCII digits, underscores, and dashes.
+-}
 bareKeyPieceP :: Parser Text
-bareKeyPieceP = lexeme $ Text.pack <$> bareStrP
+bareKeyPieceP = lexeme $ takeWhile1P (Just "bare key character") isBareKeyChar
   where
-    bareStrP :: Parser String
-    bareStrP = some $ alphaNumChar <|> char '_' <|> char '-'
+    isBareKeyChar :: Char -> Bool
+    isBareKeyChar c = isAsciiLower c || isAsciiUpper c || isDigit c || c == '_' || c == '-'
 
--- | Parser for 'Piece'.
+-- | Parser for 'Piece'. Quoted pieces are stored without their quotes.
 keyComponentP :: Parser Piece
-keyComponentP = Piece <$>
-    (bareKeyPieceP <|> (quote "\"" <$> basicStringP) <|> (quote "'" <$> literalStringP))
-  where
-    -- adds " or ' to both sides
-    quote :: Text -> Text -> Text
-    quote q t = q <> t <> q
+keyComponentP = Piece <$> (bareKeyPieceP <|> basicStringP <|> literalStringP)
 
--- | Parser for 'Key': dot-separated list of 'Piece'.
+{- | Parser for 'Key': dot-separated list of 'Piece'. Whitespace around dots is
+ignored.
+-}
 keyP :: Parser Key
-keyP = Key <$> keyComponentP `sepBy1` char '.'
+keyP = Key <$> keyComponentP `sepBy1` text "."
 
 -- | Parser for table name: 'Key' inside @[]@.
 tableNameP :: Parser Key
